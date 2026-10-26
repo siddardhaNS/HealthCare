@@ -2,6 +2,7 @@
 // registers these with @hono/zod-openapi) and of the types every app uses.
 // `z` comes from @hono/zod-openapi so schemas can carry `.openapi()` metadata.
 import { z } from '@hono/zod-openapi';
+import { appRoles } from './roles';
 
 export { z };
 
@@ -34,3 +35,43 @@ export const IdempotencyKey = z.string().uuid().openapi({ example: '2f1c6c2e-8b1
 
 /** Customer organisation types; a household may belong to none of them. */
 export const OrganisationType = z.enum(['community', 'senior_home', 'employer']).openapi('OrganisationType');
+
+export const Language = z.enum(['en', 'te', 'hi']).openapi('Language');
+export type Language = z.infer<typeof Language>;
+
+// ── Auth ────────────────────────────────────────────────────────────────
+
+export * from './roles';
+
+export const AppRole = z.enum(appRoles).openapi('AppRole');
+export type AppRole = z.infer<typeof AppRole>;
+
+export const OtpChannel = z.enum(['whatsapp', 'sms']).openapi('OtpChannel');
+export type OtpChannel = z.infer<typeof OtpChannel>;
+
+export const OtpIntentRequest = z
+  .object({
+    phone: PhoneIN,
+    channel: OtpChannel,
+    language: Language.default('en'),
+  })
+  .openapi('OtpIntentRequest');
+export type OtpIntentRequest = z.infer<typeof OtpIntentRequest>;
+
+export const WhatsappOptinRequest = z
+  .object({
+    /** Version of the WhatsApp notice shown on the sign-in screen. */
+    consentVersion: z.string().min(1).max(40),
+  })
+  .openapi('WhatsappOptinRequest');
+export type WhatsappOptinRequest = z.infer<typeof WhatsappOptinRequest>;
+
+export const Me = z
+  .object({
+    userId: z.string().uuid(),
+    phone: z.string().nullable(),
+    roles: z.array(AppRole),
+    aal: z.enum(['aal1', 'aal2']),
+  })
+  .openapi('Me');
+export type Me = z.infer<typeof Me>;

@@ -4,22 +4,30 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/dev.ts",
+    "dev": "tsx watch --env-file-if-exists=../../.env src/dev.ts",
     "openapi": "tsx scripts/openapi.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "staff:create": "tsx --env-file-if-exists=../../.env scripts/staff-create.ts"
   },
   "dependencies": {
     "@hono/zod-openapi": "1.6.3",
     "@repo/brand": "workspace:*",
     "@repo/contracts": "workspace:*",
+    "@repo/db": "workspace:*",
+    "@sentry/hono": "11.9.0",
+    "@sentry/node": "11.9.0",
+    "@upstash/redis": "1.40.0",
     "hono": "4.13.14",
-    "zod": "catalog:"
+    "jose": "6.2.13",
+    "standardwebhooks": "1.1.1",
+    "zod": "catalog:",
+    "@repo/config": "workspace:*"
   },
   "devDependencies": {
     "@hono/node-server": "2.1.5",
-    "@repo/config": "workspace:*",
+    "@supabase/supabase-js": "2.118.0",
     "@types/node": "26.6.5",
     "eslint": "10.13.0",
     "tsx": "4.23.15",

@@ -21,6 +21,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/otp-intent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Choose the OTP channel before calling Supabase signInWithOtp
+         * @description Remembers the channel for the next OTP to this phone. The WhatsApp opt-in is recorded only after sign-in (POST /auth/whatsapp-optin), once the phone is verified.
+         */
+        post: operations["createOtpIntent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/whatsapp-optin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record WhatsApp consent for the verified phone of the signed-in user */
+        post: operations["recordWhatsappOptin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The signed-in user */
+        get: operations["getMe"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -35,6 +89,41 @@ export interface components {
             /** Format: date-time */
             time: string;
         };
+        ErrorBody: {
+            error: {
+                /** @example not_found */
+                code: string;
+                /** @example Resource not found */
+                message: string;
+                requestId?: string;
+            };
+        };
+        OtpIntentRequest: {
+            /** @example +919876543210 */
+            phone: string;
+            channel: components["schemas"]["OtpChannel"];
+            language?: components["schemas"]["Language"];
+        };
+        /** @enum {string} */
+        OtpChannel: "whatsapp" | "sms";
+        /**
+         * @default en
+         * @enum {string}
+         */
+        Language: "en" | "te" | "hi";
+        WhatsappOptinRequest: {
+            consentVersion: string;
+        };
+        Me: {
+            /** Format: uuid */
+            userId: string;
+            phone: string | null;
+            roles: components["schemas"]["AppRole"][];
+            /** @enum {string} */
+            aal: "aal1" | "aal2";
+        };
+        /** @enum {string} */
+        AppRole: "super_admin" | "operations" | "community_desk" | "support" | "doctor" | "pharmacy" | "lab" | "hospital" | "crew" | "phlebotomist" | "companion" | "rider";
     };
     responses: never;
     parameters: never;
@@ -60,6 +149,106 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HealthStatus"];
+                };
+            };
+        };
+    };
+    createOtpIntent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OtpIntentRequest"];
+            };
+        };
+        responses: {
+            /** @description Recorded */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    recordWhatsappOptin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WhatsappOptinRequest"];
+            };
+        };
+        responses: {
+            /** @description Recorded */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No verified phone on this account */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    getMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current user */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };

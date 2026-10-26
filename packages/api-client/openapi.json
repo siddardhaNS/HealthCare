@@ -5,6 +5,13 @@
     "version": "0.0.0"
   },
   "components": {
+    "securitySchemes": {
+      "bearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
     "schemas": {
       "HealthStatus": {
         "type": "object",
@@ -34,6 +41,134 @@
           "version",
           "time"
         ]
+      },
+      "ErrorBody": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "example": "not_found"
+              },
+              "message": {
+                "type": "string",
+                "example": "Resource not found"
+              },
+              "requestId": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "OtpIntentRequest": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "pattern": "^\\+91[6-9]\\d{9}$",
+            "example": "+919876543210"
+          },
+          "channel": {
+            "$ref": "#/components/schemas/OtpChannel"
+          },
+          "language": {
+            "$ref": "#/components/schemas/Language"
+          }
+        },
+        "required": [
+          "phone",
+          "channel"
+        ]
+      },
+      "OtpChannel": {
+        "type": "string",
+        "enum": [
+          "whatsapp",
+          "sms"
+        ]
+      },
+      "Language": {
+        "type": "string",
+        "enum": [
+          "en",
+          "te",
+          "hi"
+        ],
+        "default": "en"
+      },
+      "WhatsappOptinRequest": {
+        "type": "object",
+        "properties": {
+          "consentVersion": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          }
+        },
+        "required": [
+          "consentVersion"
+        ]
+      },
+      "Me": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AppRole"
+            }
+          },
+          "aal": {
+            "type": "string",
+            "enum": [
+              "aal1",
+              "aal2"
+            ]
+          }
+        },
+        "required": [
+          "userId",
+          "phone",
+          "roles",
+          "aal"
+        ]
+      },
+      "AppRole": {
+        "type": "string",
+        "enum": [
+          "super_admin",
+          "operations",
+          "community_desk",
+          "support",
+          "doctor",
+          "pharmacy",
+          "lab",
+          "hospital",
+          "crew",
+          "phlebotomist",
+          "companion",
+          "rider"
+        ]
       }
     },
     "parameters": {}
@@ -53,6 +188,126 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HealthStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/otp-intent": {
+      "post": {
+        "operationId": "createOtpIntent",
+        "tags": [
+          "auth"
+        ],
+        "summary": "Choose the OTP channel before calling Supabase signInWithOtp",
+        "description": "Remembers the channel for the next OTP to this phone. The WhatsApp opt-in is recorded only after sign-in (POST /auth/whatsapp-optin), once the phone is verified.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OtpIntentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Recorded"
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/whatsapp-optin": {
+      "post": {
+        "operationId": "recordWhatsappOptin",
+        "tags": [
+          "auth"
+        ],
+        "summary": "Record WhatsApp consent for the verified phone of the signed-in user",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WhatsappOptinRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Recorded"
+          },
+          "400": {
+            "description": "No verified phone on this account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me": {
+      "get": {
+        "operationId": "getMe",
+        "tags": [
+          "auth"
+        ],
+        "summary": "The signed-in user",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
                 }
               }
             }
