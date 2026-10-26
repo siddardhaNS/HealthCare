@@ -1,0 +1,2 @@
+-- Local development seed data. Loaded by `supabase db reset`.
+-- Never put real resident data here.

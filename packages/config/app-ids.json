@@ -1,0 +1,14 @@
+{
+  "_comment": "PERMANENT after the first store upload. Replace 'example' with the company domain before the first EAS submit. Not brand-based on purpose.",
+  "companyReverseDomain": "in.example",
+  "resident": {
+    "applicationId": "in.example.resident",
+    "bundleIdentifier": "in.example.resident",
+    "scheme": "in.example.resident"
+  },
+  "field": {
+    "applicationId": "in.example.field",
+    "bundleIdentifier": "in.example.field",
+    "scheme": "in.example.field"
+  }
+}

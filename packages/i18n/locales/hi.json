@@ -1,0 +1,62 @@
+{
+  "app": {
+    "residentName": "{{brand}}",
+    "fieldName": "{{brand}} फ़ील्ड"
+  },
+  "common": {
+    "open": "खोलें",
+    "back": "वापस",
+    "notifications": "सूचनाएँ",
+    "comingSoon": "अगले चरण में आएगा"
+  },
+  "home": {
+    "greeting": {
+      "morning": "सुप्रभात",
+      "afternoon": "नमस्कार",
+      "evening": "शुभ संध्या"
+    },
+    "snapshot": "स्वास्थ्य सारांश",
+    "viewTrends": "रुझान देखें",
+    "sosBadge": "SOS",
+    "sosTitle": "आपातकालीन SOS",
+    "sosSubtitle": "पास की एम्बुलेंस और कम्युनिटी डेस्क को सूचना",
+    "careServices": "देखभाल सेवाएँ",
+    "comingUp": "आगामी",
+    "services": {
+      "consult": { "title": "डॉक्टर से परामर्श", "subtitle": "वीडियो, विशेषज्ञता के अनुसार" },
+      "pharmacy": { "title": "दवाइयाँ मँगाएँ", "subtitle": "पार्टनर फ़ार्मेसी से" },
+      "lab": { "title": "घर पर लैब टेस्ट", "subtitle": "रिपोर्ट ऐप में" },
+      "companion": { "title": "विज़िट साथी", "subtitle": "आने-जाने में साथ" }
+    }
+  },
+  "tabs": {
+    "home": "होम",
+    "health": "स्वास्थ्य",
+    "bookings": "बुकिंग",
+    "records": "रिकॉर्ड",
+    "profile": "प्रोफ़ाइल"
+  },
+  "field": {
+    "title": "फ़ील्ड काम",
+    "onDuty": "ड्यूटी पर",
+    "offDuty": "ड्यूटी से बाहर",
+    "noJobs": "कोई सक्रिय काम नहीं",
+    "roles": {
+      "crew": "एम्बुलेंस क्रू",
+      "phlebotomist": "फ़्लेबोटोमिस्ट",
+      "companion": "विज़िट साथी",
+      "rider": "फ़ार्मेसी राइडर"
+    }
+  },
+  "web": {
+    "heroTitle": "हर घर के लिए डॉक्टर, दवाइयाँ, लैब टेस्ट और 24×7 SOS",
+    "heroBody": "{{brand}} गेटेड सोसाइटी, अपार्टमेंट, परिवारों, सीनियर-लिविंग होम और नियोक्ताओं के लिए घर पर स्वास्थ्य सेवा लाता है।",
+    "cta": "अपनी सोसाइटी में {{brand}} लाएँ",
+    "signIn": "साइन इन"
+  },
+  "console": {
+    "title": "{{brand}} कंसोल",
+    "commandCenter": "कमांड सेंटर",
+    "signInPrompt": "स्टाफ़ ईमेल और टू-फ़ैक्टर प्रमाणीकरण से साइन इन करें।"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "name": "healthcare-platform",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.15.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint && pnpm check",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "check": "tsx scripts/check-brand.ts && tsx scripts/check-tokens.ts",
+    "assets": "tsx scripts/gen-assets.ts",
+    "rebrand": "tsx scripts/rebrand.ts",
+    "openapi": "pnpm --filter api openapi && pnpm --filter @repo/api-client generate"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint": "10.13.0",
+    "prettier": "3.9.10",
+    "sharp": "0.35.5",
+    "supabase": "2.122.0",
+    "tsx": "4.23.15",
+    "turbo": "2.11.10",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.0"
+  }
+}

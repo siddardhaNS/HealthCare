@@ -1,0 +1,62 @@
+{
+  "app": {
+    "residentName": "{{brand}}",
+    "fieldName": "{{brand}} Field"
+  },
+  "common": {
+    "open": "Open",
+    "back": "Back",
+    "notifications": "Notifications",
+    "comingSoon": "Coming in a later phase"
+  },
+  "home": {
+    "greeting": {
+      "morning": "Good morning",
+      "afternoon": "Good afternoon",
+      "evening": "Good evening"
+    },
+    "snapshot": "Health snapshot",
+    "viewTrends": "View trends",
+    "sosBadge": "SOS",
+    "sosTitle": "Emergency SOS",
+    "sosSubtitle": "Alerts nearby ambulances and the community desk",
+    "careServices": "Care services",
+    "comingUp": "Coming up",
+    "services": {
+      "consult": { "title": "Consult a doctor", "subtitle": "Video, by specialty" },
+      "pharmacy": { "title": "Order medicines", "subtitle": "From partner pharmacies" },
+      "lab": { "title": "Lab tests at home", "subtitle": "Reports in the app" },
+      "companion": { "title": "Visit companion", "subtitle": "Escort there and back" }
+    }
+  },
+  "tabs": {
+    "home": "Home",
+    "health": "Health",
+    "bookings": "Bookings",
+    "records": "Records",
+    "profile": "Profile"
+  },
+  "field": {
+    "title": "Field jobs",
+    "onDuty": "On duty",
+    "offDuty": "Off duty",
+    "noJobs": "No active jobs",
+    "roles": {
+      "crew": "Ambulance crew",
+      "phlebotomist": "Phlebotomist",
+      "companion": "Visit companion",
+      "rider": "Pharmacy rider"
+    }
+  },
+  "web": {
+    "heroTitle": "Doctors, medicines, lab tests and a 24×7 SOS for every home",
+    "heroBody": "{{brand}} brings home healthcare to gated communities, apartments, families, senior-living homes and employers.",
+    "cta": "Bring {{brand}} to your community",
+    "signIn": "Sign in"
+  },
+  "console": {
+    "title": "{{brand}} console",
+    "commandCenter": "Command center",
+    "signInPrompt": "Staff sign in with email and two-factor authentication."
+  }
+}

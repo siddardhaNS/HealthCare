@@ -1,0 +1,40 @@
+{
+  "name": "@repo/tokens",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./contrast": "./src/contrast.ts",
+    "./native-fonts": "./src/native-fonts.ts",
+    "./next-fonts": "./src/next-fonts.ts",
+    "./theme.css": "./dist/theme.css",
+    "./tailwind.css": "./dist/tailwind.css"
+  },
+  "scripts": {
+    "build": "tsx scripts/build.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "peerDependencies": {
+    "@expo-google-fonts/dm-sans": "*",
+    "@expo-google-fonts/jetbrains-mono": "*",
+    "@expo-google-fonts/sora": "*",
+    "next": "*"
+  },
+  "peerDependenciesMeta": {
+    "@expo-google-fonts/dm-sans": { "optional": true },
+    "@expo-google-fonts/jetbrains-mono": { "optional": true },
+    "@expo-google-fonts/sora": { "optional": true },
+    "next": { "optional": true }
+  },
+  "devDependencies": {
+    "@repo/config": "workspace:*",
+    "@types/node": "26.6.5",
+    "eslint": "10.13.0",
+    "tsx": "4.23.15",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

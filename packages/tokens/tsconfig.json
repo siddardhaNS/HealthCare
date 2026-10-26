@@ -1,0 +1,4 @@
+{
+  "extends": "@repo/config/tsconfig/node.json",
+  "include": ["src/index.ts", "src/types.ts", "src/css.ts", "src/contrast.ts", "src/themes", "scripts", "test"]
+}

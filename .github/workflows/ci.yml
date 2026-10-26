@@ -1,0 +1,38 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # Brand name only in packages/brand; no raw colours or fonts outside packages/tokens.
+      - run: pnpm check
+      # Generated files must be up to date.
+      - run: pnpm assets && pnpm openapi && git diff --exit-code
+      - run: pnpm turbo run lint typecheck test
+      - run: pnpm turbo run build --filter=web --filter=console
+      - name: Expo config and dependency check
+        run: |
+          pnpm --filter resident exec expo install --check
+          pnpm --filter field exec expo install --check
+      - name: Dependency audit
+        run: pnpm audit --audit-level high

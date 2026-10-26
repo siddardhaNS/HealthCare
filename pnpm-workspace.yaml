@@ -1,0 +1,21 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Expo SDK 54+ supports pnpm's default isolated installs. If native module
+# resolution breaks on a device build, switch to `nodeLinker: hoisted` here.
+
+# One React for every app and shared package (Expo SDK 58 pins 19.3.0).
+catalog:
+  react: 19.3.0
+  react-dom: 19.3.0
+  '@types/react': 19.3.0
+  typescript: 6.0.3
+  zod: 4.6.7
+  vitest: 5.0.5
+
+allowBuilds:
+  esbuild: true
+  sharp: true
+  supabase: true
+  unrs-resolver: true

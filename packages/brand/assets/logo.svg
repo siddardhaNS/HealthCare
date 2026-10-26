@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Single source logo. Colours are token roles filled in by scripts/gen-assets.mjs. -->
+  <rect width="1024" height="1024" rx="232" fill="{{bg}}"/>
+  <path d="M512 236 L780 452 V760 a40 40 0 0 1 -40 40 H284 a40 40 0 0 1 -40 -40 V452 Z" fill="none" stroke="{{accent}}" stroke-width="56" stroke-linejoin="round"/>
+  <path d="M512 470 v196 M414 568 h196" stroke="{{accent}}" stroke-width="64" stroke-linecap="round"/>
+</svg>

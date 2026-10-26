@@ -1,0 +1,25 @@
+{
+  "name": "CareNest",
+  "shortName": "CareNest",
+  "legalEntityName": "CareNest Health Private Limited",
+  "tagline": "Home healthcare for your whole family",
+  "domains": {
+    "primary": "carenest.example",
+    "web": "carenest.example",
+    "console": "console.carenest.example",
+    "api": "api.carenest.example",
+    "links": "carenest.example",
+    "email": "carenest.example"
+  },
+  "support": {
+    "phone": "+910000000000",
+    "email": "support@carenest.example"
+  },
+  "whatsappDisplayName": "CareNest",
+  "smsSenderHeader": "CRNEST",
+  "logo": {
+    "source": "assets/logo.svg"
+  },
+  "formerNames": [],
+  "previousDomains": []
+}

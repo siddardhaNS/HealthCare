@@ -1,0 +1,29 @@
+{
+  "name": "api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/dev.ts",
+    "openapi": "tsx scripts/openapi.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@hono/zod-openapi": "1.6.3",
+    "@repo/brand": "workspace:*",
+    "@repo/contracts": "workspace:*",
+    "hono": "4.13.14",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@hono/node-server": "2.1.5",
+    "@repo/config": "workspace:*",
+    "@types/node": "26.6.5",
+    "eslint": "10.13.0",
+    "tsx": "4.23.15",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
