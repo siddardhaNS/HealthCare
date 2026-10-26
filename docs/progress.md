@@ -15,7 +15,7 @@
 3. Playwright tests for the sign-up form.
 
 ### Needs your input
-- **Email provider** for lead alerts (paid service, e.g. Resend / Amazon SES / Postmark). Only a log transport exists now.
+- **Email provider: Resend** (decided 2026-10-26). To be configured later: add a Resend transport in `apps/api/src/modules/notifications/mailer.ts`, a `RESEND_API_KEY` env var, and verify the sending domain from `packages/brand`. Until then only the log transport exists.
 - **Plan prices**: shown as "Price shared at the walkthrough" until provided.
 - Landing te/hi translations.
 
