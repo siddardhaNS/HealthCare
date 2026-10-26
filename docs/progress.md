@@ -1,5 +1,66 @@
 # Progress
 
+## 2026-10-26 · Phase 1 (Foundations), session 2: auth, messaging, Sentry, e2e
+
+Plan: `docs/plans/auth.md`. Built against provider docs checked today (Supabase auth hooks, MFA, SSR and Expo guides; WhatsApp Cloud API copy-code templates; Sentry Next.js/Expo/Hono; Workflow SDK; MSG91).
+
+### Done
+
+- **Database** (`…_auth.sql`): `app_role` enum, `user_roles` (optional site/organisation/partner scope), a Postgres **custom access token hook** that adds `app_roles` to every JWT, `otp_challenges` (hashed phone, never the code), `message_log` (no message bodies or variables), and append-only `messaging_optins`. Drizzle mirrors added.
+- **Supabase config**: phone sign-up on; test OTP numbers +91 99999 00001 / 00002 (code `123456`); 30 s resend interval; Send SMS hook → API; TOTP MFA on; staff email self-sign-up off.
+- **API**:
+  - `POST /v1/auth/otp-intent` remembers the chosen channel (WhatsApp or SMS) and language; rate-limited per IP.
+  - `POST /v1/auth/hooks/send-sms` is the Supabase hook:
+    - verifies the Standard Webhooks signature
+    - limits each phone to 1 code per 30 s and 5 per hour
+    - sends a WhatsApp copy-code template and falls through to MSG91 SMS in the same request if WhatsApp fails
+    - holds WhatsApp codes AES-256-GCM-encrypted in Redis for 10 min, so a `failed` delivery receipt triggers an immediate SMS
+  - `POST /v1/auth/whatsapp-optin` records consent only after sign-in, with the phone taken from the verified token.
+  - `GET /v1/me`.
+  - `GET|POST /webhooks/whatsapp`: handshake, `X-Hub-Signature-256` check, status updates that never move backwards, STOP opt-out.
+  - JWT verification via JWKS (`jose`); `requireStaff` = console role + `aal2`.
+  - Config is validated at start-up; production refuses to run without Upstash (no in-memory state) or with the local HS256 secret.
+  - `MESSAGING_MODE=log` for local dev never logs codes.
+  - `pnpm --filter api staff:create` creates console accounts.
+- **Mobile sign-in** (`@repo/mobile`, used by both apps):
+  - Supabase client with encrypted session storage (Supabase's `LargeSecureStore` pattern).
+  - Phone screen with a WhatsApp/SMS choice and the consent notice; OTP screen with resend and "Get the code by SMS instead" after 30 s.
+  - Routes are protected with `Stack.Protected`.
+  - The field app admits only field roles (checked via `/v1/me`).
+  - Strings in en/te/hi.
+- **Console**:
+  - Staff sign-in (email + password).
+  - TOTP enrolment (QR code) and verification.
+  - `proxy.ts` (Next 16) refreshes the session and routes users without a session or role, or at aal1; the `(console)` layout checks again on the server.
+  - Sign-out.
+- **Sentry** on the API, web, console and both mobile apps. It's a no-op without a DSN. Every data-collection category is off, a `beforeSend` scrubber strips user/request/extra data (unit-tested), and there's no session replay or screenshots.
+- **Tests**:
+  - API: 43 unit tests, mutation-checked on two key behaviours.
+  - Playwright: 14 tests (desktop + 360 px phone), including axe WCAG AA scans of the landing page and console sign-in. Added to CI.
+  - Maestro: sign-in flows written for both apps (not yet run; no emulator).
+- **Tokens**: new `qrBackground` role (QR codes need a light background in every theme).
+
+### Verified
+
+- `pnpm check`, lint, typecheck and unit tests pass across the repo. Both Next apps build; both Expo apps bundle for Android and iOS. No server code (Hono/OpenAPI) is in the phone bundles.
+- Real HTTP smoke test of the API (valid/invalid intent, unsigned hook → JSON 401, `/v1/me` without a token → 401, WhatsApp handshake).
+- Local dev servers: API :3001, console :3002, landing **:3003**. Port 3000 is taken by another local project, so run `npx next dev --port 3003` in `apps/web`.
+
+### Not verified yet (needs Docker / accounts)
+
+- Migrations, the access-token hook and RLS against a real database. Docker Desktop wasn't running.
+- End-to-end OTP through Supabase → hook → WhatsApp/MSG91, and console sign-in → TOTP. The code paths are unit-tested with fakes.
+- MSG91 request field names (their docs disagree; marked in `providers.ts`).
+- Vercel deploy of the API (TS workspace imports through zero-config Hono).
+
+### Decisions and questions (⚑ = your call)
+
+1. ⚑ **WhatsApp opt-in = the choice on the sign-in screen, confirmed by a verified OTP.** It's recorded after sign-in with the notice version (`wa-2026-10`). Nothing is recorded before the phone is verified, so nobody can opt in someone else's number.
+2. ⚑ **OTP fallback**: an immediate SMS when WhatsApp reports `failed`, plus a user-driven switch to SMS after 30 s, instead of a silent 60 s timer. The durable-timer version needs Vercel Workflows, which on Hono **requires Nitro, currently only a 3.0 beta**. I'll bring that choice to the Phase 3 (SOS) plan.
+3. ⚑ **Sentry stores data in the US or EU, not India.** Events are scrubbed of health and personal data, but this needs legal review before production (DPDP / "keep health data in India").
+4. Hindi/Telugu STOP keywords (`रोकें`, `ఆపు`) and all te/hi strings need a native-speaker check.
+5. The Maestro flows use the placeholder app IDs (`in.example.*`); update them with the company domain.
+
 ## 2026-10-26 · Phase 1 (Foundations), session 1: monorepo scaffold
 
 ### Done

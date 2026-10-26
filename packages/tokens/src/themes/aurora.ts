@@ -20,6 +20,7 @@ export const aurora: Theme = {
       textMuted: '#A39CC7',
       scrim: 'rgba(0,0,0,0.55)',
       shadow: 'rgba(0,0,0,0.45)',
+      qrBackground: '#FFFFFF',
 
       accent: '#B4F35A',
       accentSoft: '#22301A',
@@ -92,6 +93,7 @@ export const aurora: Theme = {
       textMuted: '#5A5380',
       scrim: 'rgba(22,18,46,0.45)',
       shadow: 'rgba(22,18,46,0.12)',
+      qrBackground: '#FFFFFF',
 
       accent: '#B4F35A',
       accentSoft: '#EDF9DC',

@@ -18,6 +18,8 @@ export interface ColorTokens {
   textMuted: string;
   scrim: string;
   shadow: string;
+  /** Behind QR codes and other scannable images: always light, in every theme. */
+  qrBackground: string;
 
   // Brand accent: `accent` is a fill (with `onAccent` on top); `accentText`
   // is safe for text and icons on `surface`.

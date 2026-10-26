@@ -34,5 +34,13 @@ jobs:
         run: |
           pnpm --filter resident exec expo install --check
           pnpm --filter field exec expo install --check
+      - name: End-to-end (Playwright, signed-out flows)
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-placeholder
+        run: |
+          pnpm --filter web exec playwright install --with-deps chromium
+          pnpm --filter web e2e
+          pnpm --filter console e2e
       - name: Dependency audit
         run: pnpm audit --audit-level high

@@ -38,7 +38,10 @@ scripts/      brand/token checks, asset generation, rebrand
 
 ```sh
 pnpm install
-cp .env.example .env            # fill in from `pnpm supabase start` output
+cp .env.example .env            # API secrets; fill in from `pnpm supabase status`
+cp supabase/.env.example supabase/.env      # same SEND_SMS_HOOK_SECRET
+cp apps/console/.env.example apps/console/.env.local
+cp apps/resident/.env.example apps/resident/.env   # likewise apps/field
 
 pnpm supabase start             # Postgres + PostGIS, Auth, Storage, Realtime
 pnpm --filter api dev           # http://localhost:3001/v1/health, /openapi.json
@@ -56,6 +59,12 @@ pnpm dev                        # Metro for an installed dev build
 # Or in the cloud: npx eas build --profile development --platform android|ios
 ```
 
+### Accounts for local testing
+
+- Residents / field staff: test numbers +91 99999 00001 and +91 99999 00002, code `123456` (no message is sent).
+- Give the field number a role: insert into `user_roles` (e.g. `crew`) via `pnpm supabase db` / Studio.
+- Console staff: `pnpm --filter api staff:create --email you@example.in --role super_admin`, then set up TOTP on first sign-in.
+
 ## Checks
 
 ```sh
@@ -63,6 +72,9 @@ pnpm check       # brand name only in packages/brand; colours/fonts only in pack
 pnpm lint        # ESLint everywhere (includes the token rule) + pnpm check
 pnpm typecheck
 pnpm test        # unit tests, incl. WCAG AA contrast for every theme and mode
+pnpm --filter web e2e        # Playwright + axe (E2E_BASE_URL=http://localhost:3000 to reuse a dev server)
+pnpm --filter console e2e
+maestro test apps/resident/.maestro/sign-in.yaml   # needs an emulator + local stack
 ```
 
 ## Generated files (committed)

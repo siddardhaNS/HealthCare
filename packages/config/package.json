@@ -6,7 +6,8 @@
   "exports": {
     "./tsconfig/*": "./tsconfig/*",
     "./eslint": "./eslint/index.js",
-    "./app-ids": "./app-ids.json"
+    "./app-ids": "./app-ids.json",
+    "./sentry": "./sentry.ts"
   },
   "dependencies": {
     "@eslint/js": "10.0.1",
@@ -14,5 +15,14 @@
   },
   "peerDependencies": {
     "eslint": "^10.0.0"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

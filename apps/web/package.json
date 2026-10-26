@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start --port 3000",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@repo/api-client": "workspace:*",
@@ -16,11 +17,14 @@
     "@repo/i18n": "workspace:*",
     "@repo/tokens": "workspace:*",
     "@repo/ui-web": "workspace:*",
+    "@sentry/nextjs": "11.9.0",
     "next": "16.4.3",
     "react": "catalog:",
     "react-dom": "catalog:"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@playwright/test": "1.64.1",
     "@repo/config": "workspace:*",
     "@tailwindcss/postcss": "4.3.3",
     "@types/node": "26.6.5",

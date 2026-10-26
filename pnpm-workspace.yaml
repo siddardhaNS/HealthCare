@@ -19,3 +19,6 @@ allowBuilds:
   sharp: true
   supabase: true
   unrs-resolver: true
+
+minimumReleaseAgeExclude:
+  - '@upstash/redis@1.40.0'
