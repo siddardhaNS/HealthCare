@@ -16,7 +16,7 @@
 
 ### Needs your input
 - **Email provider: Resend** (decided 2026-10-26). To be configured later: add a Resend transport in `apps/api/src/modules/notifications/mailer.ts`, a `RESEND_API_KEY` env var, and verify the sending domain from `packages/brand`. Until then only the log transport exists.
-- **Plan prices**: shown as "Price shared at the walkthrough" until provided.
+- **Plan prices**: removed from the landing page for now (decided 2026-10-26); plan cards show no price.
 - Landing te/hi translations.
 
 

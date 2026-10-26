@@ -20,26 +20,56 @@
     "lead": "{{brand}} brings video consults, medicine delivery, home lab tests, hospital-visit companions and a 24×7 emergency SOS to gated communities, apartments, senior-living homes, workplaces and families, all in one app.",
     "primary": "Book a free walkthrough",
     "secondary": "See how it works",
-    "points": ["Verified doctors and partners", "Records shared only with consent", "Live in weeks, not months"],
+    "points": [
+      "Verified doctors and partners",
+      "Records shared only with consent",
+      "Live in weeks, not months"
+    ],
     "phone": {
       "greeting": "Good evening",
       "name": "Lakshmi",
       "sosTitle": "Emergency SOS",
       "sosSub": "Ambulance arriving · 4 min",
-      "tiles": ["Consult", "Medicines", "Lab tests", "Companion"],
-      "vitals": [
-        { "k": "BP", "v": "128/82" },
-        { "k": "Pulse", "v": "74" },
-        { "k": "SpO2", "v": "97%" }
+      "tiles": [
+        "Consult",
+        "Medicines",
+        "Lab tests",
+        "Companion"
       ],
-      "cardA": { "title": "Records sent to ER", "sub": "Allergies, medicines, last vitals" },
-      "cardB": { "title": "Medicines at the door", "sub": "From a partner pharmacy" },
+      "vitals": [
+        {
+          "k": "BP",
+          "v": "128/82"
+        },
+        {
+          "k": "Pulse",
+          "v": "74"
+        },
+        {
+          "k": "SpO2",
+          "v": "97%"
+        }
+      ],
+      "cardA": {
+        "title": "Records sent to ER",
+        "sub": "Allergies, medicines, last vitals"
+      },
+      "cardB": {
+        "title": "Medicines at the door",
+        "sub": "From a partner pharmacy"
+      },
       "alt": "Illustration of the resident app: an emergency SOS in progress, care services and the latest vitals"
     }
   },
   "audiences": {
     "label": "Built for",
-    "items": ["Gated villa communities", "Apartment complexes", "Senior living", "Workplaces", "Families with ageing parents"]
+    "items": [
+      "Gated villa communities",
+      "Apartment complexes",
+      "Senior living",
+      "Workplaces",
+      "Families with ageing parents"
+    ]
   },
   "services": {
     "eyebrow": "Our offerings",
@@ -54,8 +84,18 @@
         "short": "Video or audio, by specialty",
         "tagline": "Telemedicine",
         "desc": "Residents describe how they feel and book the right specialist, from cardiology to dermatology, usually the same evening. Their health record is shared with the doctor only if they choose.",
-        "points": ["Same-day slots across specialties", "Video, audio or in-clinic visits", "e-Prescriptions straight into the app", "Follow-ups linked to lab reports"],
-        "flow": ["Pick a specialty", "Choose a slot", "Join the call", "Get the e-prescription"]
+        "points": [
+          "Same-day slots across specialties",
+          "Video, audio or in-clinic visits",
+          "e-Prescriptions straight into the app",
+          "Follow-ups linked to lab reports"
+        ],
+        "flow": [
+          "Pick a specialty",
+          "Choose a slot",
+          "Join the call",
+          "Get the e-prescription"
+        ]
       },
       {
         "key": "pharmacy",
@@ -63,8 +103,18 @@
         "short": "From enrolled local pharmacies",
         "tagline": "Pharmacy",
         "desc": "Orders go to partner pharmacies nearby and arrive at the door. Every order is checked against the resident's allergy list before it is sent.",
-        "points": ["Order from an e-prescription or a photo", "Allergy check on every order", "Live order tracking", "Refill reminders for regular medicines"],
-        "flow": ["Add medicines", "Allergy check", "Pharmacy packs", "Delivered home"]
+        "points": [
+          "Order from an e-prescription or a photo",
+          "Allergy check on every order",
+          "Live order tracking",
+          "Refill reminders for regular medicines"
+        ],
+        "flow": [
+          "Add medicines",
+          "Allergy check",
+          "Pharmacy packs",
+          "Delivered home"
+        ]
       },
       {
         "key": "lab",
@@ -72,8 +122,18 @@
         "short": "Sample collection, reports in the app",
         "tagline": "Diagnostics",
         "desc": "A trained phlebotomist collects samples at home in a slot that suits the resident. Reports arrive in the app with values outside range clearly flagged.",
-        "points": ["Early-morning fasting slots", "Packages for heart, diabetes, thyroid", "Out-of-range values highlighted", "Share a report with a doctor in one tap"],
-        "flow": ["Choose tests", "Pick a slot", "Collected at home", "Report in app"]
+        "points": [
+          "Early-morning fasting slots",
+          "Packages for heart, diabetes, thyroid",
+          "Out-of-range values highlighted",
+          "Share a report with a doctor in one tap"
+        ],
+        "flow": [
+          "Choose tests",
+          "Pick a slot",
+          "Collected at home",
+          "Report in app"
+        ]
       },
       {
         "key": "companion",
@@ -81,8 +141,18 @@
         "short": "Escort to the hospital and back",
         "tagline": "Assisted visits",
         "desc": "For residents who shouldn't go alone, a verified, elder-care trained companion picks them up, stays through the visit and brings them home, with live updates for family.",
-        "points": ["Verified, trained companions", "Wheelchair and mobility help", "Handles registration and pharmacy", "Live trip updates for family"],
-        "flow": ["Request", "Companion assigned", "Hospital visit", "Dropped home"]
+        "points": [
+          "Verified, trained companions",
+          "Wheelchair and mobility help",
+          "Handles registration and pharmacy",
+          "Live trip updates for family"
+        ],
+        "flow": [
+          "Request",
+          "Companion assigned",
+          "Hospital visit",
+          "Dropped home"
+        ]
       },
       {
         "key": "sos",
@@ -90,8 +160,18 @@
         "short": "Nearest ambulance, records to the ER",
         "tagline": "24×7 response",
         "desc": "One tap alerts the nearest ambulance and the community desk together. The crew gives first aid at the door and takes the resident to a network hospital that already has their history.",
-        "points": ["Alerts ambulance and desk at once", "Gate opened by security", "Live ambulance tracking", "Medical history sent to the ER"],
-        "flow": ["Tap SOS", "Ambulance assigned", "First aid at home", "Hospital handover"]
+        "points": [
+          "Alerts ambulance and desk at once",
+          "Gate opened by security",
+          "Live ambulance tracking",
+          "Medical history sent to the ER"
+        ],
+        "flow": [
+          "Tap SOS",
+          "Ambulance assigned",
+          "First aid at home",
+          "Hospital handover"
+        ]
       }
     ]
   },
@@ -105,48 +185,121 @@
     "now": "Now",
     "done": "Done",
     "steps": [
-      { "t": "Resident taps SOS", "sub": "Location and profile sent instantly" },
-      { "t": "Nearest ambulance assigned", "sub": "Community desk alerted at the same time" },
-      { "t": "Gate opened by security", "sub": "No time lost at the entrance" },
-      { "t": "First aid at the door", "sub": "Paramedic stabilises the resident" },
-      { "t": "Records reach the ER first", "sub": "Allergies, medicines and last vitals" }
+      {
+        "t": "Resident taps SOS",
+        "sub": "Location and profile sent instantly"
+      },
+      {
+        "t": "Nearest ambulance assigned",
+        "sub": "Community desk alerted at the same time"
+      },
+      {
+        "t": "Gate opened by security",
+        "sub": "No time lost at the entrance"
+      },
+      {
+        "t": "First aid at the door",
+        "sub": "Paramedic stabilises the resident"
+      },
+      {
+        "t": "Records reach the ER first",
+        "sub": "Allergies, medicines and last vitals"
+      }
     ]
   },
   "why": {
     "eyebrow": "Why {{brand}}",
     "title": "Care that knows your community",
     "items": [
-      { "t": "Made for where people live", "b": "Built around your gates, towers and association, or around one family's home. Residents are verified by home." },
-      { "t": "Response from inside the gate", "b": "Ambulances on standby nearby, with security alerted the moment SOS is pressed." },
-      { "t": "One health record per person", "b": "Vitals, conditions, allergies and medicines in one place, so every doctor and ER sees the same picture." },
-      { "t": "People control their data", "b": "Each resident chooses what doctors and hospitals can see. Associations and employers never see medical details." },
-      { "t": "Local partner network", "b": "Enrolled neighbourhood pharmacies, labs and network hospitals, so help is close and familiar." },
-      { "t": "Care in their language", "b": "Doctors and companions who speak Telugu, Hindi, English and more, matched to each resident." }
+      {
+        "t": "Made for where people live",
+        "b": "Built around your gates, towers and association, or around one family's home. Residents are verified by home."
+      },
+      {
+        "t": "Response from inside the gate",
+        "b": "Ambulances on standby nearby, with security alerted the moment SOS is pressed."
+      },
+      {
+        "t": "One health record per person",
+        "b": "Vitals, conditions, allergies and medicines in one place, so every doctor and ER sees the same picture."
+      },
+      {
+        "t": "People control their data",
+        "b": "Each resident chooses what doctors and hospitals can see. Associations and employers never see medical details."
+      },
+      {
+        "t": "Local partner network",
+        "b": "Enrolled neighbourhood pharmacies, labs and network hospitals, so help is close and familiar."
+      },
+      {
+        "t": "Care in their language",
+        "b": "Doctors and companions who speak Telugu, Hindi, English and more, matched to each resident."
+      }
     ]
   },
   "how": {
     "eyebrow": "How it works",
     "title": "Live in four steps",
     "groupLabel": "Who it's for",
-    "tabs": { "gated": "Gated villas", "apartment": "Apartments", "family": "Families" },
+    "tabs": {
+      "gated": "Gated villas",
+      "apartment": "Apartments",
+      "family": "Families"
+    },
     "steps": {
       "gated": [
-        { "t": "Walkthrough with your association", "b": "We meet your committee, map the gates and agree the services you want." },
-        { "t": "Gate and desk setup", "b": "Security and the community desk are trained on SOS alerts and ambulance access." },
-        { "t": "Resident onboarding camp", "b": "A health camp at the clubhouse records vitals and sets up each villa on the app." },
-        { "t": "Go live", "b": "Services switch on for every home. Your console shows activity from day one." }
+        {
+          "t": "Walkthrough with your association",
+          "b": "We meet your committee, map the gates and agree the services you want."
+        },
+        {
+          "t": "Gate and desk setup",
+          "b": "Security and the community desk are trained on SOS alerts and ambulance access."
+        },
+        {
+          "t": "Resident onboarding camp",
+          "b": "A health camp at the clubhouse records vitals and sets up each villa on the app."
+        },
+        {
+          "t": "Go live",
+          "b": "Services switch on for every home. Your console shows activity from day one."
+        }
       ],
       "apartment": [
-        { "t": "Walkthrough with your association", "b": "We meet the RWA or facility team and agree the services for each tower." },
-        { "t": "Tower and lift-lobby setup", "b": "Security, lift operators and the help desk are trained on SOS and stretcher access." },
-        { "t": "Onboarding by tower", "b": "Health desks in each tower lobby record vitals and set up every flat on the app." },
-        { "t": "Go live", "b": "Services switch on tower by tower. Your console tracks requests by block." }
+        {
+          "t": "Walkthrough with your association",
+          "b": "We meet the RWA or facility team and agree the services for each tower."
+        },
+        {
+          "t": "Tower and lift-lobby setup",
+          "b": "Security, lift operators and the help desk are trained on SOS and stretcher access."
+        },
+        {
+          "t": "Onboarding by tower",
+          "b": "Health desks in each tower lobby record vitals and set up every flat on the app."
+        },
+        {
+          "t": "Go live",
+          "b": "Services switch on tower by tower. Your console tracks requests by block."
+        }
       ],
       "family": [
-        { "t": "A call with our care team", "b": "We understand who needs care, where they live and which services help most." },
-        { "t": "Set up the household", "b": "Add parents or relatives; adult children can manage their care from their own phone." },
-        { "t": "Home health check", "b": "A visit records vitals, medicines and allergies so every doctor sees the full picture." },
-        { "t": "Go live", "b": "Consults, medicines, lab tests, companions and SOS are a tap away for the whole family." }
+        {
+          "t": "A call with our care team",
+          "b": "We understand who needs care, where they live and which services help most."
+        },
+        {
+          "t": "Set up the household",
+          "b": "Add parents or relatives; adult children can manage their care from their own phone."
+        },
+        {
+          "t": "Home health check",
+          "b": "A visit records vitals, medicines and allergies so every doctor sees the full picture."
+        },
+        {
+          "t": "Go live",
+          "b": "Consults, medicines, lab tests, companions and SOS are a tap away for the whole family."
+        }
       ]
     }
   },
@@ -162,9 +315,18 @@
     ],
     "mockTitle": "Command center · your community",
     "kpis": [
-      { "k": "Active SOS", "v": "1" },
-      { "k": "Open requests", "v": "12" },
-      { "k": "Ambulances free", "v": "3" }
+      {
+        "k": "Active SOS",
+        "v": "1"
+      },
+      {
+        "k": "Open requests",
+        "v": "12"
+      },
+      {
+        "k": "Ambulances free",
+        "v": "3"
+      }
     ],
     "mapAlt": "Illustrative map with one emergency and nearby ambulances",
     "note": "Illustration only. Your console shows your own residents and partners."
@@ -175,11 +337,42 @@
     "popular": "Most popular",
     "choose": "Choose {{name}}",
     "chosen": "{{name}} selected · fill in your details below",
-    "priceOnWalkthrough": "Price shared at the walkthrough",
     "items": [
-      { "key": "essentials", "name": "Essentials", "for": "Starting with emergency cover", "items": ["24×7 Emergency SOS", "Health records for every resident", "Doctor consultations", "Association console"] },
-      { "key": "complete", "name": "Complete Care", "for": "Every service for every home", "items": ["Everything in Essentials", "Medicine delivery", "Lab tests at home", "Visit companions", "Quarterly health camps"], "popular": true },
-      { "key": "custom", "name": "Custom", "for": "Townships, senior homes and employers", "items": ["Choose any services", "On-site clinic options", "Dedicated care manager", "Integration with your app"], "price": "Tailored quote" }
+      {
+        "key": "essentials",
+        "name": "Essentials",
+        "for": "Starting with emergency cover",
+        "items": [
+          "24×7 Emergency SOS",
+          "Health records for every resident",
+          "Doctor consultations",
+          "Association console"
+        ]
+      },
+      {
+        "key": "complete",
+        "name": "Complete Care",
+        "for": "Every service for every home",
+        "items": [
+          "Everything in Essentials",
+          "Medicine delivery",
+          "Lab tests at home",
+          "Visit companions",
+          "Quarterly health camps"
+        ],
+        "popular": true
+      },
+      {
+        "key": "custom",
+        "name": "Custom",
+        "for": "Townships, senior homes and employers",
+        "items": [
+          "Choose any services",
+          "On-site clinic options",
+          "Dedicated care manager",
+          "Integration with your app"
+        ]
+      }
     ]
   },
   "signup": {
@@ -187,9 +380,18 @@
     "title": "Bring {{brand}} to your community, organisation or family",
     "body": "Tell us a little about who needs care. Our team will call within one working day to plan a free walkthrough.",
     "nextSteps": [
-      { "t": "We call you", "b": "Within one working day, to understand your needs." },
-      { "t": "Free walkthrough", "b": "With your committee, team or family, on site or online." },
-      { "t": "Onboarding", "b": "Everyone is set up and services go live." }
+      {
+        "t": "We call you",
+        "b": "Within one working day, to understand your needs."
+      },
+      {
+        "t": "Free walkthrough",
+        "b": "With your committee, team or family, on site or online."
+      },
+      {
+        "t": "Onboarding",
+        "b": "Everyone is set up and services go live."
+      }
     ],
     "talkFirst": "Prefer to talk first?",
     "formLabel": "Sign-up",
@@ -205,7 +407,13 @@
       "employer": "Employer",
       "family": "My family"
     },
-    "orgName": { "gated": "Community name", "apartment": "Community name", "township": "Township name", "senior_home": "Home's name", "employer": "Company name" },
+    "orgName": {
+      "gated": "Community name",
+      "apartment": "Community name",
+      "township": "Township name",
+      "senior_home": "Home's name",
+      "employer": "Company name"
+    },
     "orgNamePlaceholder": "e.g. Green Meadows",
     "city": "City",
     "cityPlaceholder": "e.g. Hyderabad",
@@ -213,13 +421,31 @@
     "areaPlaceholder": "e.g. Gachibowli",
     "pin": "PIN code",
     "pinPlaceholder": "6 digits",
-    "size": { "gated": "Number of homes", "apartment": "Number of homes", "township": "Number of homes", "senior_home": "Number of residents", "employer": "Number of employees", "family": "People who need care" },
+    "size": {
+      "gated": "Number of homes",
+      "apartment": "Number of homes",
+      "township": "Number of homes",
+      "senior_home": "Number of residents",
+      "employer": "Number of employees",
+      "family": "People who need care"
+    },
     "towers": "Towers / blocks",
     "optional": "Optional",
     "seniors": "Residents aged 60+",
-    "seniorShares": { "unknown": "Not sure", "lt10": "Under 10%", "10to25": "10–25%", "25to50": "25–50%", "gt50": "Over 50%" },
+    "seniorShares": {
+      "unknown": "Not sure",
+      "lt10": "Under 10%",
+      "10to25": "10–25%",
+      "25to50": "25–50%",
+      "gt50": "Over 50%"
+    },
     "onsite": "Already on site",
-    "onsiteItems": { "guard": "Security at gate", "clinic": "On-site clinic", "ambulance": "Own ambulance", "pharmacy": "Pharmacy inside" },
+    "onsiteItems": {
+      "guard": "Security at gate",
+      "clinic": "On-site clinic",
+      "ambulance": "Own ambulance",
+      "pharmacy": "Pharmacy inside"
+    },
     "continue": "Continue to contact details",
     "contactName": "Your name",
     "contactRole": "Your role",
@@ -239,9 +465,19 @@
     "emailPlaceholder": "name@example.com",
     "services": "Services you're interested in",
     "plan": "Plan",
-    "plansOptions": { "essentials": "Essentials", "complete": "Complete Care", "custom": "Custom", "unsure": "Not sure yet" },
+    "plansOptions": {
+      "essentials": "Essentials",
+      "complete": "Complete Care",
+      "custom": "Custom",
+      "unsure": "Not sure yet"
+    },
     "walkthrough": "Preferred walkthrough",
-    "walkthroughs": { "this_week": "This week · weekday evening", "this_weekend": "This weekend · morning", "next_week": "Next week · any day", "call_me": "Call me to schedule" },
+    "walkthroughs": {
+      "this_week": "This week · weekday evening",
+      "this_weekend": "This weekend · morning",
+      "next_week": "Next week · any day",
+      "call_me": "Call me to schedule"
+    },
     "notes": "Anything we should know?",
     "notesPlaceholder": "e.g. many seniors living alone, nearest hospital is 6 km away",
     "consent": "I agree to be contacted by {{brand}} about this request. We never share your details.",
@@ -278,12 +514,30 @@
     "eyebrow": "Questions",
     "title": "Frequently asked",
     "items": [
-      { "q": "Who pays for {{brand}}?", "a": "Most communities pay a monthly fee per home through the association; employers and senior-living homes pay per person covered, and families can subscribe directly. Consult fees, medicines and lab tests are paid when used." },
-      { "q": "Do people have to share their medical records?", "a": "No. Each person decides what doctors and hospitals can see, and can change it anytime in the app. Associations and employers never see medical details." },
-      { "q": "Which hospitals are in the network?", "a": "We partner with multispecialty hospitals near you. During the walkthrough we show you the hospitals and travel times for your location." },
-      { "q": "What if someone does not use a smartphone?", "a": "Family members can manage a parent's account, and the community desk can raise an SOS or book a service on a resident's behalf." },
-      { "q": "How long does setup take?", "a": "Usually two to four weeks from the walkthrough for a community, and a few days for a family." },
-      { "q": "Does this replace calling 108?", "a": "No. SOS adds a faster route with your records ready. You can always call 108 as well." }
+      {
+        "q": "Who pays for {{brand}}?",
+        "a": "Most communities pay a monthly fee per home through the association; employers and senior-living homes pay per person covered, and families can subscribe directly. Consult fees, medicines and lab tests are paid when used."
+      },
+      {
+        "q": "Do people have to share their medical records?",
+        "a": "No. Each person decides what doctors and hospitals can see, and can change it anytime in the app. Associations and employers never see medical details."
+      },
+      {
+        "q": "Which hospitals are in the network?",
+        "a": "We partner with multispecialty hospitals near you. During the walkthrough we show you the hospitals and travel times for your location."
+      },
+      {
+        "q": "What if someone does not use a smartphone?",
+        "a": "Family members can manage a parent's account, and the community desk can raise an SOS or book a service on a resident's behalf."
+      },
+      {
+        "q": "How long does setup take?",
+        "a": "Usually two to four weeks from the walkthrough for a community, and a few days for a family."
+      },
+      {
+        "q": "Does this replace calling 108?",
+        "a": "No. SOS adds a faster route with your records ready. You can always call 108 as well."
+      }
     ]
   },
   "cta": {

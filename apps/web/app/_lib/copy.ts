@@ -18,5 +18,5 @@ export function tlObj<T>(key: string): T {
 export type Landing = typeof landing;
 export type ServiceItem = Landing['services']['items'][number];
 export type ServiceKey = ServiceItem['key'];
-export type PlanItem = { key: 'essentials' | 'complete' | 'custom'; name: string; for: string; items: string[]; popular?: boolean; price?: string };
+export type PlanItem = { key: 'essentials' | 'complete' | 'custom'; name: string; for: string; items: string[]; popular?: boolean };
 export type Step = { t: string; b: string };
