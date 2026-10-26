@@ -35,22 +35,22 @@ create table public.audit_events (
 create index audit_events_entity_idx on public.audit_events (entity_type, entity_id, created_at desc);
 create index audit_events_household_idx on public.audit_events (household_id, created_at desc);
 
-create or replace function public.audit_events_block_mutation()
+create or replace function public.append_only_guard()
 returns trigger
 language plpgsql
 as $$
 begin
-  raise exception 'audit_events is append-only';
+  raise exception '% is append-only', tg_table_name;
 end;
 $$;
 
 create trigger audit_events_no_update
   before update or delete on public.audit_events
-  for each row execute function public.audit_events_block_mutation();
+  for each row execute function public.append_only_guard();
 
 create trigger audit_events_no_truncate
   before truncate on public.audit_events
-  for each statement execute function public.audit_events_block_mutation();
+  for each statement execute function public.append_only_guard();
 
 alter table public.audit_events enable row level security;
 -- No policies yet: only the service role (the API) can read or insert.
