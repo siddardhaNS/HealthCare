@@ -1,5 +1,16 @@
 import type { ReactNode } from 'react';
-import { Pressable, Text as RNText, View, type PressableProps, type StyleProp, type TextProps as RNTextProps, type TextStyle, type ViewProps } from 'react-native';
+import {
+  Pressable,
+  Text as RNText,
+  TextInput,
+  View,
+  type PressableProps,
+  type StyleProp,
+  type TextInputProps,
+  type TextProps as RNTextProps,
+  type TextStyle,
+  type ViewProps,
+} from 'react-native';
 import { serviceColors, type ResolvedTheme, type ServiceKey } from '@repo/tokens';
 import { useTheme } from './theme';
 
@@ -69,8 +80,17 @@ export function Button({ label, tone = 'accent', style, ...rest }: ButtonProps) 
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityState={{ disabled: !!rest.disabled }}
       style={(state) => [
-        { minHeight: t.tapTarget, paddingHorizontal: t.space[5], borderRadius: t.radius.control, backgroundColor: bg, alignItems: 'center', justifyContent: 'center', opacity: state.pressed ? 0.85 : 1 },
+        {
+          minHeight: t.tapTarget + 4,
+          paddingHorizontal: t.space[5],
+          borderRadius: t.radius.control,
+          backgroundColor: bg,
+          alignItems: 'center',
+          justifyContent: 'center',
+          opacity: rest.disabled ? 0.5 : state.pressed ? 0.85 : 1,
+        },
         typeof style === 'function' ? style(state) : style,
       ]}
       {...rest}
@@ -78,6 +98,113 @@ export function Button({ label, tone = 'accent', style, ...rest }: ButtonProps) 
       <Text variant="body" weight="bold" tone={fg}>
         {label}
       </Text>
+    </Pressable>
+  );
+}
+
+export interface TextFieldProps extends TextInputProps {
+  label: string;
+  error?: string | null;
+  prefix?: string;
+}
+
+export function TextField({ label, error, prefix, style, ...rest }: TextFieldProps) {
+  const t = useTheme();
+  return (
+    <View style={{ gap: t.space[2] }}>
+      <Text variant="small" weight="semibold" tone="muted">
+        {label}
+      </Text>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          minHeight: t.tapTarget + 8,
+          borderRadius: t.radius.control,
+          borderWidth: 1,
+          borderColor: error ? t.colors.dangerBorder : t.colors.borderStrong,
+          backgroundColor: t.colors.surface,
+          paddingHorizontal: t.space[4],
+          gap: t.space[2],
+        }}
+      >
+        {prefix ? (
+          <Text variant="bodyLg" tone="muted">
+            {prefix}
+          </Text>
+        ) : null}
+        <TextInput
+          accessibilityLabel={label}
+          placeholderTextColor={t.colors.textMuted}
+          selectionColor={t.colors.accent}
+          style={[{ flex: 1, color: t.colors.text, fontFamily: t.fonts.body.native.medium, fontSize: t.text.bodyLg.size, paddingVertical: t.space[3] }, style]}
+          {...rest}
+        />
+      </View>
+      {error ? (
+        <Text variant="small" tone="danger" accessibilityLiveRegion="polite">
+          {error}
+        </Text>
+      ) : null}
+    </View>
+  );
+}
+
+export interface ChoiceProps extends Omit<PressableProps, 'children'> {
+  label: string;
+  description?: string;
+  selected: boolean;
+}
+
+/** One option of a single-choice group (radio semantics). */
+export function Choice({ label, description, selected, style, ...rest }: ChoiceProps) {
+  const t = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="radio"
+      accessibilityState={{ selected }}
+      accessibilityLabel={description ? `${label}. ${description}` : label}
+      style={(state) => [
+        {
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          gap: t.space[3],
+          minHeight: t.tapTarget,
+          padding: t.space[4],
+          borderRadius: t.radius.md,
+          borderWidth: 1,
+          borderColor: selected ? t.colors.accentBorder : t.colors.border,
+          backgroundColor: selected ? t.colors.accentSoft : t.colors.surface,
+          opacity: state.pressed ? 0.85 : 1,
+        },
+        typeof style === 'function' ? style(state) : style,
+      ]}
+      {...rest}
+    >
+      <View
+        style={{
+          width: 20,
+          height: 20,
+          marginTop: 2,
+          borderRadius: t.radius.pill,
+          borderWidth: 2,
+          borderColor: selected ? t.colors.accentText : t.colors.borderStrong,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {selected ? <View style={{ width: 10, height: 10, borderRadius: t.radius.pill, backgroundColor: t.colors.accentText }} /> : null}
+      </View>
+      <View style={{ flex: 1, gap: t.space[1] }}>
+        <Text variant="body" weight="bold">
+          {label}
+        </Text>
+        {description ? (
+          <Text variant="small" tone="muted">
+            {description}
+          </Text>
+        ) : null}
+      </View>
     </Pressable>
   );
 }

@@ -1,7 +1,8 @@
 import { Pressable, ScrollView, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Card, Screen, ServiceTile, Text, useTheme } from '@repo/ui-native';
+import { useSession } from '@repo/mobile';
+import { Button, Card, Screen, ServiceTile, Text, useTheme } from '@repo/ui-native';
 
 function greetingKey(hour: number) {
   if (hour < 12) return 'home.greeting.morning';
@@ -17,6 +18,7 @@ const services = ['consult', 'pharmacy', 'lab', 'companion'] as const;
 export default function Home() {
   const { t } = useTranslation();
   const theme = useTheme();
+  const { supabase } = useSession();
   const { colors, space, radius } = theme;
 
   return (
@@ -77,6 +79,9 @@ export default function Home() {
           <Card>
             <Text tone="muted">{t('common.comingSoon')}</Text>
           </Card>
+
+          {/* Moves to the Profile tab in Phase 2. */}
+          <Button label={t('auth.signOut')} tone="neutral" onPress={() => void supabase.auth.signOut()} style={{ marginTop: space[4] }} />
         </ScrollView>
       </SafeAreaView>
     </Screen>

@@ -1,3 +1,3 @@
 import base from '@repo/config/eslint';
 
-export default [...base, { ignores: ['expo-env.d.ts', '.expo/**'] }];
+export default [...base, { ignores: ['expo-env.d.ts', '.expo/**', 'metro.config.js'] }];

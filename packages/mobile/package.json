@@ -1,0 +1,43 @@
+{
+  "name": "@repo/mobile",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@repo/api-client": "workspace:*",
+    "@repo/contracts": "workspace:*",
+    "@repo/ui-native": "workspace:*",
+    "@supabase/supabase-js": "2.118.0",
+    "aes-js": "3.1.2"
+  },
+  "peerDependencies": {
+    "@react-native-async-storage/async-storage": "*",
+    "expo-crypto": "*",
+    "expo-router": "*",
+    "expo-secure-store": "*",
+    "react": "*",
+    "react-i18next": "*",
+    "react-native": "*"
+  },
+  "devDependencies": {
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@repo/config": "workspace:*",
+    "@types/aes-js": "3.1.4",
+    "@types/react": "catalog:",
+    "eslint": "10.13.0",
+    "expo-crypto": "~58.0.7",
+    "expo-router": "~58.0.26",
+    "expo-secure-store": "~58.0.2",
+    "react": "catalog:",
+    "react-i18next": "17.1.8",
+    "react-native": "0.88.0",
+    "typescript": "catalog:"
+  }
+}

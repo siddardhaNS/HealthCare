@@ -1,0 +1,19 @@
+# Phone OTP sign-in against the local Supabase stack, using the test number
+# from supabase/config.toml ([auth.sms.test_otp]; no message is sent).
+# Run: maestro test apps/resident/.maestro/sign-in.yaml
+appId: in.example.resident
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    id: phone-input
+- inputText: "9999900001"
+- tapOn:
+    id: channel-sms
+- tapOn:
+    id: send-code
+- tapOn:
+    id: code-input
+- inputText: "123456"
+- assertNotVisible:
+    id: code-input

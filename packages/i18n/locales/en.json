@@ -23,10 +23,22 @@
     "careServices": "Care services",
     "comingUp": "Coming up",
     "services": {
-      "consult": { "title": "Consult a doctor", "subtitle": "Video, by specialty" },
-      "pharmacy": { "title": "Order medicines", "subtitle": "From partner pharmacies" },
-      "lab": { "title": "Lab tests at home", "subtitle": "Reports in the app" },
-      "companion": { "title": "Visit companion", "subtitle": "Escort there and back" }
+      "consult": {
+        "title": "Consult a doctor",
+        "subtitle": "Video, by specialty"
+      },
+      "pharmacy": {
+        "title": "Order medicines",
+        "subtitle": "From partner pharmacies"
+      },
+      "lab": {
+        "title": "Lab tests at home",
+        "subtitle": "Reports in the app"
+      },
+      "companion": {
+        "title": "Visit companion",
+        "subtitle": "Escort there and back"
+      }
     }
   },
   "tabs": {
@@ -57,6 +69,46 @@
   "console": {
     "title": "{{brand}} console",
     "commandCenter": "Command center",
-    "signInPrompt": "Staff sign in with email and two-factor authentication."
+    "signInPrompt": "Staff sign in with email and two-factor authentication.",
+    "signInTitle": "Staff sign in",
+    "email": "Work email",
+    "password": "Password",
+    "invalidCredentials": "Email or password is incorrect.",
+    "notStaff": "This account has no console access. Ask a super admin to add a role.",
+    "mfaEnrollTitle": "Set up two-factor sign-in",
+    "mfaEnrollBody": "Scan this QR code with an authenticator app (Google Authenticator, Microsoft Authenticator or similar), then enter the 6-digit code it shows.",
+    "mfaSecret": "Or enter this key manually",
+    "mfaVerifyTitle": "Two-factor verification",
+    "mfaVerifyBody": "Enter the 6-digit code from your authenticator app.",
+    "mfaCode": "Authentication code",
+    "verify": "Verify",
+    "wrongCode": "That code didn't work. Codes change every 30 seconds; try the current one.",
+    "genericError": "Something went wrong. Try again.",
+    "signOut": "Sign out",
+    "signedInAs": "Signed in as {{email}}"
+  },
+  "auth": {
+    "phoneTitle": "Sign in with your mobile number",
+    "phoneSubtitle": "We'll send you a 6-digit code.",
+    "phoneLabel": "Mobile number",
+    "invalidPhone": "Enter a 10-digit Indian mobile number.",
+    "sendOn": "Send the code on",
+    "whatsapp": "WhatsApp",
+    "sms": "SMS",
+    "whatsappNotice": "We'll also send booking and service updates on WhatsApp. Reply STOP at any time to stop them.",
+    "sendCode": "Send code",
+    "codeTitle": "Enter the 6-digit code",
+    "codeSentTo": "Sent to {{phone}} on {{channel}}",
+    "codeLabel": "Code",
+    "verify": "Verify",
+    "wrongCode": "That code didn't work. Check it and try again.",
+    "tooMany": "Too many attempts. Please wait a minute and try again.",
+    "genericError": "Something went wrong. Check your connection and try again.",
+    "resendIn": "You can ask for a new code in {{seconds}} s",
+    "resend": "Send a new code",
+    "useSms": "Get the code by SMS instead",
+    "changeNumber": "Change number",
+    "signOut": "Sign out",
+    "fieldOnly": "This app is for field staff. Ask your supervisor to add your number, then sign in again."
   }
 }

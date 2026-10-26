@@ -41,6 +41,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-router',
     'expo-dev-client',
     'expo-font',
+    // Uploads source maps during EAS builds when SENTRY_AUTH_TOKEN is set.
+    ['@sentry/react-native/expo', { url: 'https://sentry.io/', organization: process.env.SENTRY_ORG, project: process.env.SENTRY_PROJECT }],
     [
       'expo-splash-screen',
       {
