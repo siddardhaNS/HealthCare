@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { brand } from '@repo/brand';
 import { createI18n } from '@repo/i18n';
@@ -20,7 +21,14 @@ export default async function ConsoleLayout({ children }: { children: ReactNode 
       <aside className="flex flex-col gap-2 border-b border-border bg-surface-raised p-5 md:w-64 md:border-r md:border-b-0">
         <span className="font-display text-title font-bold">{brand.shortName}</span>
         <nav aria-label="Console" className="mt-4 flex flex-col gap-1">
-          <span className="rounded-control bg-accent-soft px-3 py-2 font-semibold text-accent-text">{t('console.commandCenter')}</span>
+          <Link href="/" className="rounded-control px-3 py-2 font-semibold text-text-muted hover:bg-surface hover:text-text">
+            {t('console.commandCenter')}
+          </Link>
+          {claims.roles.some((r) => r === 'super_admin' || r === 'operations') ? (
+            <Link href="/leads" className="rounded-control px-3 py-2 font-semibold text-text-muted hover:bg-surface hover:text-text">
+              {t('console.leads.title')}
+            </Link>
+          ) : null}
         </nav>
         <div className="mt-auto flex flex-col gap-2 pt-6">
           {claims.email ? <span className="text-small text-text-muted">{t('console.signedInAs', { email: claims.email })}</span> : null}

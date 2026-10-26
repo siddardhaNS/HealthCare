@@ -85,7 +85,29 @@
     "wrongCode": "That code didn't work. Codes change every 30 seconds; try the current one.",
     "genericError": "Something went wrong. Try again.",
     "signOut": "Sign out",
-    "signedInAs": "Signed in as {{email}}"
+    "signedInAs": "Signed in as {{email}}",
+    "leads": {
+      "title": "Leads",
+      "filter": "Filter by status",
+      "all": "All",
+      "empty": "No leads here yet.",
+      "statusLabel": "Status",
+      "save": "Save",
+      "status": {
+        "new": "New",
+        "contacted": "Contacted",
+        "walkthrough_booked": "Walkthrough booked",
+        "live": "Live"
+      },
+      "orgType": {
+        "gated": "Gated villas",
+        "apartment": "Apartment complex",
+        "township": "Township",
+        "senior_home": "Senior-living home",
+        "employer": "Employer",
+        "family": "Family"
+      }
+    }
   },
   "auth": {
     "phoneTitle": "Sign in with your mobile number",

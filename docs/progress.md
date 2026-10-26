@@ -11,7 +11,7 @@
 
 ### Next (pick up here)
 1. Landing page components in `apps/web/app/` (nav, hero with phone mock, audiences, services tabs, SOS story, why us, how it works, console preview, plans, two-step sign-up posting to `/v1/leads`, FAQ, CTA, footer), plus robots/sitemap. Helper `apps/web/app/_lib/copy.ts` is in place.
-2. Console `/leads` page (list, filter, status changes).
+2. ~~Console `/leads` page~~ done (list, status filter, status change, sidebar link for super admin / operations). Needs a live check once Supabase runs.
 3. Playwright tests for the sign-up form.
 
 ### Needs your input
