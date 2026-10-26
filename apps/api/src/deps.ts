@@ -4,7 +4,9 @@ import { createDb } from '@repo/db';
 import { memoryKv, upstashKv, type Kv } from './lib/kv';
 import { createTokenVerifier, type TokenVerifier } from './middleware/auth';
 import { cloudApiWhatsApp, logSms, logWhatsApp, msg91Sms } from './modules/messaging/providers';
+import { drizzleLeadsRepo, type LeadsRepo } from './modules/leads/repo';
 import { drizzleMessagingRepo } from './modules/messaging/repo';
+import { logMailer, type Mailer } from './modules/notifications/mailer';
 import type { MessagingDeps } from './modules/messaging/service';
 
 const Env = z
@@ -27,6 +29,10 @@ const Env = z
     WHATSAPP_GRAPH_VERSION: z.string().default('v26.0'),
     MSG91_AUTH_KEY: z.string().optional(),
     MSG91_OTP_TEMPLATE_ID: z.string().default('local-otp'),
+    SALES_INBOX_EMAIL: z.string().email().default('sales@localhost.test'),
+    CONSOLE_URL: z.string().url().default('http://localhost:3002'),
+    /** Comma-separated origins allowed to call public endpoints from the browser (landing site). */
+    WEB_ORIGINS: z.string().default('http://localhost:3000,http://localhost:3003'),
   })
   .superRefine((e, ctx) => {
     const need = (keys: (keyof typeof e)[], why: string) =>
@@ -47,6 +53,8 @@ export class ConfigError extends Error {
 
 export interface Deps {
   kv: Kv;
+  leads: LeadsRepo;
+  mailer: Mailer;
   messaging: MessagingDeps;
   verifyToken: TokenVerifier;
   config: {
@@ -54,6 +62,8 @@ export interface Deps {
     phoneHashKey: string;
     whatsappAppSecret: string | null;
     whatsappVerifyToken: string | null;
+    salesInbox: string;
+    consoleUrl: string;
   };
 }
 
@@ -69,11 +79,14 @@ export function depsFromEnv(source: NodeJS.ProcessEnv = process.env): Deps {
       ? upstashKv(new Redis({ url: env.UPSTASH_REDIS_REST_URL, token: env.UPSTASH_REDIS_REST_TOKEN }))
       : memoryKv();
   const live = env.MESSAGING_MODE === 'live';
+  const db = createDb(env.DATABASE_URL);
   return {
     kv,
+    leads: drizzleLeadsRepo(db),
+    mailer: logMailer(),
     messaging: {
       kv,
-      repo: drizzleMessagingRepo(createDb(env.DATABASE_URL)),
+      repo: drizzleMessagingRepo(db),
       whatsapp: live
         ? cloudApiWhatsApp({ phoneNumberId: env.WHATSAPP_PHONE_NUMBER_ID!, accessToken: env.WHATSAPP_ACCESS_TOKEN!, graphVersion: env.WHATSAPP_GRAPH_VERSION })
         : logWhatsApp(),
@@ -87,6 +100,8 @@ export function depsFromEnv(source: NodeJS.ProcessEnv = process.env): Deps {
       phoneHashKey: env.PHONE_HASH_KEY,
       whatsappAppSecret: env.WHATSAPP_APP_SECRET ?? null,
       whatsappVerifyToken: env.WHATSAPP_VERIFY_TOKEN ?? null,
+      salesInbox: env.SALES_INBOX_EMAIL,
+      consoleUrl: env.CONSOLE_URL.replace(/\/$/, ''),
     },
   };
 }

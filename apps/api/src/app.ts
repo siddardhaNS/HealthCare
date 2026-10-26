@@ -1,10 +1,12 @@
 import { OpenAPIHono } from '@hono/zod-openapi';
 import { requestId } from 'hono/request-id';
+import { cors } from 'hono/cors';
 import { secureHeaders } from 'hono/secure-headers';
 import type { ErrorBody } from '@repo/contracts';
 import { ConfigError, depsFromEnv, type Deps } from './deps';
 import type { AccessClaims } from './middleware/auth';
 import { authHookRoutes, authRoutes } from './modules/auth/routes';
+import { leadsRoutes } from './modules/leads/routes';
 import { whatsappWebhookRoutes } from './modules/messaging/routes';
 import { systemRoutes } from './modules/system/routes';
 
@@ -15,6 +17,8 @@ export interface CreateAppOptions {
   deps?: () => Deps;
   /** Registers middleware ahead of everything else (Sentry in production). */
   before?: (app: OpenAPIHono<AppEnv>) => void;
+  /** Browser origins allowed to call public endpoints (the landing site). */
+  webOrigins?: string[];
 }
 
 export function createApp(options: CreateAppOptions = {}) {
@@ -46,9 +50,14 @@ export function createApp(options: CreateAppOptions = {}) {
     c.set('deps', getDeps());
     await next();
   };
-  for (const path of ['/v1/auth/*', '/v1/me', '/webhooks/*']) app.use(path, withDeps);
+  // The landing site posts sign-ups straight from the browser.
+  const webOrigins = options.webOrigins ?? (process.env.WEB_ORIGINS ?? 'http://localhost:3000,http://localhost:3003').split(',').map((o) => o.trim());
+  app.use('/v1/leads', cors({ origin: webOrigins, allowMethods: ['POST'], allowHeaders: ['content-type'], maxAge: 600 }));
+
+  for (const path of ['/v1/auth/*', '/v1/me', '/v1/leads', '/v1/leads/*', '/webhooks/*']) app.use(path, withDeps);
   app.route('/v1', authRoutes);
   app.route('/v1', authHookRoutes);
+  app.route('/v1', leadsRoutes);
   app.route('/', whatsappWebhookRoutes);
 
   app.notFound((c) => c.json<ErrorBody>({ error: { code: 'not_found', message: 'Not found', requestId: c.get('requestId') } }, 404));

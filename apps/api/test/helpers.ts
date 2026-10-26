@@ -6,6 +6,8 @@ import type { Deps } from '../src/deps';
 import { memoryKv } from '../src/lib/kv';
 import { createTokenVerifier } from '../src/middleware/auth';
 import { ProviderError, type SmsSend, type WhatsAppSend } from '../src/modules/messaging/providers';
+import type { Lead } from '@repo/contracts';
+import { newLeadRef, type LeadsRepo } from '../src/modules/leads/repo';
 import type { MessageLogInput, MessagingRepo, OptinInput } from '../src/modules/messaging/repo';
 
 export const SUPABASE_URL = 'http://supabase.test';
@@ -40,9 +42,50 @@ export function fakeRepo() {
   return { repo, messages, optins, challenges };
 }
 
-export async function testContext(opts: { whatsappFails?: boolean } = {}) {
+export function fakeLeads() {
+  const rows: Lead[] = [];
+  const repo: LeadsRepo = {
+    async create(input) {
+      const lead: Lead = {
+        id: crypto.randomUUID(),
+        ref: newLeadRef(),
+        createdAt: new Date().toISOString(),
+        status: 'new',
+        orgType: input.orgType,
+        orgName: input.orgName ?? null,
+        city: input.city,
+        area: input.area ?? null,
+        size: input.size,
+        contactName: input.contactName,
+        contactRole: input.contactRole,
+        phone: input.phone,
+        email: input.email,
+        services: input.services,
+        plan: input.plan,
+        walkthrough: input.walkthrough,
+        notes: input.notes ?? null,
+      };
+      rows.unshift(lead);
+      return { id: lead.id, ref: lead.ref };
+    },
+    async list({ status, limit }) {
+      return rows.filter((r) => !status || r.status === status).slice(0, limit);
+    },
+    async setStatus(id, status) {
+      const r = rows.find((x) => x.id === id);
+      if (!r) return null;
+      r.status = status;
+      return r;
+    },
+  };
+  return { repo, rows };
+}
+
+export async function testContext(opts: { whatsappFails?: boolean; mailerFails?: boolean } = {}) {
   const kv = memoryKv();
   const store = fakeRepo();
+  const leads = fakeLeads();
+  const mail: { to: string; subject: string; text: string }[] = [];
   const whatsappSent: WhatsAppSend[] = [];
   const smsSent: SmsSend[] = [];
   const { publicKey, privateKey } = await generateKeyPair('ES256');
@@ -50,6 +93,13 @@ export async function testContext(opts: { whatsappFails?: boolean } = {}) {
 
   const deps: Deps = {
     kv,
+    leads: leads.repo,
+    mailer: {
+      async send(msg) {
+        if (opts.mailerFails) throw new Error('smtp down');
+        mail.push(msg);
+      },
+    },
     messaging: {
       kv,
       repo: store.repo,
@@ -70,10 +120,17 @@ export async function testContext(opts: { whatsappFails?: boolean } = {}) {
       smsTemplateIds: { otp_code: 'dlt-otp' },
     },
     verifyToken: createTokenVerifier({ supabaseUrl: SUPABASE_URL, keys: createLocalJWKSet({ keys: [jwk] }) }),
-    config: { sendSmsHookSecret: HOOK_SECRET, phoneHashKey: 'x'.repeat(32), whatsappAppSecret: WA_APP_SECRET, whatsappVerifyToken: WA_VERIFY_TOKEN },
+    config: {
+      sendSmsHookSecret: HOOK_SECRET,
+      phoneHashKey: 'x'.repeat(32),
+      whatsappAppSecret: WA_APP_SECRET,
+      whatsappVerifyToken: WA_VERIFY_TOKEN,
+      salesInbox: 'sales@example.test',
+      consoleUrl: 'https://console.example.test',
+    },
   };
 
-  const app = createApp({ deps: () => deps });
+  const app = createApp({ deps: () => deps, webOrigins: ['https://web.example.test'] });
 
   async function token(claims: JWTPayload & { aal?: string; app_roles?: string[] }, opt: { issuer?: string; expiresIn?: string } = {}) {
     return new SignJWT({ role: 'authenticated', ...claims })
@@ -103,7 +160,7 @@ export async function testContext(opts: { whatsappFails?: boolean } = {}) {
     return app.request('/webhooks/whatsapp', { method: 'POST', headers: { 'content-type': 'application/json', 'x-hub-signature-256': sig }, body: raw });
   }
 
-  return { app, deps, kv, ...store, whatsappSent, smsSent, token, sendSmsHook, whatsappWebhook };
+  return { app, deps, kv, ...store, leads: leads.rows, mail, whatsappSent, smsSent, token, sendSmsHook, whatsappWebhook };
 }
 
 export const statusEvent = (id: string, status: string, code?: number) => ({

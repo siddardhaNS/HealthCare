@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-  <!-- Single source logo. Colours are token roles filled in by scripts/gen-assets.mjs. -->
-  <rect width="1024" height="1024" rx="232" fill="{{bg}}"/>
-  <path d="M512 236 L780 452 V760 a40 40 0 0 1 -40 40 H284 a40 40 0 0 1 -40 -40 V452 Z" fill="none" stroke="{{accent}}" stroke-width="56" stroke-linejoin="round"/>
-  <path d="M512 470 v196 M414 568 h196" stroke="{{accent}}" stroke-width="64" stroke-linecap="round"/>
+  <!-- Single source logo (pulse mark from the Aurora design). Colours are token
+       roles filled in by scripts/gen-assets.mjs: {{plate}} behind, {{mark}} the line. -->
+  <rect width="1024" height="1024" rx="300" fill="{{plate}}"/>
+  <path transform="translate(212 212) scale(25)" d="M3 12h4l2-5 4 10 2-5h6" fill="none" stroke="{{mark}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

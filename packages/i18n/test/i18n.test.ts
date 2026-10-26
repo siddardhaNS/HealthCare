@@ -23,3 +23,14 @@ describe('i18n', () => {
     expect(formatRupees(123456)).toBe('₹1,23,456');
   });
 });
+
+describe('landing namespace', () => {
+  it('is available and falls back to English', () => {
+    expect(createI18n('en').t('landing:nav.services')).toBe('Services');
+    expect(createI18n('te').t('landing:nav.services')).toBe('Services');
+  });
+
+  it('fills {{brand}} in landing copy', () => {
+    expect(createI18n('en').t('landing:signup.consent')).toContain(brand.name);
+  });
+});

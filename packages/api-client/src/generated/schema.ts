@@ -75,6 +75,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/leads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Leads for the console, newest first */
+        get: operations["listLeads"];
+        put?: never;
+        /** Landing-site sign-up (community, organisation or family) */
+        post: operations["createLead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/leads/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Move a lead through new → contacted → walkthrough booked → live */
+        patch: operations["updateLeadStatus"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -124,6 +159,77 @@ export interface components {
         };
         /** @enum {string} */
         AppRole: "super_admin" | "operations" | "community_desk" | "support" | "doctor" | "pharmacy" | "lab" | "hospital" | "crew" | "phlebotomist" | "companion" | "rider";
+        LeadCreated: {
+            /** @example L-7K3Q9P */
+            ref: string;
+        };
+        LeadRequest: {
+            /** @enum {string} */
+            orgType: "gated" | "apartment" | "township" | "senior_home" | "employer" | "family";
+            orgName?: string;
+            city: string;
+            area?: string;
+            pin?: string;
+            size: number;
+            towers?: number;
+            /**
+             * @default unknown
+             * @enum {string}
+             */
+            seniorShare: "unknown" | "lt10" | "10to25" | "25to50" | "gt50";
+            /** @default [] */
+            onsite: ("guard" | "clinic" | "ambulance" | "pharmacy")[];
+            contactName: string;
+            /** @enum {string} */
+            contactRole: "association" | "committee" | "facility" | "builder" | "hr" | "family" | "resident" | "other";
+            /** @example +919876543210 */
+            phone: string;
+            /** Format: email */
+            email: string;
+            services: ("consult" | "pharmacy" | "lab" | "companion" | "sos")[];
+            /** @enum {string} */
+            plan: "essentials" | "complete" | "custom" | "unsure";
+            /** @enum {string} */
+            walkthrough: "this_week" | "this_weekend" | "next_week" | "call_me";
+            notes?: string;
+            /** @enum {boolean} */
+            consent: true;
+            consentVersion: string;
+            website?: string;
+        };
+        LeadList: {
+            leads: components["schemas"]["Lead"][];
+        };
+        Lead: {
+            /** Format: uuid */
+            id: string;
+            ref: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @enum {string} */
+            status: "new" | "contacted" | "walkthrough_booked" | "live";
+            /** @enum {string} */
+            orgType: "gated" | "apartment" | "township" | "senior_home" | "employer" | "family";
+            orgName: string | null;
+            city: string;
+            area: string | null;
+            size: number;
+            contactName: string;
+            /** @enum {string} */
+            contactRole: "association" | "committee" | "facility" | "builder" | "hr" | "family" | "resident" | "other";
+            phone: string;
+            email: string;
+            services: ("consult" | "pharmacy" | "lab" | "companion" | "sos")[];
+            /** @enum {string} */
+            plan: "essentials" | "complete" | "custom" | "unsure";
+            /** @enum {string} */
+            walkthrough: "this_week" | "this_weekend" | "next_week" | "call_me";
+            notes: string | null;
+        };
+        LeadStatusUpdate: {
+            /** @enum {string} */
+            status: "new" | "contacted" | "walkthrough_booked" | "live";
+        };
     };
     responses: never;
     parameters: never;
@@ -244,6 +350,141 @@ export interface operations {
             };
             /** @description Not signed in */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    listLeads: {
+        parameters: {
+            query?: {
+                status?: "new" | "contacted" | "walkthrough_booked" | "live";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Leads */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadList"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    createLead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeadRequest"];
+            };
+        };
+        responses: {
+            /** @description Saved */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadCreated"];
+                };
+            };
+            /** @description Invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    updateLeadStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeadStatusUpdate"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Lead"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No such lead */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

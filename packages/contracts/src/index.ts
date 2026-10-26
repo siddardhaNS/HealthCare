@@ -75,3 +75,79 @@ export const Me = z
   })
   .openapi('Me');
 export type Me = z.infer<typeof Me>;
+
+// ── Leads (landing site sign-ups) ───────────────────────────────────────
+
+export const leadOrgTypes = ['gated', 'apartment', 'township', 'senior_home', 'employer', 'family'] as const;
+export const leadServices = ['consult', 'pharmacy', 'lab', 'companion', 'sos'] as const;
+export const leadOnsite = ['guard', 'clinic', 'ambulance', 'pharmacy'] as const;
+export const leadRoles = ['association', 'committee', 'facility', 'builder', 'hr', 'family', 'resident', 'other'] as const;
+export const leadSeniorShares = ['unknown', 'lt10', '10to25', '25to50', 'gt50'] as const;
+export const leadPlans = ['essentials', 'complete', 'custom', 'unsure'] as const;
+export const leadWalkthroughs = ['this_week', 'this_weekend', 'next_week', 'call_me'] as const;
+export const leadStatuses = ['new', 'contacted', 'walkthrough_booked', 'live'] as const;
+
+export const LeadRequest = z
+  .object({
+    orgType: z.enum(leadOrgTypes),
+    /** Community / organisation name; not asked for families. */
+    orgName: z.string().trim().max(120).optional(),
+    city: z.string().trim().min(1, 'Enter the city').max(80),
+    area: z.string().trim().max(80).optional(),
+    pin: z
+      .string()
+      .trim()
+      .regex(/^\d{6}$/, 'PIN code should be 6 digits')
+      .optional(),
+    /** Homes, employees or people to cover, depending on orgType. */
+    size: z.number().int().min(1).max(100000),
+    towers: z.number().int().min(1).max(500).optional(),
+    seniorShare: z.enum(leadSeniorShares).default('unknown'),
+    onsite: z.array(z.enum(leadOnsite)).max(leadOnsite.length).default([]),
+    contactName: z.string().trim().min(1, 'Enter your name').max(80),
+    contactRole: z.enum(leadRoles),
+    phone: PhoneIN,
+    email: z.string().trim().email('Enter a valid email address').max(160),
+    services: z.array(z.enum(leadServices)).min(1, 'Pick at least one service').max(leadServices.length),
+    plan: z.enum(leadPlans),
+    walkthrough: z.enum(leadWalkthroughs),
+    notes: z.string().trim().max(1000).optional(),
+    /** The "agree to be contacted" box; the request is rejected without it. */
+    consent: z.literal(true, { message: 'Please agree so we can contact you' }),
+    /** Version of the consent sentence shown. */
+    consentVersion: z.string().min(1).max(40),
+    /** Honeypot: hidden from people, filled in by bots. The API answers as if saved and stores nothing. */
+    website: z.string().max(500).optional(),
+  })
+  .refine((v) => v.orgType === 'family' || !!v.orgName, { message: 'Enter the name', path: ['orgName'] })
+  .openapi('LeadRequest');
+export type LeadRequest = z.infer<typeof LeadRequest>;
+
+export const LeadCreated = z.object({ ref: z.string().openapi({ example: 'L-7K3Q9P' }) }).openapi('LeadCreated');
+export type LeadCreated = z.infer<typeof LeadCreated>;
+
+export const Lead = z
+  .object({
+    id: z.string().uuid(),
+    ref: z.string(),
+    createdAt: z.string().datetime(),
+    status: z.enum(leadStatuses),
+    orgType: z.enum(leadOrgTypes),
+    orgName: z.string().nullable(),
+    city: z.string(),
+    area: z.string().nullable(),
+    size: z.number().int(),
+    contactName: z.string(),
+    contactRole: z.enum(leadRoles),
+    phone: z.string(),
+    email: z.string(),
+    services: z.array(z.enum(leadServices)),
+    plan: z.enum(leadPlans),
+    walkthrough: z.enum(leadWalkthroughs),
+    notes: z.string().nullable(),
+  })
+  .openapi('Lead');
+export type Lead = z.infer<typeof Lead>;
+
+export const LeadList = z.object({ leads: z.array(Lead) }).openapi('LeadList');
+export const LeadStatusUpdate = z.object({ status: z.enum(leadStatuses) }).openapi('LeadStatusUpdate');

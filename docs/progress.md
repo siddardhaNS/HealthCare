@@ -1,5 +1,25 @@
 # Progress
 
+## 2026-10-26 · Web first, session 3: leads backend, landing groundwork (in progress)
+
+### Done
+- **Leads API**: `POST /v1/leads` (public; CORS limited to the landing origins, 5/hour per IP, honeypot that fakes success, consent required), `GET /v1/leads` and `PATCH /v1/leads/{id}` for super admin / operations at aal2. The sales alert email carries only a reference, type, city, size and a console link, never contact details. Neutral references like `L-7K3Q9P`. 16 new tests (59 API tests in total).
+- **Migration** `…_leads.sql` (statuses as in the brief: new, contacted, walkthrough booked, live) + Drizzle mirror.
+- **Landing copy** in `packages/i18n/locales/landing.en.json` (`landing` namespace), broadened for senior-living homes, employers and families. English-first; te/hi fall back to English.
+- **Logo** switched to the design's pulse mark; icons, splash and favicons regenerated.
+- Shared `Icon` component in `@repo/ui-web` with the design's icon paths.
+
+### Next (pick up here)
+1. Landing page components in `apps/web/app/` (nav, hero with phone mock, audiences, services tabs, SOS story, why us, how it works, console preview, plans, two-step sign-up posting to `/v1/leads`, FAQ, CTA, footer), plus robots/sitemap. Helper `apps/web/app/_lib/copy.ts` is in place.
+2. Console `/leads` page (list, filter, status changes).
+3. Playwright tests for the sign-up form.
+
+### Needs your input
+- **Email provider** for lead alerts (paid service, e.g. Resend / Amazon SES / Postmark). Only a log transport exists now.
+- **Plan prices**: shown as "Price shared at the walkthrough" until provided.
+- Landing te/hi translations.
+
+
 ## 2026-10-26 · Phase 1 (Foundations), session 2: auth, messaging, Sentry, e2e
 
 Plan: `docs/plans/auth.md`. Built against provider docs checked today (Supabase auth hooks, MFA, SSR and Expo guides; WhatsApp Cloud API copy-code templates; Sentry Next.js/Expo/Hono; Workflow SDK; MSG91).

@@ -12,13 +12,13 @@ const template = readFileSync(join(root, 'packages/brand', brand.logo.source), '
 const dark = resolveTheme('aurora', 'dark').colors;
 const light = resolveTheme('aurora', 'light').colors;
 
-function svg(vars: { bg: string; accent: string }) {
+function svg(vars: { plate: string; mark: string }) {
   return Buffer.from(template.replace(/\{\{(\w+)\}\}/g, (_, k: keyof typeof vars) => vars[k]));
 }
 
-const full = svg({ bg: dark.bg, accent: dark.accent });
-// Transparent mark for adaptive icons and splash screens (background comes from tokens).
-const mark = svg({ bg: 'none', accent: dark.accent });
+const full = svg({ plate: dark.accent, mark: dark.onAccent });
+// Transparent mark for Android adaptive icons (the plate colour comes from theme.json).
+const mark = svg({ plate: 'none', mark: dark.onAccent });
 
 async function png(input: Buffer, size: number, file: string, padding = 0) {
   const inner = size - padding * 2;
@@ -34,7 +34,7 @@ for (const app of ['resident', 'field']) {
   mkdirSync(out, { recursive: true });
   await png(full, 1024, join(out, 'icon.png'));
   await png(mark, 1024, join(out, 'adaptive-icon.png'), 192);
-  await png(mark, 512, join(out, 'splash.png'));
+  await png(full, 512, join(out, 'splash.png'));
   // app.config.ts runs outside Metro and cannot import TS packages, so the
   // native config reads token colours from this generated file.
   writeFileSync(

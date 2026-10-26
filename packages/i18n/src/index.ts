@@ -2,6 +2,7 @@ import i18next, { type i18n } from 'i18next';
 import { brandVars } from '@repo/brand';
 import en from '../locales/en.json' with { type: 'json' };
 import hi from '../locales/hi.json' with { type: 'json' };
+import landingEn from '../locales/landing.en.json' with { type: 'json' };
 import te from '../locales/te.json' with { type: 'json' };
 
 export const languages = [
@@ -11,7 +12,12 @@ export const languages = [
 ] as const;
 export type Language = (typeof languages)[number]['code'];
 
-export const resources = { en: { translation: en }, te: { translation: te }, hi: { translation: hi } };
+/**
+ * `translation`: app and console UI, complete in every language (tested).
+ * `landing`: marketing site copy, English-first; te/hi fall back to English
+ * until professionally translated.
+ */
+export const resources = { en: { translation: en, landing: landingEn }, te: { translation: te }, hi: { translation: hi } };
 
 /**
  * Creates an isolated i18next instance. {{brand}} and the other brand
@@ -23,6 +29,8 @@ export function createI18n(lng: Language = 'en'): i18n {
     lng,
     fallbackLng: 'en',
     resources,
+    ns: ['translation', 'landing'],
+    defaultNS: 'translation',
     initAsync: false,
     interpolation: { escapeValue: false, defaultVariables: brandVars },
     returnNull: false,

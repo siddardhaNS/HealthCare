@@ -26,7 +26,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     package: ids.applicationId,
     adaptiveIcon: {
       foregroundImage: './assets/generated/adaptive-icon.png',
-      backgroundColor: theme.dark.bg,
+      backgroundColor: theme.dark.accent,
     },
     intentFilters: [
       {
