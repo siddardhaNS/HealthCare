@@ -557,6 +557,9 @@ importers:
       '@repo/brand':
         specifier: workspace:*
         version: link:../../packages/brand
+      '@repo/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       '@repo/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n

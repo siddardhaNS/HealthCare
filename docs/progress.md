@@ -10,9 +10,9 @@
 - Shared `Icon` component in `@repo/ui-web` with the design's icon paths.
 
 ### Next (pick up here)
-1. Landing page components in `apps/web/app/` (nav, hero with phone mock, audiences, services tabs, SOS story, why us, how it works, console preview, plans, two-step sign-up posting to `/v1/leads`, FAQ, CTA, footer), plus robots/sitemap. Helper `apps/web/app/_lib/copy.ts` is in place.
+1. ~~Landing page~~ done: every section from the design (nav, hero with phone mock, audiences, services tabs with keyboard support, SOS walkthrough, why us, how it works for villas / apartments / families, console preview, plans, two-step sign-up posting to `/v1/leads`, FAQ, CTA, footer), robots + sitemap. 10 Playwright tests incl. the full sign-up flow and axe WCAG AA. Light/dark follows the visitor's OS setting.
 2. ~~Console `/leads` page~~ done (list, status filter, status change, sidebar link for super admin / operations). Needs a live check once Supabase runs.
-3. Playwright tests for the sign-up form.
+3. Next: Phase 2 web work (residents directory in the console) needs the consent design first; see open questions.
 
 ### Needs your input
 - **Email provider: Resend** (decided 2026-10-26). To be configured later: add a Resend transport in `apps/api/src/modules/notifications/mailer.ts`, a `RESEND_API_KEY` env var, and verify the sending domain from `packages/brand`. Until then only the log transport exists.

@@ -2,6 +2,7 @@
 // registers these with @hono/zod-openapi) and of the types every app uses.
 // `z` comes from @hono/zod-openapi so schemas can carry `.openapi()` metadata.
 import { z } from '@hono/zod-openapi';
+import { leadOnsite, leadOrgTypes, leadPlans, leadRoles, leadSeniorShares, leadServices, leadStatuses, leadWalkthroughs } from './leads';
 import { appRoles } from './roles';
 
 export { z };
@@ -78,14 +79,7 @@ export type Me = z.infer<typeof Me>;
 
 // ── Leads (landing site sign-ups) ───────────────────────────────────────
 
-export const leadOrgTypes = ['gated', 'apartment', 'township', 'senior_home', 'employer', 'family'] as const;
-export const leadServices = ['consult', 'pharmacy', 'lab', 'companion', 'sos'] as const;
-export const leadOnsite = ['guard', 'clinic', 'ambulance', 'pharmacy'] as const;
-export const leadRoles = ['association', 'committee', 'facility', 'builder', 'hr', 'family', 'resident', 'other'] as const;
-export const leadSeniorShares = ['unknown', 'lt10', '10to25', '25to50', 'gt50'] as const;
-export const leadPlans = ['essentials', 'complete', 'custom', 'unsure'] as const;
-export const leadWalkthroughs = ['this_week', 'this_weekend', 'next_week', 'call_me'] as const;
-export const leadStatuses = ['new', 'contacted', 'walkthrough_booked', 'live'] as const;
+export * from './leads';
 
 export const LeadRequest = z
   .object({
