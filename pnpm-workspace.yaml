@@ -29,6 +29,8 @@ allowBuilds:
 # One Upstash client version everywhere (drizzle-orm lists it as an optional peer).
 overrides:
   '@upstash/redis': 1.39.0
+  # GHSA-xjj6-f33q-929c (DoS) in undici <7.30.1, via the Workflow SDK. Drop when it ships a patched undici.
+  'undici@>=7.18.0 <7.30.1': 7.30.1
 
 # Ignored advisories (reviewed 2026-10-27). Both reach us only through Expo's
 # build CLI (@expo/cli), which runs on dev machines and CI and is not
