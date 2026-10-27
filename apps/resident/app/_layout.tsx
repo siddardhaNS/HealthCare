@@ -1,17 +1,20 @@
 import { useEffect, useMemo } from 'react';
 import * as Sentry from '@sentry/react-native';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
-import { I18nextProvider } from 'react-i18next';
+import { I18nextProvider, useTranslation } from 'react-i18next';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { createI18n } from '@repo/i18n';
 import { SessionProvider, useSession } from '@repo/mobile';
 import { nativeFonts } from '@repo/tokens/native-fonts';
-import { ThemeProvider, useTheme } from '@repo/ui-native';
+import { Screen, ThemeProvider, useTheme } from '@repo/ui-native';
 import { scrubSentryEvent, sentryTracesSampleRate } from '@repo/config/sentry';
 import { config } from '../lib/config';
+import { queryClient, useOnboardingStep, useProfile } from '../lib/data';
+import { ErrorState } from '../lib/ui';
 
 // No-op without EXPO_PUBLIC_SENTRY_DSN. Screenshots, view hierarchy and
 // Session Replay stay off: screens show health data.
@@ -32,22 +35,40 @@ void SplashScreen.preventAutoHideAsync();
 function Routes({ fontsReady }: { fontsReady: boolean }) {
   const t = useTheme();
   const { session, loading } = useSession();
-  const ready = fontsReady && !loading;
+  const onboarding = useOnboardingStep();
+  const { i18n } = useTranslation();
+  const language = useProfile().data?.language;
+  // Speak the person's chosen language everywhere once their profile has it.
+  useEffect(() => {
+    if (language && i18n.language !== language) void i18n.changeLanguage(language);
+  }, [language, i18n]);
+  const ready = fontsReady && !loading && !onboarding.loading;
 
   useEffect(() => {
     if (ready) void SplashScreen.hideAsync();
   }, [ready]);
 
   if (!ready) return null;
+  if (onboarding.error) {
+    return (
+      <Screen style={{ justifyContent: 'center', padding: t.space[5] }}>
+        <ErrorState onRetry={onboarding.retry} />
+      </Screen>
+    );
+  }
 
+  const signedIn = !!session;
   return (
     <>
       <StatusBar style={t.mode === 'dark' ? 'light' : 'dark'} />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.colors.bg } }}>
-        <Stack.Protected guard={!!session}>
-          <Stack.Screen name="index" />
+        <Stack.Protected guard={signedIn && !onboarding.step}>
+          <Stack.Screen name="(tabs)" />
         </Stack.Protected>
-        <Stack.Protected guard={!session}>
+        <Stack.Protected guard={signedIn && !!onboarding.step}>
+          <Stack.Screen name="onboarding" />
+        </Stack.Protected>
+        <Stack.Protected guard={!signedIn}>
           <Stack.Screen name="sign-in" />
           <Stack.Screen name="verify" />
         </Stack.Protected>
@@ -58,16 +79,18 @@ function Routes({ fontsReady }: { fontsReady: boolean }) {
 
 function RootLayout() {
   const [fontsLoaded, fontError] = useFonts(nativeFonts);
-  // Language choice moves to onboarding in Phase 2.
+  // The chosen language is applied from the profile once onboarding saves it.
   const i18n = useMemo(() => createI18n('en'), []);
 
   return (
     <SafeAreaProvider>
       <I18nextProvider i18n={i18n}>
         <ThemeProvider>
-          <SessionProvider config={config}>
-            <Routes fontsReady={fontsLoaded || !!fontError} />
-          </SessionProvider>
+          <QueryClientProvider client={queryClient}>
+            <SessionProvider config={config}>
+              <Routes fontsReady={fontsLoaded || !!fontError} />
+            </SessionProvider>
+          </QueryClientProvider>
         </ThemeProvider>
       </I18nextProvider>
     </SafeAreaProvider>

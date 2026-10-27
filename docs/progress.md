@@ -1,5 +1,43 @@
 # Progress
 
+## 2026-10-27 · Phase 2, step 4: resident app screens (Android/iOS)
+
+### Done
+- **Onboarding** after sign-in, resuming at the first unfinished step:
+  1. name + app language (applied app-wide)
+  2. household: join by community code + villa/flat, set up an own home, or accept a family invitation
+  3. consent screen: nothing pre-ticked; the core record is required; emergency sharing first and marked recommended
+- **Tabs** as in the design: Home, Health, Bookings, Records, Profile (Bookings/Records are placeholders until Phases 4–5).
+- **Home**: greeting by name, live snapshot (BP, pulse, SpO2, sugar with status colours), SOS card (until Phase 3 it explains SOS is coming and offers a one-tap call to 108), service tiles, today's medicines with "Mark taken".
+- **Health**:
+  - six vital tiles; tap one for its last-7 trend chart with the target band shaded
+  - "Log a reading" sheet with validation messages from the API
+  - conditions and allergies (add/remove)
+  - medicines with 30-day adherence bars
+  - devices, vaccinations (due-soon flag), insurance cards with show/hide numbers
+- **Profile**:
+  - name, age, home; blood group / conditions / allergies
+  - emergency contacts (call, add, remove)
+  - family members with the "can manage my care" switch, showing the manager notice
+  - invite by phone, cancel invites
+  - **Privacy** switches for every optional consent (outdated ones shown as off until agreed again)
+  - consent history; sign out
+- Shared `@repo/icons` (design icon paths) used by both web and native icon components; native `Icon` via react-native-svg.
+- Data via @tanstack/react-query (5.104.5); every change refreshes what it affects.
+- All screen text in en/te/hi.
+
+### Verified
+- Typecheck and lint clean; Metro bundles for Android and iOS; `expo install --check` clean; all repo checks pass (36 tasks).
+- Bundle check: no server code in the app. Size grew mostly from Sentry (core/browser/replay ~2 MB of source); trim later if needed.
+
+### Not verified yet
+- Not run on a device or emulator: needs Android Studio (or EAS dev build) **and** the local Supabase stack (Docker → WSL 2).
+
+### Next
+1. When WSL/Docker is up: first real database run, then Chrome walkthrough of the console flows.
+2. When Android Studio is installed: run the resident app on an emulator end to end (sign-in → onboarding → Health → Profile).
+3. Phase 3 plan (SOS) for your approval: the riskiest phase, and it needs the Vercel Workflows / Nitro decision.
+
 ## 2026-10-27 · Phase 2, step 3: health record API and console medical view
 
 ### Done

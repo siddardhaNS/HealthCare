@@ -7,7 +7,10 @@
     "open": "Open",
     "back": "Back",
     "notifications": "Notifications",
-    "comingSoon": "Coming in a later phase"
+    "comingSoon": "Coming in a later phase",
+    "error": "Something went wrong. Check your connection and try again.",
+    "retry": "Try again",
+    "loading": "Loading…"
   },
   "home": {
     "greeting": {
@@ -39,7 +42,13 @@
         "title": "Visit companion",
         "subtitle": "Escort there and back"
       }
-    }
+    },
+    "snapshotEmpty": "Log your first reading to see it here.",
+    "medsToday": "Medicines today",
+    "markTaken": "Mark taken",
+    "taken": "Taken",
+    "noMeds": "No medicines with dose times yet.",
+    "sosSoon": "Emergency SOS goes live soon. In an emergency, call 108."
   },
   "tabs": {
     "home": "Home",
@@ -249,5 +258,100 @@
     "bmi": "BMI",
     "takenAt": "Taken {{when}}",
     "byOther": "entered by family or care team"
+  },
+  "onboarding": {
+    "profileTitle": "Tell us about you",
+    "nameLabel": "Your full name",
+    "languageLabel": "App language",
+    "continue": "Continue",
+    "householdTitle": "Set up your household",
+    "householdBody": "Join your community with the code from your association, or set up your own home.",
+    "joinTab": "Join my community",
+    "ownTab": "My own home",
+    "code": "Community code",
+    "codeHint": "From your association or community desk",
+    "tower": "Tower / block (if any)",
+    "number": "Villa or flat number",
+    "city": "City",
+    "pin": "PIN code (optional)",
+    "householdName": "Household name (optional)",
+    "join": "Join my community",
+    "create": "Set up my home",
+    "invitesTitle": "You have been invited",
+    "inviteFrom": "{{name}} invited you to join {{household}}",
+    "someone": "A family member",
+    "theirHousehold": "their household",
+    "accept": "Join this household",
+    "consentContinue": "Save and continue",
+    "consentRequired": "Keeping your health record is needed to use the health features."
+  },
+  "healthTab": {
+    "title": "My health",
+    "log": "Log reading",
+    "logTitle": "Log a reading",
+    "value": "Value",
+    "systolic": "Systolic (upper)",
+    "diastolic": "Diastolic (lower)",
+    "target": "Target: {{range}}",
+    "save": "Save reading",
+    "close": "Close",
+    "last7": "{{label}} · last 7",
+    "trendEmpty": "Log a few readings to see a trend.",
+    "add": "Add",
+    "newCondition": "Add a condition",
+    "newAllergy": "Add an allergy (e.g. Sulfa drugs)",
+    "severityLabel": "Severity",
+    "noAllergies": "No known allergies",
+    "devices": "Connected devices",
+    "vaccinations": "Vaccinations",
+    "insurance": "Insurance",
+    "dueSoon": "Due soon",
+    "expired": "Expired",
+    "policy": "Policy",
+    "member": "Member ID",
+    "validUntil": "Valid until {{date}}",
+    "showDetails": "Show details",
+    "hideDetails": "Hide details",
+    "remove": "Remove {{name}}",
+    "targets": {
+      "bp": "below 130/80",
+      "pulse": "60–100 bpm",
+      "spo2": "95% or higher",
+      "sugar": "80–130 fasting",
+      "temp": "97–99.5 °F",
+      "weight": "healthy BMI 18.5–24.9"
+    },
+    "sources": {
+      "manual": "Entered by hand",
+      "health_connect": "Health Connect",
+      "healthkit": "Apple Health",
+      "bluetooth": "Bluetooth"
+    }
+  },
+  "profileTab": {
+    "healthRecord": "Manage my health record",
+    "emergencyContacts": "Emergency contacts",
+    "addContact": "Add contact",
+    "contactName": "Name",
+    "contactRelation": "Relation",
+    "contactPhone": "Mobile number",
+    "call": "Call",
+    "remove": "Remove",
+    "family": "Family",
+    "invite": "Invite a family member",
+    "invitePhone": "Their mobile number",
+    "inviteRelation": "Relation (e.g. son)",
+    "sendInvite": "Send invite",
+    "pendingInvites": "Invited, not joined yet",
+    "cancel": "Cancel",
+    "makeManager": "Can manage my care",
+    "managesYou": "Manages your care",
+    "youManage": "You manage their care",
+    "you": "You",
+    "privacy": "Privacy and alerts",
+    "history": "Consent history",
+    "historyEmpty": "No changes yet.",
+    "historyGranted": "Turned on: {{title}}",
+    "historyWithdrawn": "Turned off: {{title}}"
   }
 }

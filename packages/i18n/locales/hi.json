@@ -7,7 +7,10 @@
     "open": "खोलें",
     "back": "वापस",
     "notifications": "सूचनाएँ",
-    "comingSoon": "अगले चरण में आएगा"
+    "comingSoon": "अगले चरण में आएगा",
+    "error": "कुछ गड़बड़ हो गई। अपना कनेक्शन जाँचकर फिर कोशिश करें।",
+    "retry": "फिर कोशिश करें",
+    "loading": "लोड हो रहा है…"
   },
   "home": {
     "greeting": {
@@ -39,7 +42,13 @@
         "title": "विज़िट साथी",
         "subtitle": "आने-जाने में साथ"
       }
-    }
+    },
+    "snapshotEmpty": "यहाँ देखने के लिए अपनी पहली रीडिंग दर्ज करें।",
+    "medsToday": "आज की दवाइयाँ",
+    "markTaken": "ली गई चिह्नित करें",
+    "taken": "ली गई",
+    "noMeds": "अभी कोई दवा खुराक के समय के साथ नहीं है।",
+    "sosSoon": "आपातकालीन SOS जल्द शुरू होगा। आपात स्थिति में 108 पर कॉल करें।"
   },
   "tabs": {
     "home": "होम",
@@ -249,5 +258,100 @@
     "bmi": "BMI",
     "takenAt": "{{when}} ली गई",
     "byOther": "परिवार या केयर टीम ने दर्ज की"
+  },
+  "onboarding": {
+    "profileTitle": "अपने बारे में बताइए",
+    "nameLabel": "आपका पूरा नाम",
+    "languageLabel": "ऐप की भाषा",
+    "continue": "आगे बढ़ें",
+    "householdTitle": "अपना घर सेट करें",
+    "householdBody": "अपनी एसोसिएशन से मिले कोड से अपनी सोसाइटी से जुड़ें, या अपना घर ख़ुद सेट करें।",
+    "joinTab": "अपनी सोसाइटी से जुड़ें",
+    "ownTab": "मेरा अपना घर",
+    "code": "सोसाइटी कोड",
+    "codeHint": "आपकी एसोसिएशन या कम्युनिटी डेस्क से",
+    "tower": "टावर / ब्लॉक (अगर हो)",
+    "number": "विला या फ़्लैट नंबर",
+    "city": "शहर",
+    "pin": "पिन कोड (वैकल्पिक)",
+    "householdName": "घर का नाम (वैकल्पिक)",
+    "join": "अपनी सोसाइटी से जुड़ें",
+    "create": "मेरा घर सेट करें",
+    "invitesTitle": "आपको आमंत्रण मिला है",
+    "inviteFrom": "{{name}} ने आपको {{household}} से जुड़ने का आमंत्रण दिया है",
+    "someone": "परिवार के एक सदस्य",
+    "theirHousehold": "उनके घर",
+    "accept": "इस घर से जुड़ें",
+    "consentContinue": "सेव करके आगे बढ़ें",
+    "consentRequired": "स्वास्थ्य सुविधाओं के लिए आपका स्वास्थ्य रिकॉर्ड रखना ज़रूरी है।"
+  },
+  "healthTab": {
+    "title": "मेरा स्वास्थ्य",
+    "log": "रीडिंग दर्ज करें",
+    "logTitle": "रीडिंग दर्ज करें",
+    "value": "मान",
+    "systolic": "सिस्टोलिक (ऊपर वाला)",
+    "diastolic": "डायस्टोलिक (नीचे वाला)",
+    "target": "लक्ष्य: {{range}}",
+    "save": "रीडिंग सेव करें",
+    "close": "बंद करें",
+    "last7": "{{label}} · पिछली 7",
+    "trendEmpty": "रुझान देखने के लिए कुछ रीडिंग दर्ज करें।",
+    "add": "जोड़ें",
+    "newCondition": "बीमारी जोड़ें",
+    "newAllergy": "एलर्जी जोड़ें (जैसे सल्फ़ा दवाएँ)",
+    "severityLabel": "गंभीरता",
+    "noAllergies": "कोई ज्ञात एलर्जी नहीं",
+    "devices": "जुड़े हुए उपकरण",
+    "vaccinations": "टीके",
+    "insurance": "बीमा",
+    "dueSoon": "जल्द लगना है",
+    "expired": "समाप्त",
+    "policy": "पॉलिसी",
+    "member": "सदस्य ID",
+    "validUntil": "{{date}} तक मान्य",
+    "showDetails": "विवरण दिखाएँ",
+    "hideDetails": "विवरण छिपाएँ",
+    "remove": "{{name}} हटाएँ",
+    "targets": {
+      "bp": "130/80 से कम",
+      "pulse": "60–100 bpm",
+      "spo2": "95% या ज़्यादा",
+      "sugar": "ख़ाली पेट 80–130",
+      "temp": "97–99.5 °F",
+      "weight": "स्वस्थ BMI 18.5–24.9"
+    },
+    "sources": {
+      "manual": "हाथ से दर्ज",
+      "health_connect": "Health Connect",
+      "healthkit": "Apple Health",
+      "bluetooth": "ब्लूटूथ"
+    }
+  },
+  "profileTab": {
+    "healthRecord": "मेरा स्वास्थ्य रिकॉर्ड सँभालें",
+    "emergencyContacts": "आपातकालीन संपर्क",
+    "addContact": "संपर्क जोड़ें",
+    "contactName": "नाम",
+    "contactRelation": "रिश्ता",
+    "contactPhone": "मोबाइल नंबर",
+    "call": "कॉल",
+    "remove": "हटाएँ",
+    "family": "परिवार",
+    "invite": "परिवार के सदस्य को आमंत्रित करें",
+    "invitePhone": "उनका मोबाइल नंबर",
+    "inviteRelation": "रिश्ता (जैसे बेटा)",
+    "sendInvite": "आमंत्रण भेजें",
+    "pendingInvites": "आमंत्रित, अभी जुड़े नहीं",
+    "cancel": "रद्द करें",
+    "makeManager": "मेरी देखभाल सँभाल सकते हैं",
+    "managesYou": "आपकी देखभाल सँभालते हैं",
+    "youManage": "आप उनकी देखभाल सँभालते हैं",
+    "you": "आप",
+    "privacy": "गोपनीयता और अलर्ट",
+    "history": "सहमति का इतिहास",
+    "historyEmpty": "अभी कोई बदलाव नहीं।",
+    "historyGranted": "चालू किया: {{title}}",
+    "historyWithdrawn": "बंद किया: {{title}}"
   }
 }

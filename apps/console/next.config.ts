@@ -3,7 +3,7 @@ import { withSentryConfig } from '@sentry/nextjs/config';
 
 const config: NextConfig = {
   // Workspace packages ship TypeScript source.
-  transpilePackages: ['@repo/api-client', '@repo/brand', '@repo/config', '@repo/contracts', '@repo/i18n', '@repo/tokens', '@repo/ui-web'],
+  transpilePackages: ['@repo/api-client', '@repo/brand', '@repo/config', '@repo/contracts', '@repo/i18n', '@repo/icons', '@repo/tokens', '@repo/ui-web'],
   poweredByHeader: false,
 };
 
