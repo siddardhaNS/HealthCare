@@ -219,7 +219,9 @@ web3 = 30
 
 [auth.email]
 # Allow/disallow new user signups via email to your project.
-enable_signup = false # staff accounts are created by an admin, never self sign-up
+# Must stay true: the CLI maps false to "email provider disabled", which also blocks
+# staff password sign-in. Self sign-up yields no console role (staff:create grants roles).
+enable_signup = true
 # If enabled, a user will be required to confirm any email change on both the old, and new email
 # addresses. If disabled, only the new email is required to confirm.
 double_confirm_changes = true
