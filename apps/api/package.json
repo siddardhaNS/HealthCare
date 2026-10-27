@@ -18,7 +18,7 @@
     "@repo/db": "workspace:*",
     "@sentry/hono": "11.9.0",
     "@sentry/node": "11.9.0",
-    "@upstash/redis": "1.40.0",
+    "@upstash/redis": "1.39.0",
     "hono": "4.13.14",
     "jose": "6.2.13",
     "standardwebhooks": "1.1.1",

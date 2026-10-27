@@ -19,6 +19,19 @@ allowBuilds:
   sharp: true
   supabase: true
   unrs-resolver: true
+  # Downloads the sentry-cli binary (source-map upload for Sentry).
+  '@sentry/cli': true
 
-minimumReleaseAgeExclude:
-  - '@upstash/redis@1.40.0'
+# One Upstash client version everywhere (drizzle-orm lists it as an optional peer).
+overrides:
+  '@upstash/redis': 1.39.0
+
+# Ignored advisories (reviewed 2026-10-27). Both reach us only through Expo's
+# build CLI (@expo/cli), which runs on dev machines and CI and is not
+# shipped in the apps. Remove when Expo upgrades them.
+# - node-forge <=1.4.0 (no patched release yet), via @expo/code-signing-certificates
+# - zod 3.x memory exhaustion, via @expo/cli (our own code uses zod 4.6.7)
+auditConfig:
+  ignoreGhsas:
+    - GHSA-86w9-cpqp-85rv
+    - GHSA-mrhx-c7xc-m3w5
