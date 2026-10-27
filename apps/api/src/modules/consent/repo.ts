@@ -5,6 +5,8 @@ import type { ConsentRow } from './policy';
 export interface ConsentRepo {
   /** All consent events for a person, newest first (read as that person: RLS applies). */
   history(userId: string): Promise<ConsentRow[]>;
+  /** The same history read by the API for authorised staff (route checks the staff role first). */
+  historyForStaff(userId: string): Promise<ConsentRow[]>;
   /** Appends one consent event, written as the acting user so RLS checks it. */
   record(actorId: string, row: Omit<ConsentRow, 'createdAt' | 'actedBy'>): Promise<ConsentRow>;
 }
@@ -25,6 +27,7 @@ function toRow(r: typeof consents.$inferSelect): ConsentRow {
 export function drizzleConsentRepo(db: Db): ConsentRepo {
   return {
     history: (userId) => asUser(db, { sub: userId }, async (tx) => (await tx.select().from(consents).where(eq(consents.userId, userId)).orderBy(desc(consents.createdAt))).map(toRow)),
+    historyForStaff: async (userId) => (await db.select().from(consents).where(eq(consents.userId, userId)).orderBy(desc(consents.createdAt))).map(toRow),
     record: (actorId, row) =>
       asUser(db, { sub: actorId }, async (tx) => {
         const [r] = await tx

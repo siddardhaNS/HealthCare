@@ -84,9 +84,14 @@ describe('consent API', () => {
     expect(hist.events[0]).toMatchObject({ language: 'te', byManager: false });
   });
 
-  it('records a family manager by their user id', async () => {
+  it('records a family manager by their user id, only for someone in my household', async () => {
     const t = await testContext();
     const headers = await auth(t);
+    // Not in my household yet: refused.
+    const refused = await t.app.request('/v1/consents', { method: 'POST', headers, body: body('manager', 'granted', SON) });
+    expect(refused.status).toBe(409);
+    const hid = await t.hh.repo.createHousehold({ homeId: null, city: 'Hyderabad' }, ME);
+    await t.hh.repo.addMember(hid, SON, 'member', 'son');
     expect((await t.app.request('/v1/consents', { method: 'POST', headers, body: body('manager', 'granted', SON) })).status).toBe(200);
     const list = (await (await t.app.request('/v1/consents', { headers })).json()) as { consents: { purpose: string; scopeKey: string; status: string }[] };
     expect(list.consents).toContainEqual(expect.objectContaining({ purpose: 'manager', scopeKey: SON, status: 'granted' }));

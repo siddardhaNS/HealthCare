@@ -664,6 +664,517 @@
           "createdAt",
           "byManager"
         ]
+      },
+      "HouseholdView": {
+        "type": "object",
+        "properties": {
+          "household": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "city": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "community": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "deskPhone": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "name",
+                  "kind",
+                  "deskPhone"
+                ]
+              },
+              "home": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "tower": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "number": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "tower",
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "city",
+              "community",
+              "home"
+            ]
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HouseholdMember"
+            }
+          },
+          "invites": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HouseholdInvite"
+            }
+          }
+        },
+        "required": [
+          "household",
+          "members",
+          "invites"
+        ]
+      },
+      "HouseholdMember": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fullName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "relation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "member"
+            ]
+          },
+          "isMe": {
+            "type": "boolean"
+          },
+          "managesMe": {
+            "type": "boolean"
+          },
+          "iManage": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "userId",
+          "fullName",
+          "relation",
+          "role",
+          "isMe",
+          "managesMe",
+          "iManage"
+        ]
+      },
+      "HouseholdInvite": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "relation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "phone",
+          "relation",
+          "expiresAt"
+        ]
+      },
+      "CreateHousehold": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "standalone"
+                ]
+              },
+              "name": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "city": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "address": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "pin": {
+                "type": "string",
+                "pattern": "^\\d{6}$"
+              }
+            },
+            "required": [
+              "mode",
+              "city"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "join"
+                ]
+              },
+              "joinCode": {
+                "type": "string",
+                "pattern": "^[A-Z0-9]{6,10}$"
+              },
+              "tower": {
+                "type": "string",
+                "maxLength": 20
+              },
+              "number": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 20
+              }
+            },
+            "required": [
+              "mode",
+              "joinCode",
+              "number"
+            ]
+          }
+        ]
+      },
+      "InviteCreate": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "pattern": "^\\+91[6-9]\\d{9}$",
+            "example": "+919876543210"
+          },
+          "relation": {
+            "type": "string",
+            "maxLength": 40,
+            "example": "son"
+          }
+        },
+        "required": [
+          "phone"
+        ]
+      },
+      "MyInvites": {
+        "type": "object",
+        "properties": {
+          "invites": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MyInvite"
+            }
+          }
+        },
+        "required": [
+          "invites"
+        ]
+      },
+      "MyInvite": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "householdName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "invitedBy": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "relation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "householdName",
+          "invitedBy",
+          "relation",
+          "expiresAt"
+        ]
+      },
+      "Profile": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "fullName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "language": {
+            "$ref": "#/components/schemas/Language"
+          }
+        },
+        "required": [
+          "fullName",
+          "language"
+        ]
+      },
+      "EmergencyContacts": {
+        "type": "object",
+        "properties": {
+          "contacts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EmergencyContact"
+            }
+          }
+        },
+        "required": [
+          "contacts"
+        ]
+      },
+      "EmergencyContact": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/EmergencyContactInput"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "relation": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "required": [
+              "relation",
+              "id"
+            ]
+          }
+        ]
+      },
+      "EmergencyContactInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "relation": {
+            "type": "string",
+            "maxLength": 40,
+            "example": "son"
+          },
+          "phone": {
+            "type": "string",
+            "pattern": "^\\+91[6-9]\\d{9}$",
+            "example": "+919876543210"
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5,
+            "default": 1
+          }
+        },
+        "required": [
+          "name",
+          "phone"
+        ]
+      },
+      "ResidentList": {
+        "type": "object",
+        "properties": {
+          "residents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResidentRow"
+            }
+          }
+        },
+        "required": [
+          "residents"
+        ]
+      },
+      "ResidentRow": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fullName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "community": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tower": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "city": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "member"
+            ]
+          }
+        },
+        "required": [
+          "userId",
+          "fullName",
+          "community",
+          "tower",
+          "number",
+          "city",
+          "phone",
+          "role"
+        ]
+      },
+      "ResidentDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ResidentRow"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "householdSize": {
+                "type": "integer"
+              },
+              "consents": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "$ref": "#/components/schemas/ConsentState"
+                }
+              },
+              "medicalAccess": {
+                "type": "string",
+                "enum": [
+                  "granted",
+                  "not_granted",
+                  "not_permitted"
+                ]
+              }
+            },
+            "required": [
+              "householdSize",
+              "consents",
+              "medicalAccess"
+            ]
+          }
+        ]
       }
     },
     "parameters": {}
@@ -1113,6 +1624,1162 @@
           },
           "401": {
             "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/households/me": {
+      "get": {
+        "operationId": "getMyHousehold",
+        "tags": [
+          "households"
+        ],
+        "summary": "My household, members (with manager links) and open invitations",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Household",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HouseholdView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request (e.g. your own number)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (unknown code, home, invitation or contact)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict (already in a household, home needs an invitation, no household yet)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Invitation expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/households": {
+      "post": {
+        "operationId": "createHousehold",
+        "tags": [
+          "households"
+        ],
+        "summary": "Set up my household: standalone (families) or by community code",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateHousehold"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HouseholdView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request (e.g. your own number)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (unknown code, home, invitation or contact)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict (already in a household, home needs an invitation, no household yet)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Invitation expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/households/invites": {
+      "post": {
+        "operationId": "inviteToHousehold",
+        "tags": [
+          "households"
+        ],
+        "summary": "Invite a relative by phone; they accept after signing in with that number",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InviteCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Invitation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HouseholdInvite"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request (e.g. your own number)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (unknown code, home, invitation or contact)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict (already in a household, home needs an invitation, no household yet)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Invitation expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/households/invites/{id}": {
+      "delete": {
+        "operationId": "revokeHouseholdInvite",
+        "tags": [
+          "households"
+        ],
+        "summary": "Cancel an open invitation",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Cancelled"
+          },
+          "400": {
+            "description": "Invalid request (e.g. your own number)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (unknown code, home, invitation or contact)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict (already in a household, home needs an invitation, no household yet)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Invitation expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me/invites": {
+      "get": {
+        "operationId": "listMyInvites",
+        "tags": [
+          "households"
+        ],
+        "summary": "Invitations sent to my verified phone number",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Invitations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyInvites"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request (e.g. your own number)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (unknown code, home, invitation or contact)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict (already in a household, home needs an invitation, no household yet)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Invitation expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me/invites/{id}/accept": {
+      "post": {
+        "operationId": "acceptHouseholdInvite",
+        "tags": [
+          "households"
+        ],
+        "summary": "Join the household that invited me",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Joined",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HouseholdView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request (e.g. your own number)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (unknown code, home, invitation or contact)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict (already in a household, home needs an invitation, no household yet)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Invitation expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me/profile": {
+      "get": {
+        "operationId": "getMyProfile",
+        "tags": [
+          "households"
+        ],
+        "summary": "My name and language",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profile, or null if not set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Profile"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request (e.g. your own number)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (unknown code, home, invitation or contact)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict (already in a household, home needs an invitation, no household yet)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Invitation expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "saveMyProfile",
+        "tags": [
+          "households"
+        ],
+        "summary": "Set my name and language",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Profile"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Profile"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request (e.g. your own number)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (unknown code, home, invitation or contact)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict (already in a household, home needs an invitation, no household yet)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Invitation expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/people/{userId}/emergency-contacts": {
+      "get": {
+        "operationId": "listEmergencyContacts",
+        "tags": [
+          "households"
+        ],
+        "summary": "A person's emergency contacts (mine, or someone who made me their manager)",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "userId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Contacts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmergencyContacts"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request (e.g. your own number)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (unknown code, home, invitation or contact)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict (already in a household, home needs an invitation, no household yet)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Invitation expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "addEmergencyContact",
+        "tags": [
+          "households"
+        ],
+        "summary": "Add an emergency contact",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "userId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmergencyContactInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmergencyContact"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request (e.g. your own number)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (unknown code, home, invitation or contact)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict (already in a household, home needs an invitation, no household yet)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Invitation expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/people/{userId}/emergency-contacts/{id}": {
+      "delete": {
+        "operationId": "removeEmergencyContact",
+        "tags": [
+          "households"
+        ],
+        "summary": "Remove an emergency contact",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "userId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Removed"
+          },
+          "400": {
+            "description": "Invalid request (e.g. your own number)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (unknown code, home, invitation or contact)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict (already in a household, home needs an invitation, no household yet)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Invitation expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/residents": {
+      "get": {
+        "operationId": "listResidents",
+        "tags": [
+          "residents"
+        ],
+        "summary": "Residents directory (community desk: their own community only; no medical data)",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 60
+            },
+            "required": false,
+            "name": "q",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Residents",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResidentList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/residents/{userId}": {
+      "get": {
+        "operationId": "getResident",
+        "tags": [
+          "residents"
+        ],
+        "summary": "Resident profile: consent state for the care team, medical access per consent; every view is logged",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "userId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resident",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResidentDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
             "content": {
               "application/json": {
                 "schema": {

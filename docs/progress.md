@@ -1,5 +1,35 @@
 # Progress
 
+## 2026-10-27 · Phase 2, step 2: households & family API, console residents directory
+
+### Done
+- **Migration `…_profiles_invites.sql`**: `profiles` (name, language; visible to yourself and your household), `household_invites`, and a `shares_household` helper.
+- **Households API**:
+  - `GET /v1/households/me`; `POST /v1/households` (standalone for families, or join by community code + villa/flat).
+  - Invitations: `POST /v1/households/invites`, `DELETE …/{id}`, `GET /v1/me/invites`, `POST /v1/me/invites/{id}/accept`.
+  - Profile: `GET|PUT /v1/me/profile`.
+  - Emergency contacts: `/v1/people/{userId}/emergency-contacts`, for yourself or someone who made you their manager.
+  - Rules:
+    - One household per person.
+    - **A code + flat number can only start a household for an empty home; joining an existing household always needs an invite from a member.**
+    - Invites last 7 days and can only be accepted by the invited (verified) phone number.
+    - **A manager must be in your household** (enforced when the consent is recorded); withdrawing it removes access at once.
+- **Residents directory** (web console, `/residents` and `/residents/[id]`, API `/v1/residents`):
+  - The community desk sees only its own community (scope from `user_roles`) and never consent detail or medical data.
+  - The care team (super admin, operations, support) sees everyone and each person's consent state (read-only).
+  - Medical access shows as granted only with the person's `proactive_care` consent; the medical sections arrive with the health record step.
+  - **Phone numbers are masked for all staff** (brief: never show residents' personal numbers to staff).
+  - Every profile view is written to `audit_events`.
+  - Strings in en/te/hi.
+- 97 API tests (23 new: households, invitations, managers, contacts, directory scope), mutation-checked on the household-join guard.
+
+### Not verified yet
+- As before, new SQL is parsed by the Postgres 17 parser but not executed (no Docker); the residents query joins `auth.users` for phone numbers and needs a real database to confirm.
+
+### Next
+1. Health record API + console resident profile medical sections (care team, with consent) — web first.
+2. Resident app screens (Android): onboarding (profile, household, family invites, consent screen), Health tab, home snapshot, Privacy.
+
 ## 2026-10-27 · Phase 2, step 1: consent, households and health-record foundations
 
 Plan approved today: `docs/plans/phase-2-households-consent.md` (all recommendations; assisted onboarding dropped).

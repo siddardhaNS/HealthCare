@@ -2,6 +2,7 @@ import { OpenAPIHono, createRoute } from '@hono/zod-openapi';
 import { ConsentHistory, ConsentList, ConsentState, ConsentUpdate, ErrorBody, type ErrorBody as ErrorBodyT } from '@repo/contracts';
 import type { AppEnv } from '../../app';
 import { requireAuth } from '../../middleware/auth';
+import { areCoMembers } from '../households/service';
 import { checkUpdate, currentState } from './policy';
 
 const security = [{ bearer: [] }];
@@ -57,6 +58,10 @@ export const consentRoutes = new OpenAPIHono<AppEnv>()
     const body = c.req.valid('json');
     const check = checkUpdate(me, body);
     if (!check.ok) return c.json({ error: { code: check.code, message: check.message, requestId: c.get('requestId') } } satisfies ErrorBodyT, 409);
+    // A manager must be someone in my household.
+    if (body.purpose === 'manager' && body.status === 'granted' && !(await areCoMembers(c.get('deps').households, me, body.scopeKey))) {
+      return c.json({ error: { code: 'bad_scope', message: 'Only someone in your household can manage your care.', requestId: c.get('requestId') } } satisfies ErrorBodyT, 409);
+    }
     const repo = c.get('deps').consents;
     await repo.record(me, { userId: me, purpose: body.purpose, scopeKey: body.scopeKey, status: body.status, noticeVersion: body.noticeVersion, language: body.language });
     const state = currentState(await repo.history(me)).find((s) => s.purpose === body.purpose && s.scopeKey === body.scopeKey)!;

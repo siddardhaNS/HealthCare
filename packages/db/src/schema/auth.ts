@@ -1,4 +1,4 @@
-import { index, integer, pgEnum, pgTable, text, timestamp, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
+import { index, integer, pgEnum, pgSchema, pgTable, text, timestamp, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
 
 /** Mirror of supabase/migrations/*_auth.sql. */
 export const appRole = pgEnum('app_role', [
@@ -70,4 +70,12 @@ export const messagingOptins = pgTable('messaging_optins', {
   status: text('status', { enum: ['opted_in', 'opted_out'] }).notNull(),
   source: text('source', { enum: ['signin', 'profile', 'stop_reply', 'console'] }).notNull(),
   consentVersion: text('consent_version'),
+});
+
+/** Read-only view of Supabase's auth.users (phone and email only). */
+const authSchema = pgSchema('auth');
+export const authUsers = authSchema.table('users', {
+  id: uuid('id').primaryKey(),
+  phone: text('phone'),
+  email: text('email'),
 });

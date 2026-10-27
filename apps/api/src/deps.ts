@@ -5,7 +5,9 @@ import { memoryKv, upstashKv, type Kv } from './lib/kv';
 import { createTokenVerifier, type TokenVerifier } from './middleware/auth';
 import { cloudApiWhatsApp, logSms, logWhatsApp, msg91Sms } from './modules/messaging/providers';
 import { drizzleConsentRepo, type ConsentRepo } from './modules/consent/repo';
+import { drizzleHouseholdsRepo, type HouseholdsRepo } from './modules/households/repo';
 import { drizzleLeadsRepo, type LeadsRepo } from './modules/leads/repo';
+import { drizzleResidentsRepo, type ResidentsRepo } from './modules/residents/repo';
 import { drizzleMessagingRepo } from './modules/messaging/repo';
 import { logMailer, type Mailer } from './modules/notifications/mailer';
 import type { MessagingDeps } from './modules/messaging/service';
@@ -56,6 +58,8 @@ export interface Deps {
   kv: Kv;
   leads: LeadsRepo;
   consents: ConsentRepo;
+  households: HouseholdsRepo;
+  residents: ResidentsRepo;
   mailer: Mailer;
   messaging: MessagingDeps;
   verifyToken: TokenVerifier;
@@ -86,6 +90,8 @@ export function depsFromEnv(source: NodeJS.ProcessEnv = process.env): Deps {
     kv,
     leads: drizzleLeadsRepo(db),
     consents: drizzleConsentRepo(db),
+    households: drizzleHouseholdsRepo(db),
+    residents: drizzleResidentsRepo(db),
     mailer: logMailer(),
     messaging: {
       kv,

@@ -40,7 +40,7 @@ describe('consent notices', () => {
     const { consentPurposes } = await import('@repo/contracts/consent');
     for (const lng of ['en', 'te', 'hi'] as const) {
       const consent = (resources[lng].translation as unknown as { consent: Record<string, { title: string; body: string }> }).consent;
-      for (const p of consentPurposes.filter((x) => x !== 'whatsapp_updates')) {
+      for (const p of consentPurposes) {
         expect(consent[p]?.title, `${lng}.${p}`).toBeTruthy();
         expect(consent[p]?.body, `${lng}.${p}`).toBeTruthy();
       }

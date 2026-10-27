@@ -185,3 +185,106 @@ export const ConsentEvent = z
   .object({ purpose: ConsentPurposeSchema, scopeKey: z.string(), status: z.enum(['granted', 'withdrawn']), noticeVersion: z.string(), language: Language, createdAt: z.string().datetime(), byManager: z.boolean() })
   .openapi('ConsentEvent');
 export const ConsentHistory = z.object({ events: z.array(ConsentEvent) }).openapi('ConsentHistory');
+
+// ── Profiles, households and family ─────────────────────────────────────
+
+export const Profile = z
+  .object({ fullName: z.string().trim().min(1, 'Enter your name').max(80), language: Language })
+  .openapi('Profile');
+export type Profile = z.infer<typeof Profile>;
+
+export const Relation = z.string().trim().max(40).openapi({ example: 'son' });
+
+export const CreateHousehold = z
+  .discriminatedUnion('mode', [
+    z.object({
+      mode: z.literal('standalone'),
+      name: z.string().trim().max(80).optional(),
+      city: z.string().trim().min(1, 'Enter the city').max(80),
+      address: z.string().trim().max(200).optional(),
+      pin: z.string().trim().regex(/^\d{6}$/, 'PIN code should be 6 digits').optional(),
+    }),
+    z.object({
+      mode: z.literal('join'),
+      joinCode: z.string().trim().toUpperCase().regex(/^[A-Z0-9]{6,10}$/, 'Enter the code from your association'),
+      tower: z.string().trim().max(20).optional(),
+      number: z.string().trim().min(1, 'Enter your villa or flat number').max(20),
+    }),
+  ])
+  .openapi('CreateHousehold');
+export type CreateHousehold = z.infer<typeof CreateHousehold>;
+
+export const HouseholdMember = z
+  .object({
+    userId: z.string().uuid(),
+    fullName: z.string().nullable(),
+    relation: z.string().nullable(),
+    role: z.enum(['owner', 'member']),
+    isMe: z.boolean(),
+    /** This person may manage my care (I granted it). */
+    managesMe: z.boolean(),
+    /** I may manage this person's care (they granted it). */
+    iManage: z.boolean(),
+  })
+  .openapi('HouseholdMember');
+
+export const HouseholdInvite = z
+  .object({ id: z.string().uuid(), phone: z.string(), relation: z.string().nullable(), expiresAt: z.string().datetime() })
+  .openapi('HouseholdInvite');
+
+export const HouseholdView = z
+  .object({
+    household: z
+      .object({
+        id: z.string().uuid(),
+        name: z.string().nullable(),
+        city: z.string().nullable(),
+        community: z.object({ name: z.string(), kind: z.string(), deskPhone: z.string().nullable() }).nullable(),
+        home: z.object({ tower: z.string().nullable(), number: z.string() }).nullable(),
+      })
+      .nullable(),
+    members: z.array(HouseholdMember),
+    invites: z.array(HouseholdInvite),
+  })
+  .openapi('HouseholdView');
+export type HouseholdView = z.infer<typeof HouseholdView>;
+
+export const InviteCreate = z.object({ phone: PhoneIN, relation: Relation.optional() }).openapi('InviteCreate');
+
+export const MyInvite = z
+  .object({ id: z.string().uuid(), householdName: z.string().nullable(), invitedBy: z.string().nullable(), relation: z.string().nullable(), expiresAt: z.string().datetime() })
+  .openapi('MyInvite');
+export const MyInvites = z.object({ invites: z.array(MyInvite) }).openapi('MyInvites');
+
+export const EmergencyContactInput = z
+  .object({ name: z.string().trim().min(1, 'Enter a name').max(80), relation: Relation.optional(), phone: PhoneIN, priority: z.number().int().min(1).max(5).default(1) })
+  .openapi('EmergencyContactInput');
+export const EmergencyContact = EmergencyContactInput.extend({ id: z.string().uuid(), relation: z.string().nullable() }).openapi('EmergencyContact');
+export const EmergencyContacts = z.object({ contacts: z.array(EmergencyContact) }).openapi('EmergencyContacts');
+
+// ── Console: residents directory ────────────────────────────────────────
+
+export const ResidentRow = z
+  .object({
+    userId: z.string().uuid(),
+    fullName: z.string().nullable(),
+    community: z.string().nullable(),
+    tower: z.string().nullable(),
+    number: z.string().nullable(),
+    city: z.string().nullable(),
+    /** Always masked: staff never see residents' personal numbers. */
+    phone: z.string().nullable(),
+    role: z.enum(['owner', 'member']),
+  })
+  .openapi('ResidentRow');
+export type ResidentRow = z.infer<typeof ResidentRow>;
+export const ResidentList = z.object({ residents: z.array(ResidentRow) }).openapi('ResidentList');
+
+export const ResidentDetail = ResidentRow.extend({
+  householdSize: z.number().int(),
+  /** Care team only; null for the community desk. */
+  consents: z.array(ConsentState).nullable(),
+  /** Whether this viewer may see medical details (care team + the person's proactive_care consent). */
+  medicalAccess: z.enum(['granted', 'not_granted', 'not_permitted']),
+}).openapi('ResidentDetail');
+export type ResidentDetail = z.infer<typeof ResidentDetail>;

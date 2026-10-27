@@ -8,6 +8,8 @@ import { createTokenVerifier } from '../src/middleware/auth';
 import { ProviderError, type SmsSend, type WhatsAppSend } from '../src/modules/messaging/providers';
 import type { Lead } from '@repo/contracts';
 import type { ConsentRepo } from '../src/modules/consent/repo';
+import type { ResidentsRepo } from '../src/modules/residents/repo';
+import { fakeHouseholds } from './fake-households';
 import type { ConsentRow } from '../src/modules/consent/policy';
 import { newLeadRef, type LeadsRepo } from '../src/modules/leads/repo';
 import type { MessageLogInput, MessagingRepo, OptinInput } from '../src/modules/messaging/repo';
@@ -88,9 +90,33 @@ export async function testContext(opts: { whatsappFails?: boolean; mailerFails?:
   const store = fakeRepo();
   const leads = fakeLeads();
   const consentRows: ConsentRow[] = [];
+  const hh = fakeHouseholds(consentRows);
+  const residentViews: { staffId: string; role: string; residentId: string }[] = [];
+  const deskScopes = new Map<string, string[]>();
+  const residents: ResidentsRepo = {
+    async deskSites(staffId) {
+      return deskScopes.get(staffId) ?? [];
+    },
+    async list({ siteIds, q }) {
+      const all = await hh.residents();
+      return all.filter((r) => (siteIds === 'all' || (r.siteId && siteIds.includes(r.siteId))) && (!q || `${r.fullName} ${r.number} ${r.community}`.toLowerCase().includes(q.toLowerCase())));
+    },
+    async get(userId) {
+      return (await hh.residents()).find((r) => r.userId === userId) ?? null;
+    },
+    async householdSize(householdId) {
+      return hh.members.filter((m) => m.householdId === householdId).length;
+    },
+    async logView(staffId, role, residentId) {
+      residentViews.push({ staffId, role, residentId });
+    },
+  };
   let tick = Date.parse('2026-10-27T00:00:00Z');
   const consents: ConsentRepo = {
     async history(userId) {
+      return consentRows.filter((r) => r.userId === userId).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    },
+    async historyForStaff(userId) {
       return consentRows.filter((r) => r.userId === userId).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     },
     async record(actorId, row) {
@@ -111,6 +137,8 @@ export async function testContext(opts: { whatsappFails?: boolean; mailerFails?:
     kv,
     leads: leads.repo,
     consents,
+    households: hh.repo,
+    residents,
     mailer: {
       async send(msg) {
         if (opts.mailerFails) throw new Error('smtp down');
@@ -177,7 +205,7 @@ export async function testContext(opts: { whatsappFails?: boolean; mailerFails?:
     return app.request('/webhooks/whatsapp', { method: 'POST', headers: { 'content-type': 'application/json', 'x-hub-signature-256': sig }, body: raw });
   }
 
-  return { app, deps, kv, ...store, leads: leads.rows, consentRows, mail, whatsappSent, smsSent, token, sendSmsHook, whatsappWebhook };
+  return { app, deps, kv, ...store, leads: leads.rows, consentRows, hh, residentViews, deskScopes, mail, whatsappSent, smsSent, token, sendSmsHook, whatsappWebhook };
 }
 
 export const statusEvent = (id: string, status: string, code?: number) => ({

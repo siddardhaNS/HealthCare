@@ -24,6 +24,11 @@ export default async function ConsoleLayout({ children }: { children: ReactNode 
           <Link href="/" className="rounded-control px-3 py-2 font-semibold text-text-muted hover:bg-surface hover:text-text">
             {t('console.commandCenter')}
           </Link>
+          {claims.roles.some((r) => r === 'super_admin' || r === 'operations' || r === 'support' || r === 'community_desk') ? (
+            <Link href="/residents" className="rounded-control px-3 py-2 font-semibold text-text-muted hover:bg-surface hover:text-text">
+              {t('console.residents.title')}
+            </Link>
+          ) : null}
           {claims.roles.some((r) => r === 'super_admin' || r === 'operations') ? (
             <Link href="/leads" className="rounded-control px-3 py-2 font-semibold text-text-muted hover:bg-surface hover:text-text">
               {t('console.leads.title')}

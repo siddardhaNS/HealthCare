@@ -107,6 +107,33 @@
         "employer": "Employer",
         "family": "Family"
       }
+    },
+    "residents": {
+      "title": "Residents",
+      "home": "Home",
+      "search": "Search by name, home or community",
+      "searchButton": "Search",
+      "empty": "No residents found.",
+      "noName": "Name not set yet",
+      "standalone": "Own home (no community)",
+      "owner": "Household owner",
+      "member": "Household member",
+      "back": "All residents",
+      "household": "People in household: {{count}}",
+      "phoneNote": "Personal numbers are hidden from staff. Calls go through the app.",
+      "consents": "Consent (read-only)",
+      "consentsNote": "Only the resident can change these, in their app.",
+      "medical": "Medical details",
+      "medical_granted": "The resident lets the care team see their readings. Medical details appear here once the health record is live.",
+      "medical_not_granted": "The resident has not asked the care team to watch their readings, so medical details are not shown.",
+      "medical_not_permitted": "Community desk accounts never see medical details.",
+      "status": {
+        "granted": "On",
+        "withdrawn": "Off",
+        "not_asked": "Not asked yet"
+      },
+      "outdated": "agreed to an older notice",
+      "viewLogged": "Your view of this profile is recorded."
     }
   },
   "auth": {
@@ -165,6 +192,10 @@
     "doctor_share": {
       "title": "Share with the doctor",
       "body": "The doctor sees only what I tick here, for this consult only."
+    },
+    "whatsapp_updates": {
+      "title": "WhatsApp updates",
+      "body": "We'll also send booking and service updates on WhatsApp. Reply STOP at any time to stop them."
     }
   }
 }
