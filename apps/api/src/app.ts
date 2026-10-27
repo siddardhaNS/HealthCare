@@ -7,6 +7,7 @@ import { ConfigError, depsFromEnv, type Deps } from './deps';
 import type { AccessClaims } from './middleware/auth';
 import { authHookRoutes, authRoutes } from './modules/auth/routes';
 import { consentRoutes } from './modules/consent/routes';
+import { healthRoutes } from './modules/health/routes';
 import { householdRoutes } from './modules/households/routes';
 import { residentRoutes } from './modules/residents/routes';
 import { leadsRoutes } from './modules/leads/routes';
@@ -64,6 +65,7 @@ export function createApp(options: CreateAppOptions = {}) {
   app.route('/v1', consentRoutes);
   app.route('/v1', householdRoutes);
   app.route('/v1', residentRoutes);
+  app.route('/v1', healthRoutes);
   app.route('/', whatsappWebhookRoutes);
 
   app.notFound((c) => c.json<ErrorBody>({ error: { code: 'not_found', message: 'Not found', requestId: c.get('requestId') } }, 404));

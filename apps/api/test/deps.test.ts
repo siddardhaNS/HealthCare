@@ -7,6 +7,7 @@ const base = {
   SEND_SMS_HOOK_SECRET: `v1,whsec_${Buffer.alloc(32, 7).toString('base64')}`,
   OTP_FALLBACK_KEY: Buffer.alloc(32, 9).toString('base64'),
   PHONE_HASH_KEY: 'k'.repeat(32),
+  FIELD_ENC_KEY: Buffer.alloc(32, 3).toString('base64'),
 };
 
 describe('depsFromEnv', () => {

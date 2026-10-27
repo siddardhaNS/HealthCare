@@ -5,6 +5,7 @@ import { memoryKv, upstashKv, type Kv } from './lib/kv';
 import { createTokenVerifier, type TokenVerifier } from './middleware/auth';
 import { cloudApiWhatsApp, logSms, logWhatsApp, msg91Sms } from './modules/messaging/providers';
 import { drizzleConsentRepo, type ConsentRepo } from './modules/consent/repo';
+import { drizzleHealthRepo, type HealthRepo } from './modules/health/repo';
 import { drizzleHouseholdsRepo, type HouseholdsRepo } from './modules/households/repo';
 import { drizzleLeadsRepo, type LeadsRepo } from './modules/leads/repo';
 import { drizzleResidentsRepo, type ResidentsRepo } from './modules/residents/repo';
@@ -24,6 +25,8 @@ const Env = z
     SEND_SMS_HOOK_SECRET: z.string().startsWith('v1,whsec_'),
     OTP_FALLBACK_KEY: z.string().refine((v) => Buffer.from(v, 'base64').length === 32, 'must be 32 bytes, base64'),
     PHONE_HASH_KEY: z.string().min(32),
+    /** 32 bytes, base64: encrypts clinical free text (condition notes) before storage. */
+    FIELD_ENC_KEY: z.string().refine((v) => Buffer.from(v, 'base64').length === 32, 'must be 32 bytes, base64'),
     MESSAGING_MODE: z.enum(['live', 'log']).default('log'),
     WHATSAPP_PHONE_NUMBER_ID: z.string().optional(),
     WHATSAPP_ACCESS_TOKEN: z.string().optional(),
@@ -60,6 +63,7 @@ export interface Deps {
   consents: ConsentRepo;
   households: HouseholdsRepo;
   residents: ResidentsRepo;
+  health: HealthRepo;
   mailer: Mailer;
   messaging: MessagingDeps;
   verifyToken: TokenVerifier;
@@ -70,6 +74,7 @@ export interface Deps {
     whatsappVerifyToken: string | null;
     salesInbox: string;
     consoleUrl: string;
+    fieldKey: Buffer;
   };
 }
 
@@ -92,6 +97,7 @@ export function depsFromEnv(source: NodeJS.ProcessEnv = process.env): Deps {
     consents: drizzleConsentRepo(db),
     households: drizzleHouseholdsRepo(db),
     residents: drizzleResidentsRepo(db),
+    health: drizzleHealthRepo(db),
     mailer: logMailer(),
     messaging: {
       kv,
@@ -111,6 +117,7 @@ export function depsFromEnv(source: NodeJS.ProcessEnv = process.env): Deps {
       whatsappVerifyToken: env.WHATSAPP_VERIFY_TOKEN ?? null,
       salesInbox: env.SALES_INBOX_EMAIL,
       consoleUrl: env.CONSOLE_URL.replace(/\/$/, ''),
+      fieldKey: Buffer.from(env.FIELD_ENC_KEY, 'base64'),
     },
   };
 }

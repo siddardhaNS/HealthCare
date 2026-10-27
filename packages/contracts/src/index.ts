@@ -288,3 +288,116 @@ export const ResidentDetail = ResidentRow.extend({
   medicalAccess: z.enum(['granted', 'not_granted', 'not_permitted']),
 }).openapi('ResidentDetail');
 export type ResidentDetail = z.infer<typeof ResidentDetail>;
+
+// ── Health record ───────────────────────────────────────────────────────
+
+export * from './vitals';
+import { vitalTypes as _vitalTypes } from './vitals';
+
+export const VitalTypeSchema = z.enum(_vitalTypes).openapi('VitalType');
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD');
+
+export const HealthProfile = z
+  .object({
+    bloodGroup: z.enum(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']).nullable(),
+    heightCm: z.number().min(50).max(250).nullable(),
+    dateOfBirth: isoDate.nullable(),
+    sex: z.enum(['female', 'male', 'other']).nullable(),
+  })
+  .openapi('HealthProfile');
+export type HealthProfile = z.infer<typeof HealthProfile>;
+
+export const VitalStatusSchema = z.object({ key: z.string(), level: z.enum(['ok', 'warn', 'danger']) }).openapi('VitalStatus');
+
+export const VitalReadingInput = z
+  .object({
+    type: VitalTypeSchema,
+    value: z.number(),
+    /** Diastolic, for blood pressure only. */
+    value2: z.number().optional(),
+    context: z.enum(['fasting', 'post_meal', 'random']).optional(),
+    takenAt: z.string().datetime().optional(),
+  })
+  .openapi('VitalReadingInput');
+export type VitalReadingInput = z.infer<typeof VitalReadingInput>;
+
+export const VitalReading = z
+  .object({
+    id: z.string().uuid(),
+    type: VitalTypeSchema,
+    value: z.number(),
+    value2: z.number().nullable(),
+    unit: z.string(),
+    context: z.string().nullable(),
+    source: z.string(),
+    takenAt: z.string().datetime(),
+    status: VitalStatusSchema,
+    /** Entered by someone other than the person (a manager or the care team). */
+    enteredByOther: z.boolean(),
+  })
+  .openapi('VitalReading');
+export type VitalReading = z.infer<typeof VitalReading>;
+
+export const VitalSeries = z
+  .object({ type: VitalTypeSchema, unit: z.string(), target: z.object({ low: z.number(), high: z.number() }).nullable(), readings: z.array(VitalReading) })
+  .openapi('VitalSeries');
+
+export const ConditionInput = z
+  .object({
+    name: z.string().trim().min(1).max(120),
+    status: z.enum(['controlled', 'monitoring', 'active', 'resolved']),
+    diagnosedOn: isoDate.optional(),
+    notes: z.string().trim().max(2000).optional(),
+  })
+  .openapi('ConditionInput');
+export const Condition = ConditionInput.extend({ id: z.string().uuid(), diagnosedOn: isoDate.nullable(), notes: z.string().nullable() }).openapi('Condition');
+export type Condition = z.infer<typeof Condition>;
+
+export const AllergyInput = z
+  .object({ substance: z.string().trim().min(1).max(120), severity: z.enum(['mild', 'moderate', 'severe']), reaction: z.string().trim().max(200).optional() })
+  .openapi('AllergyInput');
+export const Allergy = AllergyInput.extend({ id: z.string().uuid(), reaction: z.string().nullable() }).openapi('Allergy');
+export type Allergy = z.infer<typeof Allergy>;
+
+const hhmm = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Use HH:MM');
+export const MedicationInput = z
+  .object({
+    name: z.string().trim().min(1).max(120),
+    strength: z.string().trim().max(40).optional(),
+    dose: z.string().trim().max(60).optional(),
+    frequency: z.string().trim().max(60).optional(),
+    /** Local times doses are due. */
+    schedule: z.array(hhmm).max(8).default([]),
+    startDate: isoDate.optional(),
+    endDate: isoDate.optional(),
+  })
+  .openapi('MedicationInput');
+export const DoseToday = z.object({ time: hhmm, status: z.enum(['taken', 'missed', 'skipped', 'due']) }).openapi('DoseToday');
+export const Medication = MedicationInput.extend({
+  id: z.string().uuid(),
+  strength: z.string().nullable(),
+  dose: z.string().nullable(),
+  frequency: z.string().nullable(),
+  startDate: isoDate.nullable(),
+  endDate: isoDate.nullable(),
+  active: z.boolean(),
+  /** Taken ÷ scheduled over the last 30 days, 0–100; null without a schedule or history. */
+  adherence30: z.number().int().min(0).max(100).nullable(),
+  today: z.array(DoseToday),
+}).openapi('Medication');
+export type Medication = z.infer<typeof Medication>;
+
+export const DoseMark = z.object({ time: hhmm, date: isoDate, status: z.enum(['taken', 'skipped']) }).openapi('DoseMark');
+
+export const HealthSummary = z
+  .object({
+    profile: HealthProfile,
+    age: z.number().int().nullable(),
+    bmi: z.number().nullable(),
+    latest: z.object({ bp: VitalReading.nullable(), pulse: VitalReading.nullable(), spo2: VitalReading.nullable(), sugar: VitalReading.nullable(), temp: VitalReading.nullable(), weight: VitalReading.nullable() }),
+    conditions: z.array(Condition),
+    allergies: z.array(Allergy),
+    medications: z.array(Medication),
+  })
+  .openapi('HealthSummary');
+export type HealthSummary = z.infer<typeof HealthSummary>;

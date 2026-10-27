@@ -5,6 +5,7 @@ import type { components, paths } from './generated/schema';
 
 export type { components, paths };
 export type Schemas = components['schemas'];
+export type HealthSummary = Schemas['HealthSummary'];
 
 export interface ApiClientOptions {
   baseUrl: string;

@@ -124,7 +124,7 @@
       "consents": "Consent (read-only)",
       "consentsNote": "Only the resident can change these, in their app.",
       "medical": "Medical details",
-      "medical_granted": "The resident lets the care team see their readings. Medical details appear here once the health record is live.",
+      "medical_granted": "The resident lets the care team see their readings.",
       "medical_not_granted": "The resident has not asked the care team to watch their readings, so medical details are not shown.",
       "medical_not_permitted": "Community desk accounts never see medical details.",
       "status": {
@@ -197,5 +197,57 @@
       "title": "WhatsApp updates",
       "body": "We'll also send booking and service updates on WhatsApp. Reply STOP at any time to stop them."
     }
+  },
+  "health": {
+    "vitals": {
+      "bp": "Blood pressure",
+      "pulse": "Heart rate",
+      "spo2": "Oxygen",
+      "sugar": "Blood sugar",
+      "temp": "Temperature",
+      "weight": "Weight"
+    },
+    "status": {
+      "normal": "Normal",
+      "elevated": "Elevated",
+      "high": "High",
+      "crisis": "Crisis",
+      "low": "Low",
+      "outside_range": "Outside range",
+      "abnormal": "Abnormal",
+      "below_normal": "Below normal",
+      "in_target": "In target",
+      "above_target": "Above target",
+      "fever": "Fever",
+      "slightly_high": "Slightly high",
+      "underweight": "Underweight",
+      "healthy_bmi": "Healthy BMI",
+      "overweight": "Overweight",
+      "obese": "Obese",
+      "unknown": "Add height to judge"
+    },
+    "conditionStatus": {
+      "controlled": "Controlled",
+      "monitoring": "Monitoring",
+      "active": "Active",
+      "resolved": "Resolved"
+    },
+    "severity": {
+      "mild": "Mild",
+      "moderate": "Moderate",
+      "severe": "Severe"
+    },
+    "conditions": "Conditions",
+    "allergies": "Allergies",
+    "medicines": "Medicines",
+    "adherence": "{{pct}}% taken in 30 days",
+    "noAdherence": "No dose times set",
+    "none": "None recorded",
+    "noReading": "No reading yet",
+    "bloodGroup": "Blood group",
+    "age": "Age",
+    "bmi": "BMI",
+    "takenAt": "Taken {{when}}",
+    "byOther": "entered by family or care team"
   }
 }

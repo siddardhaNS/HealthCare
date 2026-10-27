@@ -1,5 +1,27 @@
 # Progress
 
+## 2026-10-27 · Phase 2, step 3: health record API and console medical view
+
+### Done
+- **Shared vital rules** (`@repo/contracts/vitals`, browser-safe): units, accepted ranges, target bands, the design's status rules (e.g. BP ≥ 140/90 = High), BMI. 21 tests.
+- **Health API** (`/v1/people/{userId}/health/…`, for the person or their manager; runs as the user so RLS applies):
+  - summary (profile, latest of each vital, conditions, allergies, medicines), profile, vital series with target band, log/remove reading
+  - conditions (notes **encrypted at rest** with `FIELD_ENC_KEY`), allergies, medicines with dose times
+  - dose check-off (today and the past week, scheduled times only) and **30-day adherence** (taken ÷ due, IST)
+  - readings are validated (impossible values, BP without diastolic, future times are refused)
+  - entries made by a manager or the care team are marked
+- **Care team view** `GET /v1/residents/{userId}/health`: super admin / operations / support only, **only with the person's `proactive_care` consent**; every view is written to `record_shares` and `audit_events`.
+- **Console resident profile** now shows the medical section when allowed: six vitals with status colours, blood group / age / BMI, conditions, allergies with severity, medicines with adherence. Strings in en/te/hi (shared `health.*`, reusable by the app).
+- 113 API tests (16 new), mutation-checked on the consent gate and the access guard.
+
+### Testing in Chrome (new standing practice)
+From now on each feature is also clicked through in Chrome. The console flows (residents, health view, leads) need staff sign-in, so they need the local Supabase stack, i.e. **Docker Desktop running**.
+
+### Next
+1. Chrome walkthrough of console flows once Docker is up (and fixes from the first real database run).
+2. Vaccinations, insurance e-card, devices (remaining health-record parts).
+3. Resident app screens on Android.
+
 ## 2026-10-27 · Phase 2, step 2: households & family API, console residents directory
 
 ### Done

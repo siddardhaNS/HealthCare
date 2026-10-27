@@ -10,6 +10,7 @@ import type { Lead } from '@repo/contracts';
 import type { ConsentRepo } from '../src/modules/consent/repo';
 import type { ResidentsRepo } from '../src/modules/residents/repo';
 import { fakeHouseholds } from './fake-households';
+import { fakeHealth } from './fake-health';
 import type { ConsentRow } from '../src/modules/consent/policy';
 import { newLeadRef, type LeadsRepo } from '../src/modules/leads/repo';
 import type { MessageLogInput, MessagingRepo, OptinInput } from '../src/modules/messaging/repo';
@@ -91,6 +92,7 @@ export async function testContext(opts: { whatsappFails?: boolean; mailerFails?:
   const leads = fakeLeads();
   const consentRows: ConsentRow[] = [];
   const hh = fakeHouseholds(consentRows);
+  const health = fakeHealth(hh.repo, consentRows);
   const residentViews: { staffId: string; role: string; residentId: string }[] = [];
   const deskScopes = new Map<string, string[]>();
   const residents: ResidentsRepo = {
@@ -139,6 +141,7 @@ export async function testContext(opts: { whatsappFails?: boolean; mailerFails?:
     consents,
     households: hh.repo,
     residents,
+    health: health.repo,
     mailer: {
       async send(msg) {
         if (opts.mailerFails) throw new Error('smtp down');
@@ -172,6 +175,7 @@ export async function testContext(opts: { whatsappFails?: boolean; mailerFails?:
       whatsappVerifyToken: WA_VERIFY_TOKEN,
       salesInbox: 'sales@example.test',
       consoleUrl: 'https://console.example.test',
+      fieldKey: randomBytes(32),
     },
   };
 
@@ -205,7 +209,7 @@ export async function testContext(opts: { whatsappFails?: boolean; mailerFails?:
     return app.request('/webhooks/whatsapp', { method: 'POST', headers: { 'content-type': 'application/json', 'x-hub-signature-256': sig }, body: raw });
   }
 
-  return { app, deps, kv, ...store, leads: leads.rows, consentRows, hh, residentViews, deskScopes, mail, whatsappSent, smsSent, token, sendSmsHook, whatsappWebhook };
+  return { app, deps, kv, ...store, leads: leads.rows, consentRows, hh, health, residentViews, deskScopes, mail, whatsappSent, smsSent, token, sendSmsHook, whatsappWebhook };
 }
 
 export const statusEvent = (id: string, status: string, code?: number) => ({

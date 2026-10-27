@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { createI18n } from '@repo/i18n';
 import { Card, cn } from '@repo/ui-web';
 import { serverApi } from '@/lib/api';
+import { MedicalSection } from './medical';
 
 // Resident profile. Consent is read-only (only the resident changes it, in
 // their app). Medical details follow the resident's proactive_care consent;
@@ -13,6 +14,8 @@ export default async function ResidentPage({ params }: { params: Promise<{ userI
   const api = await serverApi();
   const { data, response } = await api.GET('/v1/residents/{userId}', { params: { path: { userId } } });
   if (response.status === 404) notFound();
+  // The API checks the role and the person's consent again, and records the disclosure.
+  const medical = data?.medicalAccess === 'granted' ? (await api.GET('/v1/residents/{userId}/health', { params: { path: { userId } } })).data : undefined;
 
   if (!data) {
     return (
@@ -46,11 +49,22 @@ export default async function ResidentPage({ params }: { params: Promise<{ userI
           </span>
         </Card>
 
-        <Card className="flex flex-col gap-2 rounded-panel">
-          <h2 className="font-display text-title font-bold">{t('console.residents.medical')}</h2>
-          <p className={cn('text-small', data.medicalAccess === 'granted' ? 'text-text' : 'text-text-muted')}>{t(`console.residents.medical_${data.medicalAccess}`)}</p>
-        </Card>
+        {!medical ? (
+          <Card className="flex flex-col gap-2 rounded-panel">
+            <h2 className="font-display text-title font-bold">{t('console.residents.medical')}</h2>
+            <p className="text-small text-text-muted">{t(`console.residents.medical_${data.medicalAccess}`)}</p>
+          </Card>
+        ) : null}
       </div>
+
+      {medical ? (
+        <section className="flex flex-col gap-3" aria-labelledby="medical-heading">
+          <h2 id="medical-heading" className="font-display text-h3 font-bold">
+            {t('console.residents.medical')}
+          </h2>
+          <MedicalSection data={medical} />
+        </section>
+      ) : null}
 
       {data.consents ? (
         <Card className="flex flex-col gap-3 rounded-panel">
