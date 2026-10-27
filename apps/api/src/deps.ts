@@ -1,7 +1,10 @@
 import { Redis } from '@upstash/redis';
 import { z } from 'zod';
 import { createDb } from '@repo/db';
-import { memoryKv, upstashKv, type Kv } from './lib/kv';
+import { processMemoryKv, upstashKv, type Kv } from './lib/kv';
+import { processMemoryCrewLocator, upstashCrewLocator, type CrewLocator } from './lib/crew-locator';
+import { drizzleDispatchRepo, type DispatchRepo } from './modules/dispatch/repo';
+import { dispatchAlerts } from './modules/dispatch/service';
 import { createTokenVerifier, type TokenVerifier } from './middleware/auth';
 import { cloudApiWhatsApp, logSms, logWhatsApp, msg91Sms } from './modules/messaging/providers';
 import { drizzleConsentRepo, type ConsentRepo } from './modules/consent/repo';
@@ -10,7 +13,7 @@ import { drizzleHouseholdsRepo, type HouseholdsRepo } from './modules/households
 import { drizzleLeadsRepo, type LeadsRepo } from './modules/leads/repo';
 import { drizzleResidentsRepo, type ResidentsRepo } from './modules/residents/repo';
 import { drizzleSosRepo, type SosRepo } from './modules/sos/repo';
-import { logAlerts, type EscalationRunner, type SosAlerts } from './modules/sos/escalation-service';
+import type { EscalationRunner, SosAlerts } from './modules/sos/escalation-service';
 import { workflowEscalation } from './modules/sos/escalation-runner';
 import { drizzleMessagingRepo } from './modules/messaging/repo';
 import { logMailer, type Mailer } from './modules/notifications/mailer';
@@ -70,6 +73,8 @@ export interface Deps {
   sos: SosRepo;
   sosAlerts: SosAlerts;
   escalation: EscalationRunner;
+  dispatch: DispatchRepo;
+  locator: CrewLocator;
   mailer: Mailer;
   messaging: MessagingDeps;
   verifyToken: TokenVerifier;
@@ -91,12 +96,14 @@ export function depsFromEnv(source: Record<string, string | undefined> = process
     throw new ConfigError(`Invalid configuration: ${parsed.error.issues.map((i) => `${i.path.join('.')} (${i.message})`).join(', ')}`);
   }
   const env = parsed.data;
-  const kv =
-    env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN
-      ? upstashKv(new Redis({ url: env.UPSTASH_REDIS_REST_URL, token: env.UPSTASH_REDIS_REST_TOKEN }))
-      : memoryKv();
+  const redis = env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN ? new Redis({ url: env.UPSTASH_REDIS_REST_URL, token: env.UPSTASH_REDIS_REST_TOKEN }) : null;
+  // Without Upstash (local dev only; required in production) state is in-process and shared by handlers and workflow steps.
+  const kv = redis ? upstashKv(redis) : processMemoryKv();
+  const locator = redis ? upstashCrewLocator(redis) : processMemoryCrewLocator();
   const live = env.MESSAGING_MODE === 'live';
   const db = createDb(env.DATABASE_URL);
+  const sos = drizzleSosRepo(db);
+  const dispatch = drizzleDispatchRepo(db);
   return {
     kv,
     leads: drizzleLeadsRepo(db),
@@ -104,9 +111,11 @@ export function depsFromEnv(source: Record<string, string | undefined> = process
     households: drizzleHouseholdsRepo(db),
     residents: drizzleResidentsRepo(db),
     health: drizzleHealthRepo(db),
-    sos: drizzleSosRepo(db),
-    sosAlerts: logAlerts(),
+    sos,
+    sosAlerts: dispatchAlerts({ dispatch, locator, sos }),
     escalation: workflowEscalation(),
+    dispatch,
+    locator,
     mailer: logMailer(),
     messaging: {
       kv,

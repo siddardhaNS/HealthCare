@@ -7,6 +7,8 @@ export interface Kv {
   del(key: string): Promise<void>;
   /** Increments a counter that expires `ttlSeconds` after its first hit; returns the new count. */
   hit(key: string, ttlSeconds: number): Promise<number>;
+  /** Sets the key only if it is absent (atomic). True if this call took it: used as a short lock. */
+  claim(key: string, value: unknown, ttlSeconds: number): Promise<boolean>;
 }
 
 export function upstashKv(redis: Redis): Kv {
@@ -22,6 +24,7 @@ export function upstashKv(redis: Redis): Kv {
       const [count] = await redis.multi().incr(key).expire(key, ttlSeconds, 'NX').exec<[number, 0 | 1]>();
       return count;
     },
+    claim: async (key, value, ttlSeconds) => (await redis.set(key, value, { nx: true, ex: ttlSeconds })) === 'OK',
   };
 }
 
@@ -50,5 +53,20 @@ export function memoryKv(now: () => number = Date.now): Kv {
       store.set(key, { value: count, expiresAt: e?.expiresAt ?? now() + ttlSeconds * 1000 });
       return count;
     },
+    claim: async (key, value, ttlSeconds) => {
+      if (live(key)) return false;
+      store.set(key, { value: structuredClone(value), expiresAt: now() + ttlSeconds * 1000 });
+      return true;
+    },
   };
+}
+
+/**
+ * One in-memory store per process for local development without Upstash.
+ * The request handlers and the workflow steps build their dependencies
+ * separately, so they must share it to see the same crew positions and locks.
+ */
+export function processMemoryKv(): Kv {
+  const g = globalThis as Record<symbol, Kv | undefined>;
+  return (g[Symbol.for('api.memoryKv')] ??= memoryKv());
 }

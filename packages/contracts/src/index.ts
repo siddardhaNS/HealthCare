@@ -473,3 +473,39 @@ export const SosIncident = z
   })
   .openapi('SosIncident');
 export type SosIncident = z.infer<typeof SosIncident>;
+
+// ── Dispatch (field app) ────────────────────────────────────────────────
+
+export const CrewDuty = z
+  .object({
+    onDuty: z.boolean(),
+    /** Where the crew is now; going on duty without one leaves them out of distance-based offers until the first location update. */
+    location: GeoPoint.optional(),
+  })
+  .openapi('CrewDuty');
+
+export const CrewLocation = z
+  .object({
+    /** Batched fixes, oldest first (the app sends every 3–5 s during a job, less often on standby). */
+    points: z.array(GeoPoint.extend({ at: z.string().datetime() })).min(1).max(50),
+  })
+  .openapi('CrewLocation');
+
+export const CrewStatus = z
+  .object({ crewId: z.string().uuid(), onDuty: z.boolean(), team: z.string().nullable(), drillParticipant: z.boolean() })
+  .openapi('CrewStatus');
+
+/** What a crew sees when an SOS rings: where to go and how far, never medical details. */
+export const DispatchOffer = z
+  .object({
+    id: z.string().uuid(),
+    incidentId: z.string().uuid(),
+    ring: z.number().int(),
+    offeredAt: z.string().datetime(),
+    isDrill: z.boolean(),
+    location: GeoPoint.nullable(),
+    distanceM: z.number().int().nullable(),
+    etaS: z.number().int().nullable(),
+  })
+  .openapi('DispatchOffer');
+export type DispatchOffer = z.infer<typeof DispatchOffer>;

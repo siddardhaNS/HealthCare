@@ -20,6 +20,7 @@ export const ambulances = pgTable('ambulances', {
   equipment: text('equipment', { enum: ['bls', 'als'] }).notNull(),
   workPhone: text('work_phone').notNull(),
   active: boolean('active').notNull().default(true),
+  teamId: uuid('team_id'),
 });
 
 export const crews = pgTable('crews', {
@@ -29,6 +30,7 @@ export const crews = pgTable('crews', {
   ambulanceId: uuid('ambulance_id'),
   drillParticipant: boolean('drill_participant').notNull().default(false),
   active: boolean('active').notNull().default(true),
+  teamId: uuid('team_id'),
 });
 
 export const crewShifts = pgTable('crew_shifts', {
@@ -127,4 +129,16 @@ export const hospitalHandovers = pgTable('hospital_handovers', {
   firstAidNotesEnc: text('first_aid_notes_enc'),
   confirmedAt: timestamp('confirmed_at', { withTimezone: true }),
   confirmedBy: uuid('confirmed_by'),
+});
+
+/** Mirror of supabase/migrations/*_coverage.sql (plan §9). */
+export const coverageTeams = pgTable('coverage_teams', { id: uuid('id').primaryKey().defaultRandom(), ...ts, name: text('name').notNull(), area: text('area'), active: boolean('active').notNull().default(true) });
+
+export const coverageAssignments = pgTable('coverage_assignments', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  teamId: uuid('team_id').notNull(),
+  siteId: uuid('site_id').unique(),
+  householdId: uuid('household_id').unique(),
+  assignedBy: uuid('assigned_by'),
 });
