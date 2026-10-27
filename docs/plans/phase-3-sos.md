@@ -157,7 +157,7 @@ Realtime: private channels `sos:{incidentId}` (resident, family managers, assign
 Ops **manually** assign who covers whom: a **coverage team** (crew members and their ambulance, e.g. "ABC team, Gachibowli") covers a list of gated communities, apartment buildings and stand-alone homes. Every household is covered by **at most one team**, so there are never overlaps. An SOS from a covered household is offered to its team first. Decided: priority first (the 30 s widen still applies); managed by super admin and operations; the community desk can see which team covers its community but not change it.
 
 **Data** (migration, RLS, every change in `audit_events`):
-- `coverage_teams`: name, area label (free text, e.g. "Gachibowli"), active.
+- `coverage_teams`: name, area label (free text, e.g. "Gachibowli"), active. A team covers **any number** of places (one team → many communities, buildings and homes; each place → at most one team). A crew member covering places on their own is a one-person team.
 - Team members: `crews.team_id` and `ambulances.team_id` (a crew or ambulance belongs to one team at a time).
 - `coverage_assignments`: team + **either** a site (gated community or apartment building) **or** a stand-alone household. Unique per site and per household, enforced by the database, so a second team cannot be assigned to the same place.
 - Households inside a site follow the site's team. Only households without a site are assigned individually.
