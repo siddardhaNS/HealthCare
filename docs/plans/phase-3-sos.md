@@ -149,3 +149,27 @@ Realtime: private channels `sos:{incidentId}` (resident, family managers, assign
 5. Resident SOS screens + Realtime tracking + fallbacks
 6. Console command center + test SOS + thresholds; hospital handover + partner confirm
 7. Load test, failure-path e2e, device tests (needs Android Studio / a real phone)
+
+---
+
+## 9. Crew coverage areas (added 2026-10-27, awaiting approval)
+
+Crews are stationed at strategic points chosen from where households are. Ops tag crews to **coverage areas**; an SOS inside an area is offered to its crews first. Decided: priority first (the 30 s widen still applies); managed by super admin and operations; the community desk can see which crews cover its community but not change them.
+
+**Data** (migration, RLS, every change in `audit_events`):
+- `coverage_areas`: name, centre (geography point), radius in metres, active. Usually centred on a `standby_point`.
+- `crew_coverage`: crew ↔ area (many-to-many: a crew can cover two neighbouring areas; an area has several crews for shifts).
+
+**Dispatch** (step 3):
+- Area match uses the SOS location, or the household's home location when the phone sent none.
+- Ring 1 = the area's on-duty crews, nearest first, up to 3. Ring 2 at the widen threshold = the nearest other crews, as today. Drills: drill crews only, as today.
+
+**Console** (step 6, with the command center):
+- Coverage page: list of areas with their crews, on-duty count and **how many households fall inside** (PostGIS, so ops can see where coverage is thin); create/edit an area (name, standby point or coordinates, radius); add or remove crews.
+- Map view of areas over the resident heatmap comes with the maps work.
+
+| # | Question | My recommendation |
+|---|---|---|
+| ⚑8 | **Area shape.** | A **circle** (standby point + radius, e.g. 3 km) to start: quick to set up and matches "stationed at a point". Polygons (draw on a map) later if ops need irregular areas. |
+| ⚑9 | **Ring 1 when fewer than 3 tagged crews are on duty.** | **Fill the remaining slots with the nearest other crews** in the same first offer, so a thin area never costs 30 s. With no tagged crew on duty, ring 1 is the normal nearest 3. |
+| ⚑10 | **An SOS inside two overlapping areas.** | Use the crews of both, nearest first. |

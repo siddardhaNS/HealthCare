@@ -6,6 +6,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import { I18nextProvider, useTranslation } from 'react-i18next';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { createI18n } from '@repo/i18n';
 import { SessionProvider, useSession } from '@repo/mobile';
@@ -84,15 +85,17 @@ function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <I18nextProvider i18n={i18n}>
-        <ThemeProvider>
-          <QueryClientProvider client={queryClient}>
-            <SessionProvider config={config}>
-              <Routes fontsReady={fontsLoaded || !!fontError} />
-            </SessionProvider>
-          </QueryClientProvider>
-        </ThemeProvider>
-      </I18nextProvider>
+      <KeyboardProvider>
+        <I18nextProvider i18n={i18n}>
+          <ThemeProvider>
+            <QueryClientProvider client={queryClient}>
+              <SessionProvider config={config}>
+                <Routes fontsReady={fontsLoaded || !!fontError} />
+              </SessionProvider>
+            </QueryClientProvider>
+          </ThemeProvider>
+        </I18nextProvider>
+      </KeyboardProvider>
     </SafeAreaProvider>
   );
 }

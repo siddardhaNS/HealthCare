@@ -9,8 +9,14 @@
   - The bottom sheet ("Log a reading") stayed under the keyboard on Android, hiding the fields and Save; it now lifts by the keyboard height. Reading fields capped at 6 characters.
 - **Local setup:** phone login needed a placeholder SMS provider in `supabase/config.toml` (the CLI ignores the send-SMS hook); `virtualStoreDirMaxLength: 24` shortens pnpm store paths; README covers the Windows Android setup (JDK 17, long paths, CMake/Ninja).
 
+### Finishing pass (same day)
+- Resident: Profile (emergency contact added, family invite sent with masked number, privacy toggles, consent history), Bookings and Records (placeholders, as planned). Home shows the logged BP.
+- Fixed: page forms could leave fields under the keyboard (edge-to-edge); pages now use `KeyboardAwareScrollView` (`react-native-keyboard-controller` 1.22.7, with `react-native-reanimated` 4.7.1, versions from `expo install`).
+- Field app: first Android build; sign-in, the "field staff only" message without a role, then home with the crew role and the duty switch (persisted in step 4).
+- **Crew coverage areas** requested (tag crews to areas around their standby points; priority-first offers; ops/super admin manage them). Planned in `docs/plans/phase-3-sos.md` §9 with ⚑8–⚑10 awaiting approval.
+
 ### Next
-- Rest of the resident click-through (Bookings, Records, Profile, family invites) and the field app's first build; then Phase 3 step 3 (dispatch).
+- Phase 3 step 3 (dispatch), including coverage areas once ⚑8–⚑10 are approved.
 
 ## 2026-10-27 · Phase 3, step 2: Workflows host and SOS escalation
 

@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { ActivityIndicator, Keyboard, Modal, Platform, Pressable, RefreshControl, ScrollView, View, type ViewStyle } from 'react-native';
+import { ActivityIndicator, Keyboard, Modal, Platform, Pressable, RefreshControl, View, type ViewStyle } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Icon, Screen, Text, useTheme } from '@repo/ui-native';
 
@@ -10,13 +11,15 @@ export function Page({ children, refreshing, onRefresh }: { children: ReactNode;
   return (
     <Screen>
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
-        <ScrollView
+        {/* Scrolls the focused field above the keyboard (Android edge-to-edge no longer resizes the window). */}
+        <KeyboardAwareScrollView
+          bottomOffset={space[6]}
           contentContainerStyle={{ paddingHorizontal: space[5], paddingTop: space[6], paddingBottom: space[8], gap: space[3] + 2 }}
           refreshControl={onRefresh ? <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={colors.accent} /> : undefined}
           keyboardShouldPersistTaps="handled"
         >
           {children}
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </SafeAreaView>
     </Screen>
   );
@@ -82,7 +85,14 @@ export function Sheet({ visible, title, onClose, children }: { visible: boolean;
         <Pressable style={{ flex: 1, backgroundColor: colors.scrim }} onPress={onClose} accessibilityLabel={t('healthTab.close')} />
         <View
           accessibilityViewIsModal
-          style={{ backgroundColor: colors.surface, borderTopLeftRadius: radius.section, borderTopRightRadius: radius.section, padding: space[5], paddingBottom: space[10], gap: space[4] }}
+          style={{
+            backgroundColor: colors.surface,
+            borderTopLeftRadius: radius.section,
+            borderTopRightRadius: radius.section,
+            padding: space[5],
+            paddingBottom: space[10],
+            gap: space[4],
+          }}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <Text variant="h3" accessibilityRole="header">
@@ -111,17 +121,45 @@ function useKeyboardHeight() {
   return height;
 }
 
-export function IconButton({ icon, label, onPress, color, style }: { icon: Parameters<typeof Icon>[0]['name']; label: string; onPress: () => void; color?: string; style?: ViewStyle }) {
+export function IconButton({
+  icon,
+  label,
+  onPress,
+  color,
+  style,
+}: {
+  icon: Parameters<typeof Icon>[0]['name'];
+  label: string;
+  onPress: () => void;
+  color?: string;
+  style?: ViewStyle;
+}) {
   const { tapTarget } = useTheme();
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} hitSlop={8} style={[{ minWidth: tapTarget, minHeight: tapTarget, alignItems: 'center', justifyContent: 'center' }, style]}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      hitSlop={8}
+      style={[{ minWidth: tapTarget, minHeight: tapTarget, alignItems: 'center', justifyContent: 'center' }, style]}
+    >
       <Icon name={icon} color={color} />
     </Pressable>
   );
 }
 
 /** Two-to-four option pill row (radio semantics), e.g. vital type or severity. */
-export function Segmented<T extends string>({ options, value, onChange, label }: { options: { value: T; label: string }[]; value: T; onChange: (v: T) => void; label: string }) {
+export function Segmented<T extends string>({
+  options,
+  value,
+  onChange,
+  label,
+}: {
+  options: { value: T; label: string }[];
+  value: T;
+  onChange: (v: T) => void;
+  label: string;
+}) {
   const { colors, radius, space, tapTarget } = useTheme();
   return (
     <View accessibilityRole="radiogroup" accessibilityLabel={label} style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2] }}>
@@ -133,7 +171,15 @@ export function Segmented<T extends string>({ options, value, onChange, label }:
             accessibilityRole="radio"
             accessibilityState={{ selected: on }}
             onPress={() => onChange(o.value)}
-            style={{ minHeight: tapTarget, paddingHorizontal: space[4], justifyContent: 'center', borderRadius: radius.pill, borderWidth: 1, borderColor: on ? colors.accentBorder : colors.border, backgroundColor: on ? colors.accentSoft : colors.surface }}
+            style={{
+              minHeight: tapTarget,
+              paddingHorizontal: space[4],
+              justifyContent: 'center',
+              borderRadius: radius.pill,
+              borderWidth: 1,
+              borderColor: on ? colors.accentBorder : colors.border,
+              backgroundColor: on ? colors.accentSoft : colors.surface,
+            }}
           >
             <Text variant="small" weight="bold" tone={on ? 'accent' : 'default'}>
               {o.label}
