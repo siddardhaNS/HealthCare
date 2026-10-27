@@ -1,0 +1,151 @@
+`# Plan: Phase 3 (SOS and the field app)
+`
+`Status: **draft for your approval.** The brief requires approval before Phase 3 is built, and asks to check before changing the stack, adding paid services, or touching SOS escalation rules. The ⚑ items are the decisions I need from you.
+`
+`SOS must never fail silently: an alert reaches a human within seconds, even on a weak network, and every step is recorded.
+`
+`---
+`
+`## 1. Decisions needed
+`
+`| # | Question | My recommendation |
+`|---|---|---|
+`| ⚑1 | **How to run Vercel Workflows** (the durable 30 s / 90 s escalation timers). The Workflow SDK's documented Hono setup needs **Nitro, whose only release is a 3.0 beta**. Its Next.js setup (\`withWorkflow\`) is documented and Next is stable. | Keep the Hono API exactly as it is, but **serve it from a thin Next.js app** (\`apps/api\` gets a catch-all route that hands every request to Hono). Workflows then use the stable Next.js integration. It's still Hono on Vercel Functions in bom1, so not a stack change in substance, but it changes how the API is built, so I'm asking. The alternative is Nitro 3 beta under Hono. |
+`| ⚑2 | **Escalation thresholds.** Brief: widen at 30 s, prompt 108 at 90 s, configurable. | Defaults 30 s / 90 s, adjustable **per site** by a super admin in the console, between 15–60 s and 60–180 s. Every change is audited. |
+`| ⚑3 | **Whose ambulances.** | The data model supports both our own fleet and partner operators (\`ambulances.operator\`). For the pilot: whichever ambulances are enrolled and on duty in the field app. Operational choice, no code impact. |
+`| ⚑4 | **Which hospital receives the patient.** Brief: nearest with capacity, or the resident's preferred one. | The preferred hospital if it has capacity and its ETA is at most 10 minutes worse than the nearest; otherwise the nearest with capacity. The crew can override with a reason (logged). |
+`| ⚑5 | **Test SOS (drills).** | Run from the console by super admin / operations, or by the community desk for its own site. Offered only to crews marked as drill participants. Family and hospitals get **no** messages. Everything is labelled DRILL on every screen and in every record, and never counts in reports. |
+`| ⚑6 | **In-app crew call.** The brief puts calling (LiveKit) in Phase 4, but the SOS screen needs a crew call. | Phase 3 ships the brief's required fallback first: a one-tap phone call to the **crew's company-issued work number** (never personal numbers), with in-app voice added when the calls module lands in Phase 4. |
+`| ⚑7 | **Paid services this phase turns on**, all in the decided stack: Upstash Redis (GEO + locks), Google Maps Routes API (ETAs) and Maps SDK, Vercel Workflows usage, FCM/APNs (free). | Approve the accounts; use test/sandbox keys until launch. **Outside the code:** Apple's Critical Alerts entitlement (apply now, approval takes time) and the Play Store full-screen-intent / foreground-location declarations. |
+`
+`---
+`
+`## 2. State machine (server-side, \`sos\` + \`dispatch\` modules)
+`
+`\`countdown\` (on the phone only) → \`raised\` → \`dispatching\` → \`accepted\` → \`en_route\` → \`on_scene\` → \`transporting\` → \`handed_over\` → \`closed\`, plus \`cancelled\` and \`escalated_to_108\`.
+`
+`- Transitions are allowed only along these edges; each is one row in **\`sos_events\`** (who, when, from → to, reason), and an \`audit_events\` row.
+`- \`cancelled\`: by the resident during or after the countdown, or by the desk with a reason.
+`- \`escalated_to_108\`: at the 90 s threshold with no acceptance. Dispatch can still continue if a crew accepts later.
+`- Idempotency: \`POST /sos\` carries a client key; retries never create a second incident.
+`
+`## 3. Flow (as the brief, with the parts that make it reliable)
+`
+`1. **Trigger:**
+`   - The resident app opens a 5 s cancellable countdown with "Send now".
+`   - It grabs the last-known location at once, then a fresh high-accuracy fix.
+`   - Home-screen SOS card first; the lock-screen widget follows after the first device test.
+`2. **Raise:**
+`   - \`POST /v1/sos\` with an idempotency key.
+`   - If no answer in 4 s, it retries with backoff and **at the same time shows "Call community desk" and "Call 108"** (phone dialer). The UI never waits on the network.
+`3. **Notify in parallel:**
+`   - Console alarm (Realtime + sound), push and WhatsApp to the desk.
+`   - Family push + WhatsApp; SMS if WhatsApp isn't delivered in 60 s (a workflow step); no medical details.
+`   - Gate security when the household is in a community.
+`4. **Dispatch:**
+`   - Redis GEO shortlist of on-duty crews near the location → Google Routes ETAs → offer to the **nearest 3 at once** (critical push + ringing screen).
+`   - **First accept wins** through an atomic Redis lock; the others get "taken".
+`5. **Escalation**, as one Workflow run per incident:
+`   - Wait for the accept hook or 30 s → widen to the next ring and alarm the desk to dispatch manually.
+`   - Wait until 90 s → prompt the resident and the desk to call 108 and mark \`escalated_to_108\`.
+`   - Thresholds come from the site's settings (⚑2).
+`6. **Track:**
+`   - The field app sends location every 3–5 s during an active job (Android foreground service, iOS background location).
+`   - The API updates Redis and broadcasts on the incident's private Realtime channel.
+`   - The resident app and console show the ambulance, route and ETA, refreshed every 30 s.
+`7. **Hospital handover:**
+`   - On accept, the hospital is chosen (⚑4) and gets a **time-limited, signed handover link**.
+`   - Contents: blood group, allergies, conditions, medicines, last vitals, emergency contacts, insurance. **With \`emergency_share\` off: blood group only.**
+`   - The ER confirms receipt in the partner portal. Every disclosure goes to \`record_shares\`.
+`8. **Close:**
+`   - The crew marks on-scene → transporting → handed-over; the desk closes; family get a final update.
+`
+`## 4. Data model (migration \`…_sos.sql\`, with RLS)
+`
+`- \`ambulances\` (registration, operator, equipment level, work phone)
+`- \`crews\`, \`crew_shifts\` (on/off duty, standby point)
+`- \`standby_points\` (PostGIS)
+`- \`hospitals\` (location, capacity flags, ER phone)
+`- \`sos_incidents\`:
+`  - household, resident, location (geography point), accuracy, state, site
+`  - \`is_drill\`
+`  - assigned crew / ambulance, hospital
+`  - thresholds used, workflow run id
+`- \`sos_events\` (append-only)
+`- \`dispatch_offers\` (crew, offered_at, ring, response, responded_at)
+`- \`hospital_handovers\` (items shared, link expiry, confirmed_at, confirmed_by)
+`- \`site_sos_settings\` (thresholds, gate-security contacts)
+`
+`Redis:
+`- \`geo:crews:on_duty\` (positions)
+`- \`lock:incident:{id}\` (first accept)
+`- \`pos:crew:{id}\` (last position + timestamp)
+`- rate limits on \`POST /sos\`
+`
+`Realtime: private channels \`sos:{incidentId}\` (resident, family managers, assigned crew, desk, care team), \`desk:{siteId}\` (alarms), \`crew:{crewId}\` (offers). Authorized by Supabase Realtime RLS.
+`
+`## 5. API
+`
+`- **Resident:**
+`  - \`POST /v1/sos\` (raise, idempotent)
+`  - \`POST /v1/sos/{id}/cancel\`
+`  - \`GET /v1/sos/{id}\` (state, timeline, crew, ETA, what was shared with the ER)
+`- **Field:**
+`  - \`PUT /v1/crew/duty\` (on/off duty)
+`  - \`POST /v1/crew/location\` (batched)
+`  - \`POST /v1/dispatch/offers/{id}/accept|decline\`
+`  - \`POST /v1/sos/{id}/status\` (en_route…handed_over)
+`  - \`POST /v1/sos/{id}/first-aid-notes\` (added to the handover)
+`  - \`GET /v1/sos/{id}/patient\` (allergies, conditions, medicines: **only while assigned and active**)
+`- **Console:**
+`  - incidents list / detail with timeline
+`  - reassign, manual dispatch, mark handed over, close
+`  - **test SOS**
+`  - per-site thresholds
+`  - fleet status
+`- **Partner (hospital):**
+`  - incoming handovers with arrival ETA
+`  - confirm receipt
+`  - handover link view (signed, expiring)
+`
+`## 6. Screens
+`
+`- **Resident app:**
+`  - countdown sheet
+`  - live SOS screen: map with ambulance, ETA, timeline, crew call (work number), what was shared with the ER, cancel
+`  - the network-failure fallback buttons
+`- **Field app:**
+`  - role home with duty toggle
+`  - incoming job ring screen with accept / decline
+`  - navigation hand-off to Google Maps
+`  - status buttons
+`  - patient summary (active job only)
+`  - first-aid notes
+`  - visible "sharing location" indicator
+`- **Console:**
+`  - **command center** from the design: live emergency map, active incident panel with handover record, reassign, call crew, mark handed over, test SOS, fleet status
+`  - incident timeline
+`- **Partner portal (hospital):** incoming handovers and confirm.
+`
+`## 7. Tests (brief: failure paths too, load test, simulated crews)
+`
+`- **Unit:** every state transition and every illegal one; threshold maths; hospital choice; handover item filtering by consent.
+`- **Workflow:** accept before 30 s; no accept → widen at 30 s → 108 at 90 s; accept after escalation; cancel during dispatch; API restart mid-run (durable sleep resumes).
+`- **Concurrency:** 3 crews accept within the same millisecond → exactly one wins.
+`- **Failure paths:**
+`  - POST /sos times out → fallbacks shown, retry lands once (idempotency)
+`  - no crews on duty → immediate desk alarm
+`  - WhatsApp undelivered → SMS at 60 s
+`  - Realtime disconnect → polling fallback
+`- **End-to-end with simulated crews:** a script runs N fake crews that go on duty, move, accept and update status; used by the e2e suite and the **load test** (k6, local, no paid service) for, e.g., 50 simultaneous incidents in one city.
+`- **Maestro** (resident SOS, field accept-to-handover) and **Playwright** (command center, test SOS).
+`
+`## 8. Order of work once approved
+`
+`1. Migration + state machine + \`sos_events\` (with unit tests)
+`2. ⚑1 setup (Workflows) + escalation workflow with simulated crews
+`3. Dispatch (Redis GEO, Routes ETAs, offers, atomic accept)
+`4. Field app: duty, ringing offer, accept, status, location streaming
+`5. Resident SOS screens + Realtime tracking + fallbacks
+`6. Console command center + test SOS + thresholds; hospital handover + partner confirm
+`7. Load test, failure-path e2e, device tests (needs Android Studio / a real phone)
