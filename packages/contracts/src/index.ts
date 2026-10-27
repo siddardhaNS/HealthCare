@@ -3,6 +3,7 @@
 // `z` comes from @hono/zod-openapi so schemas can carry `.openapi()` metadata.
 import { z } from '@hono/zod-openapi';
 import { leadOnsite, leadOrgTypes, leadPlans, leadRoles, leadSeniorShares, leadServices, leadStatuses, leadWalkthroughs } from './leads';
+import { consentPurposes } from './consent';
 import { appRoles } from './roles';
 
 export { z };
@@ -145,3 +146,42 @@ export type Lead = z.infer<typeof Lead>;
 
 export const LeadList = z.object({ leads: z.array(Lead) }).openapi('LeadList');
 export const LeadStatusUpdate = z.object({ status: z.enum(leadStatuses) }).openapi('LeadStatusUpdate');
+
+// ── Consent ─────────────────────────────────────────────────────────────
+
+export * from './consent';
+
+export const ConsentPurposeSchema = z.enum(consentPurposes).openapi('ConsentPurpose');
+
+export const ConsentState = z
+  .object({
+    purpose: ConsentPurposeSchema,
+    scopeKey: z.string(),
+    status: z.enum(['granted', 'withdrawn', 'not_asked']),
+    noticeVersion: z.string().nullable(),
+    /** Newer notice text exists; ask again before relying on this consent. */
+    outdated: z.boolean(),
+    updatedAt: z.string().datetime().nullable(),
+  })
+  .openapi('ConsentState');
+export type ConsentState = z.infer<typeof ConsentState>;
+
+export const ConsentList = z.object({ consents: z.array(ConsentState) }).openapi('ConsentList');
+
+export const ConsentUpdate = z
+  .object({
+    purpose: ConsentPurposeSchema,
+    /** Manager's user id for 'manager'; booking id for 'doctor_share'; omitted otherwise. */
+    scopeKey: z.string().max(64).default(''),
+    status: z.enum(['granted', 'withdrawn']),
+    /** The notice version the person was shown; must be the current one. */
+    noticeVersion: z.string().min(1).max(64),
+    language: Language,
+  })
+  .openapi('ConsentUpdate');
+export type ConsentUpdate = z.infer<typeof ConsentUpdate>;
+
+export const ConsentEvent = z
+  .object({ purpose: ConsentPurposeSchema, scopeKey: z.string(), status: z.enum(['granted', 'withdrawn']), noticeVersion: z.string(), language: Language, createdAt: z.string().datetime(), byManager: z.boolean() })
+  .openapi('ConsentEvent');
+export const ConsentHistory = z.object({ events: z.array(ConsentEvent) }).openapi('ConsentHistory');

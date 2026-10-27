@@ -7,6 +7,8 @@ import { memoryKv } from '../src/lib/kv';
 import { createTokenVerifier } from '../src/middleware/auth';
 import { ProviderError, type SmsSend, type WhatsAppSend } from '../src/modules/messaging/providers';
 import type { Lead } from '@repo/contracts';
+import type { ConsentRepo } from '../src/modules/consent/repo';
+import type { ConsentRow } from '../src/modules/consent/policy';
 import { newLeadRef, type LeadsRepo } from '../src/modules/leads/repo';
 import type { MessageLogInput, MessagingRepo, OptinInput } from '../src/modules/messaging/repo';
 
@@ -85,6 +87,20 @@ export async function testContext(opts: { whatsappFails?: boolean; mailerFails?:
   const kv = memoryKv();
   const store = fakeRepo();
   const leads = fakeLeads();
+  const consentRows: ConsentRow[] = [];
+  let tick = Date.parse('2026-10-27T00:00:00Z');
+  const consents: ConsentRepo = {
+    async history(userId) {
+      return consentRows.filter((r) => r.userId === userId).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    },
+    async record(actorId, row) {
+      // Mirrors the RLS insert policy: people write only their own consents.
+      if (row.userId !== actorId) throw new Error('RLS: new row violates row-level security policy');
+      const r: ConsentRow = { ...row, actedBy: actorId, createdAt: new Date((tick += 1000)) };
+      consentRows.push(r);
+      return r;
+    },
+  };
   const mail: { to: string; subject: string; text: string }[] = [];
   const whatsappSent: WhatsAppSend[] = [];
   const smsSent: SmsSend[] = [];
@@ -94,6 +110,7 @@ export async function testContext(opts: { whatsappFails?: boolean; mailerFails?:
   const deps: Deps = {
     kv,
     leads: leads.repo,
+    consents,
     mailer: {
       async send(msg) {
         if (opts.mailerFails) throw new Error('smtp down');
@@ -160,7 +177,7 @@ export async function testContext(opts: { whatsappFails?: boolean; mailerFails?:
     return app.request('/webhooks/whatsapp', { method: 'POST', headers: { 'content-type': 'application/json', 'x-hub-signature-256': sig }, body: raw });
   }
 
-  return { app, deps, kv, ...store, leads: leads.rows, mail, whatsappSent, smsSent, token, sendSmsHook, whatsappWebhook };
+  return { app, deps, kv, ...store, leads: leads.rows, consentRows, mail, whatsappSent, smsSent, token, sendSmsHook, whatsappWebhook };
 }
 
 export const statusEvent = (id: string, status: string, code?: number) => ({

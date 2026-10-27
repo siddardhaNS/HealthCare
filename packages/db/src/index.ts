@@ -18,3 +18,4 @@ export function createDb(url = process.env.DATABASE_URL) {
 }
 
 export type Db = ReturnType<typeof createDb>;
+export { asUser, type UserClaims } from './as-user';

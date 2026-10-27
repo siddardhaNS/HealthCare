@@ -1,6 +1,6 @@
 # Plan: Phase 2 (households, health record and consent)
 
-Status: **draft for your approval.** The brief says to ask before anything that touches consent or stores new kinds of health data, so nothing here is built until you answer the ⚑ questions. Items marked **⚖ lawyer** need legal review; the plan builds them so the answer can change by configuration, not code.
+Status: **approved 2026-10-27**: all recommendations accepted; ⚑4 dropped (audience uses smartphones). Items marked **⚖ lawyer** still need legal review before launch; they are built so the answer can change by configuration, not code.
 
 Scope from the brief: organisations, sites, homes, households, family accounts, consent, the full Health tab and home snapshot, and the residents directory in the console.
 

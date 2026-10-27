@@ -34,3 +34,16 @@ describe('landing namespace', () => {
     expect(createI18n('en').t('landing:signup.consent')).toContain(brand.name);
   });
 });
+
+describe('consent notices', () => {
+  it('every purpose in the catalogue has a notice in every language', async () => {
+    const { consentPurposes } = await import('@repo/contracts/consent');
+    for (const lng of ['en', 'te', 'hi'] as const) {
+      const consent = (resources[lng].translation as unknown as { consent: Record<string, { title: string; body: string }> }).consent;
+      for (const p of consentPurposes.filter((x) => x !== 'whatsapp_updates')) {
+        expect(consent[p]?.title, `${lng}.${p}`).toBeTruthy();
+        expect(consent[p]?.body, `${lng}.${p}`).toBeTruthy();
+      }
+    }
+  });
+});

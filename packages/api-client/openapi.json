@@ -506,6 +506,164 @@
         "required": [
           "status"
         ]
+      },
+      "ConsentList": {
+        "type": "object",
+        "properties": {
+          "consents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConsentState"
+            }
+          }
+        },
+        "required": [
+          "consents"
+        ]
+      },
+      "ConsentState": {
+        "type": "object",
+        "properties": {
+          "purpose": {
+            "$ref": "#/components/schemas/ConsentPurpose"
+          },
+          "scopeKey": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "granted",
+              "withdrawn",
+              "not_asked"
+            ]
+          },
+          "noticeVersion": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "outdated": {
+            "type": "boolean"
+          },
+          "updatedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "purpose",
+          "scopeKey",
+          "status",
+          "noticeVersion",
+          "outdated",
+          "updatedAt"
+        ]
+      },
+      "ConsentPurpose": {
+        "type": "string",
+        "enum": [
+          "care_record",
+          "emergency_share",
+          "family_sos_alert",
+          "doctor_share",
+          "proactive_care",
+          "manager",
+          "whatsapp_updates",
+          "reminders"
+        ]
+      },
+      "ConsentUpdate": {
+        "type": "object",
+        "properties": {
+          "purpose": {
+            "$ref": "#/components/schemas/ConsentPurpose"
+          },
+          "scopeKey": {
+            "type": "string",
+            "maxLength": 64,
+            "default": ""
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "granted",
+              "withdrawn"
+            ]
+          },
+          "noticeVersion": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "language": {
+            "$ref": "#/components/schemas/Language"
+          }
+        },
+        "required": [
+          "purpose",
+          "status",
+          "noticeVersion",
+          "language"
+        ]
+      },
+      "ConsentHistory": {
+        "type": "object",
+        "properties": {
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConsentEvent"
+            }
+          }
+        },
+        "required": [
+          "events"
+        ]
+      },
+      "ConsentEvent": {
+        "type": "object",
+        "properties": {
+          "purpose": {
+            "$ref": "#/components/schemas/ConsentPurpose"
+          },
+          "scopeKey": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "granted",
+              "withdrawn"
+            ]
+          },
+          "noticeVersion": {
+            "type": "string"
+          },
+          "language": {
+            "$ref": "#/components/schemas/Language"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "byManager": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "purpose",
+          "scopeKey",
+          "status",
+          "noticeVersion",
+          "language",
+          "createdAt",
+          "byManager"
+        ]
       }
     },
     "parameters": {}
@@ -829,6 +987,132 @@
           },
           "404": {
             "description": "No such lead",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consents": {
+      "get": {
+        "operationId": "listConsents",
+        "tags": [
+          "consent"
+        ],
+        "summary": "My consents: every standing purpose (granted, withdrawn or not asked) plus scoped ones",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current consents",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsentList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "updateConsent",
+        "tags": [
+          "consent"
+        ],
+        "summary": "Grant or withdraw one of my consents (takes effect immediately)",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsentUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recorded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsentState"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not allowed as asked (stale notice, wrong scope, or needs an erasure request)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consents/history": {
+      "get": {
+        "operationId": "consentHistory",
+        "tags": [
+          "consent"
+        ],
+        "summary": "Every consent change I (or a manager) made, newest first",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "History",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsentHistory"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
             "content": {
               "application/json": {
                 "schema": {

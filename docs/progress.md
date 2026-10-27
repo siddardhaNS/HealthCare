@@ -1,5 +1,35 @@
 # Progress
 
+## 2026-10-27 · Phase 2, step 1: consent, households and health-record foundations
+
+Plan approved today: `docs/plans/phase-2-households-consent.md` (all recommendations; assisted onboarding dropped).
+
+### Done
+- **Migrations** (`…_consent.sql`, `…_households.sql`, `…_health_record.sql`):
+  - Append-only `consents` and `record_shares`, with no foreign key to users so consent evidence survives account deletion.
+  - `has_consent` / `can_act_for` helpers (self or a granted manager).
+  - Organisations, sites (PostGIS boundary, join code), homes, households (`home_id` nullable for families), members, emergency contacts.
+  - The nine health-record tables, with physiological range checks on readings, soft delete, `entered_by`, and encrypted-at-API columns for free text and insurance numbers.
+  - **Every insert/update on a health table writes `audit_events` by trigger** (ids only, never values).
+  - RLS: health data readable/writable only by the person and their managers; households readable by members, writes via the API; no client delete.
+- **Consent catalogue** in `@repo/contracts/consent` (browser-safe): purposes, required/standing/onboarding flags, notice versions, emergency handover rule (consent off → blood group only), doctor-share items.
+- **Consent notices** in en/te/hi (`consent.*` in the i18n files), with a test that every purpose has text in every language.
+- **API `consent` module**:
+  - `GET /v1/consents` (every standing purpose incl. "not asked", plus scoped ones), `POST /v1/consents` (grant/withdraw, immediate), `GET /v1/consents/history`.
+  - Refuses stale notice versions, withdrawing the core record (→ erasure request), and bad scopes.
+  - A consent counts only against the notice version in force.
+- **`asUser`** in `@repo/db`: the API runs user queries with the `authenticated` role and verified claims, so Postgres RLS applies to the API too (consent writes use it).
+- 74 API tests (15 new), 6 i18n tests.
+
+### Not verified yet
+- The new SQL is checked with the real Postgres 17 parser (libpg_query) but **not executed**: Docker isn't running. The PL/pgSQL bodies were reviewed by hand. First run of `pnpm supabase start` will apply all migrations; expect possible small fixes.
+
+### Next
+1. Households & family API + resident onboarding (household, family members, consent screen), with the manager flow.
+2. Health record API + Health tab + home snapshot.
+3. Privacy screen (consents, history, access/erasure requests).
+4. Console residents directory + resident profile (read-only consent, audited reads).
+
 ## 2026-10-26 · Web first, session 3: leads backend, landing groundwork (in progress)
 
 ### Done

@@ -18,6 +18,7 @@
   },
   "devDependencies": {
     "@repo/config": "workspace:*",
+    "@repo/contracts": "workspace:*",
     "eslint": "10.13.0",
     "typescript": "catalog:",
     "vitest": "catalog:"

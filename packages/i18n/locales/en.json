@@ -132,5 +132,39 @@
     "changeNumber": "Change number",
     "signOut": "Sign out",
     "fieldOnly": "This app is for field staff. Ask your supervisor to add your number, then sign in again."
+  },
+  "consent": {
+    "screenTitle": "Your privacy choices",
+    "screenBody": "You decide who sees your health information. You can change any of these later in Profile → Privacy.",
+    "required": "Needed to use health features",
+    "recommended": "Recommended",
+    "care_record": {
+      "title": "Keep my health record",
+      "body": "Store my readings, conditions, allergies, medicines and reports so the app can show them to me and provide the services I ask for. Nobody else sees them unless I allow it below or when booking."
+    },
+    "emergency_share": {
+      "title": "Share my records with the hospital in an emergency",
+      "body": "If I raise an SOS, send my blood group, allergies, conditions, medicines, last readings, emergency contacts and insurance to the receiving hospital through a secure link that expires. If this is off, only my blood group is sent."
+    },
+    "family_sos_alert": {
+      "title": "Alert my family on every SOS",
+      "body": "Tell my emergency contacts that an SOS was raised and when help is on the way. They never receive medical details."
+    },
+    "proactive_care": {
+      "title": "Let the care team watch over my readings",
+      "body": "The care team may review my readings and contact me if something looks wrong or a check-up is due. If this is off, I am never included in risk lists or alerts."
+    },
+    "reminders": {
+      "title": "Medicine reminders",
+      "body": "Remind me when a dose is due."
+    },
+    "manager": {
+      "title": "Let {{name}} manage my care",
+      "body": "{{name}} can see my health record, book services and record readings for me. Everything they do is recorded, and I can remove them at any time."
+    },
+    "doctor_share": {
+      "title": "Share with the doctor",
+      "body": "The doctor sees only what I tick here, for this consult only."
+    }
   }
 }

@@ -110,6 +110,41 @@ export interface paths {
         patch: operations["updateLeadStatus"];
         trace?: never;
     };
+    "/v1/consents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My consents: every standing purpose (granted, withdrawn or not asked) plus scoped ones */
+        get: operations["listConsents"];
+        put?: never;
+        /** Grant or withdraw one of my consents (takes effect immediately) */
+        post: operations["updateConsent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/consents/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every consent change I (or a manager) made, newest first */
+        get: operations["consentHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -229,6 +264,44 @@ export interface components {
         LeadStatusUpdate: {
             /** @enum {string} */
             status: "new" | "contacted" | "walkthrough_booked" | "live";
+        };
+        ConsentList: {
+            consents: components["schemas"]["ConsentState"][];
+        };
+        ConsentState: {
+            purpose: components["schemas"]["ConsentPurpose"];
+            scopeKey: string;
+            /** @enum {string} */
+            status: "granted" | "withdrawn" | "not_asked";
+            noticeVersion: string | null;
+            outdated: boolean;
+            /** Format: date-time */
+            updatedAt: string | null;
+        };
+        /** @enum {string} */
+        ConsentPurpose: "care_record" | "emergency_share" | "family_sos_alert" | "doctor_share" | "proactive_care" | "manager" | "whatsapp_updates" | "reminders";
+        ConsentUpdate: {
+            purpose: components["schemas"]["ConsentPurpose"];
+            /** @default  */
+            scopeKey: string;
+            /** @enum {string} */
+            status: "granted" | "withdrawn";
+            noticeVersion: string;
+            language: components["schemas"]["Language"];
+        };
+        ConsentHistory: {
+            events: components["schemas"]["ConsentEvent"][];
+        };
+        ConsentEvent: {
+            purpose: components["schemas"]["ConsentPurpose"];
+            scopeKey: string;
+            /** @enum {string} */
+            status: "granted" | "withdrawn";
+            noticeVersion: string;
+            language: components["schemas"]["Language"];
+            /** Format: date-time */
+            createdAt: string;
+            byManager: boolean;
         };
     };
     responses: never;
@@ -485,6 +558,106 @@ export interface operations {
             };
             /** @description No such lead */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    listConsents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current consents */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentList"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    updateConsent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsentUpdate"];
+            };
+        };
+        responses: {
+            /** @description Recorded */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentState"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Not allowed as asked (stale notice, wrong scope, or needs an erasure request) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    consentHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description History */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentHistory"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

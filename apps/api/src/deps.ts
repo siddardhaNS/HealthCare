@@ -4,6 +4,7 @@ import { createDb } from '@repo/db';
 import { memoryKv, upstashKv, type Kv } from './lib/kv';
 import { createTokenVerifier, type TokenVerifier } from './middleware/auth';
 import { cloudApiWhatsApp, logSms, logWhatsApp, msg91Sms } from './modules/messaging/providers';
+import { drizzleConsentRepo, type ConsentRepo } from './modules/consent/repo';
 import { drizzleLeadsRepo, type LeadsRepo } from './modules/leads/repo';
 import { drizzleMessagingRepo } from './modules/messaging/repo';
 import { logMailer, type Mailer } from './modules/notifications/mailer';
@@ -54,6 +55,7 @@ export class ConfigError extends Error {
 export interface Deps {
   kv: Kv;
   leads: LeadsRepo;
+  consents: ConsentRepo;
   mailer: Mailer;
   messaging: MessagingDeps;
   verifyToken: TokenVerifier;
@@ -83,6 +85,7 @@ export function depsFromEnv(source: NodeJS.ProcessEnv = process.env): Deps {
   return {
     kv,
     leads: drizzleLeadsRepo(db),
+    consents: drizzleConsentRepo(db),
     mailer: logMailer(),
     messaging: {
       kv,

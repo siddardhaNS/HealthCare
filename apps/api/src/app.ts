@@ -6,6 +6,7 @@ import type { ErrorBody } from '@repo/contracts';
 import { ConfigError, depsFromEnv, type Deps } from './deps';
 import type { AccessClaims } from './middleware/auth';
 import { authHookRoutes, authRoutes } from './modules/auth/routes';
+import { consentRoutes } from './modules/consent/routes';
 import { leadsRoutes } from './modules/leads/routes';
 import { whatsappWebhookRoutes } from './modules/messaging/routes';
 import { systemRoutes } from './modules/system/routes';
@@ -54,10 +55,11 @@ export function createApp(options: CreateAppOptions = {}) {
   const webOrigins = options.webOrigins ?? (process.env.WEB_ORIGINS ?? 'http://localhost:3000,http://localhost:3003').split(',').map((o) => o.trim());
   app.use('/v1/leads', cors({ origin: webOrigins, allowMethods: ['POST'], allowHeaders: ['content-type'], maxAge: 600 }));
 
-  for (const path of ['/v1/auth/*', '/v1/me', '/v1/leads', '/v1/leads/*', '/webhooks/*']) app.use(path, withDeps);
+  for (const path of ['/v1/auth/*', '/v1/me', '/v1/leads', '/v1/leads/*', '/v1/consents', '/v1/consents/*', '/webhooks/*']) app.use(path, withDeps);
   app.route('/v1', authRoutes);
   app.route('/v1', authHookRoutes);
   app.route('/v1', leadsRoutes);
+  app.route('/v1', consentRoutes);
   app.route('/', whatsappWebhookRoutes);
 
   app.notFound((c) => c.json<ErrorBody>({ error: { code: 'not_found', message: 'Not found', requestId: c.get('requestId') } }, 404));
