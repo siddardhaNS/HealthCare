@@ -11,9 +11,9 @@ Scope from the brief: organisations, sites, homes, households, family accounts, 
 | # | Question | My recommendation |
 |---|---|---|
 | ⚑1 | **Default state of optional consents.** The design shows "share with hospital" and "alert family" switched **on**. DPDP consent must be a clear affirmative action, so pre-ticked boxes are risky. | Nothing pre-ticked. The onboarding consent screen asks for each purpose with a plain-language explanation and a recommended choice. Emergency sharing is presented first, with what changes if it's off (the hospital gets the blood group only). ⚖ |
-| ⚑2 | **Staff editing consent.** The console design lets staff tick a resident's consent boxes and edit their medical details. | Staff **cannot** change consent; the console shows it read-only. The one exception is assisted onboarding (⚑4). Medical edits in the console are limited to the care team, always audited, and the resident is notified. The community desk can never edit or see medical data. |
+| ⚑2 | **Staff editing consent.** The console design lets staff tick a resident's consent boxes and edit their medical details. | Staff **cannot** change consent; the console shows it read-only. Medical edits in the console are limited to the care team, always audited, and the resident is notified. The community desk can never edit or see medical data. |
 | ⚑3 | **Family managers** (an adult child managing a parent's care). | The parent grants it explicitly in their own app ("Let Arjun manage my care"), recorded as a consent with scope and expiry, and revocable at any time. Managers act *on behalf of* the parent; every action is audited with both identities. ⚖ (DPDP treats consent for an adult differently from a guardian for a child or a person with a disability.) |
-| ⚑4 | **Residents without a smartphone** (common for elders). | Assisted onboarding at a health camp or home visit: a staff member reads the notice in the person's language, the person agrees, and the record captures the staff member, a witness or family member, the time, the notice version and a signature or thumbprint photo. These consents are flagged "assisted" for review. ⚖ |
+| ~~⚑4~~ | ~~Residents without a smartphone~~ | **Decided 2026-10-27: not needed.** The target audience uses smartphones, so everyone signs up and consents in their own app. No assisted-consent flow. |
 | ⚑5 | **Proactive care** (resident heatmap risk tiers, "needs a check-in" list, vitals alerts to the care team). This is health data used for outreach, a separate purpose. | Its own opt-in purpose ("Let the care team watch my readings and contact me"). People who say no don't appear in risk tiers or alerts. Heatmap counts are aggregated and never per-home for non-consenting households. ⚖ |
 | ⚑6 | **Community desk visibility.** | Name, home number, phone (masked except when calling through the console), whether they're on the app, and live SOS status. Never conditions, readings, medicines or reports. |
 | ⚑7 | **Data retention and erasure.** Medical records may have legal retention periods that override erasure requests. | Erasure requests come from the Profile screen. Non-medical data is deleted within 30 days; medical records are restricted (hidden, unusable) and deleted when the retention period ends. A retention table per data type, values to be set by a lawyer. ⚖ |
@@ -37,7 +37,7 @@ Scope from the brief: organisations, sites, homes, households, family accounts, 
 | `reminders` | Medicine reminders (design toggle) | Optional, a preference rather than a data-sharing consent |
 
 **Tables**:
-- `consents` is append-only: user, purpose, scope (JSON, e.g. which items or which manager), status granted/withdrawn, notice version, language, method (app / assisted), assisted-by and witness, timestamp. The current state is the latest row per (user, purpose, scope).
+- `consents` is append-only: user, purpose, scope (JSON, e.g. which items or which manager), status granted/withdrawn, notice version, language, timestamp. The current state is the latest row per (user, purpose, scope).
 - `record_shares` records who saw what, when and why (purpose + booking/incident id), written on every disclosure.
 
 **Enforcement**: one `consent` service in the API answers `can(subject, purpose, scope)`. Every module that discloses health data calls it, and every disclosure writes `record_shares` and `audit_events`. RLS is the backstop: health tables are readable only by the person, their active managers, and staff/partners through API endpoints that check consent. There are no direct table grants for staff.
@@ -81,7 +81,7 @@ Everything acting on someone else's data takes an explicit `subjectId` and check
   - Health tab with six vitals, 7-reading trends with target bands, log sheet, BMI, conditions, allergies, medicines and 30-day adherence, vaccinations, insurance e-card, devices (manual + import)
   - Profile → **Privacy** (current consents, history, manage family managers, download my data, delete my account)
 - **Family manager view**: a person switcher at the top ("Viewing: Amma"); actions are labelled as on behalf of.
-- **Console**: residents directory (search, filter by site/tower, on-app status), resident profile (read-only consent panel, medical sections only with consent, audited reads), assisted-onboarding flow (⚑4).
+- **Console**: residents directory (search, filter by site/tower, on-app status), resident profile (read-only consent panel, medical sections only with consent, audited reads).
 
 ---
 
@@ -100,6 +100,6 @@ Everything acting on someone else's data takes an explicit `subjectId` and check
 2. Households & family (API + resident onboarding)
 3. Health record API + Health tab + home snapshot
 4. Privacy screen (consents, history, access/erasure requests)
-5. Console residents directory + profile + assisted onboarding
+5. Console residents directory + profile
 
 Web-first, as agreed: the console parts can start right after step 1, and the resident screens follow on Android.
