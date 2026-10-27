@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { ConsentRow } from '../src/modules/consent/policy';
-import type { AllergyRow, ConditionRow, DoseRow, HealthRepo, MedicationRow, ProfileRow, ReadingRow } from '../src/modules/health/repo';
+import type { AllergyRow, ConditionRow, DeviceRow, DoseRow, HealthRepo, InsuranceRow, MedicationRow, ProfileRow, ReadingRow, VaccinationRow } from '../src/modules/health/repo';
 import type { HouseholdsRepo } from '../src/modules/households/repo';
 import { canActFor } from '../src/modules/households/service';
 
@@ -17,6 +17,9 @@ export function fakeHealth(households: HouseholdsRepo, _consents: ConsentRow[]) 
   const allergies: Owned<AllergyRow>[] = [];
   const medications: Owned<MedicationRow>[] = [];
   const doses: Owned<DoseRow>[] = [];
+  const vaccinations: Owned<VaccinationRow>[] = [];
+  const insurance: Owned<InsuranceRow>[] = [];
+  const devices: Owned<DeviceRow>[] = [];
   const shares: { subjectId: string; viewerId: string; viewerRole: string; purpose: string; items: string[] }[] = [];
   let at = 0;
 
@@ -60,7 +63,7 @@ export function fakeHealth(households: HouseholdsRepo, _consents: ConsentRow[]) 
     },
     async softDelete(actor, subject, table, id) {
       await rls(actor, subject);
-      const list = { vital_readings: readings, conditions, allergies, medications }[table] as Owned<{ id: string }>[];
+      const list = { vital_readings: readings, conditions, allergies, medications, vaccinations, insurance_policies: insurance, devices }[table] as Owned<{ id: string }>[];
       const row = mine(list, subject).find((r) => r.id === id);
       if (!row) return false;
       row.deleted = true;
@@ -106,6 +109,36 @@ export function fakeHealth(households: HouseholdsRepo, _consents: ConsentRow[]) 
       if (existing) existing.status = d.status;
       else doses.push({ ...d, userId: subject, enteredBy: actor, deleted: false, at: ++at });
     },
+    async vaccinations(actor, subject) {
+      await rls(actor, subject);
+      return mine(vaccinations, subject).map(strip);
+    },
+    async addVaccination(actor, subject, v) {
+      await rls(actor, subject);
+      const row = { ...v, id: randomUUID(), userId: subject, enteredBy: actor, deleted: false, at: ++at };
+      vaccinations.push(row);
+      return strip(row);
+    },
+    async insurance(actor, subject) {
+      await rls(actor, subject);
+      return mine(insurance, subject).map(strip);
+    },
+    async addInsurance(actor, subject, i) {
+      await rls(actor, subject);
+      const row = { ...i, cardPath: null, id: randomUUID(), userId: subject, enteredBy: actor, deleted: false, at: ++at };
+      insurance.push(row);
+      return strip(row);
+    },
+    async devices(actor, subject) {
+      await rls(actor, subject);
+      return mine(devices, subject).map(strip);
+    },
+    async addDevice(actor, subject, d) {
+      await rls(actor, subject);
+      const row = { ...d, lastSyncAt: null, id: randomUUID(), userId: subject, enteredBy: actor, deleted: false, at: ++at };
+      devices.push(row);
+      return strip(row);
+    },
     async dataForStaff(subject, since) {
       const best = new Map<string, Owned<ReadingRow>>();
       for (const r of mine(readings, subject)) if (!best.has(r.type) || r.takenAt > best.get(r.type)!.takenAt) best.set(r.type, r);
@@ -122,5 +155,5 @@ export function fakeHealth(households: HouseholdsRepo, _consents: ConsentRow[]) 
       shares.push(s);
     },
   };
-  return { repo, conditions, shares, doses };
+  return { repo, conditions, shares, doses, insurance };
 }

@@ -1,6 +1,6 @@
 import { bmi, checkVital, vitalStatus, vitalUnits, type Allergy, type Condition, type HealthSummary, type Medication, type VitalReading, type VitalReadingInput, type VitalType } from '@repo/contracts';
 import { decryptJson, encryptJson } from '../../lib/crypto';
-import type { AllergyRow, ConditionRow, DoseRow, HealthData, MedicationRow, ProfileRow, ReadingRow } from './repo';
+import type { AllergyRow, ConditionRow, DeviceRow, DoseRow, HealthData, InsuranceRow, MedicationRow, ProfileRow, ReadingRow, VaccinationRow } from './repo';
 
 // The service runs in India only; medicine schedules are local (IST) times.
 const IST_OFFSET_MS = (5 * 60 + 30) * 60_000;
@@ -99,6 +99,26 @@ export const decNotes = (key: Buffer, enc: string | null) => (enc ? decryptJson<
 
 export const toCondition = (c: ConditionRow, key: Buffer): Condition => ({ id: c.id, name: c.name, status: c.status as Condition['status'], diagnosedOn: c.diagnosedOn, notes: decNotes(key, c.notesEnc) });
 export const toAllergy = (a: AllergyRow): Allergy => ({ id: a.id, substance: a.substance, severity: a.severity as Allergy['severity'], reaction: a.reaction });
+
+/** Due within 30 days, or overdue. */
+export function toVaccination(v: VaccinationRow, now = new Date()) {
+  const soon = istDate(new Date(now.getTime() + 30 * DAY));
+  return { id: v.id, name: v.name, doseLabel: v.doseLabel, givenOn: v.givenOn, nextDue: v.nextDue, dueSoon: !!v.nextDue && v.nextDue <= soon };
+}
+
+export function toInsurance(i: InsuranceRow, key: Buffer, now = new Date()) {
+  return {
+    id: i.id,
+    insurer: i.insurer,
+    policyNumber: decNotes(key, i.policyNumberEnc),
+    memberId: decNotes(key, i.memberIdEnc),
+    validUntil: i.validUntil,
+    expired: !!i.validUntil && i.validUntil < istDate(now),
+    hasCard: !!i.cardPath,
+  };
+}
+
+export const toDevice = (d: DeviceRow) => ({ id: d.id, kind: d.kind as 'bp_monitor', name: d.name, connection: d.connection as 'manual', lastSyncAt: d.lastSyncAt ? d.lastSyncAt.toISOString() : null });
 
 const emptyProfile: ProfileRow = { bloodGroup: null, heightCm: null, dateOfBirth: null, sex: null };
 

@@ -401,3 +401,35 @@ export const HealthSummary = z
   })
   .openapi('HealthSummary');
 export type HealthSummary = z.infer<typeof HealthSummary>;
+
+export const VaccinationInput = z
+  .object({ name: z.string().trim().min(1).max(120), doseLabel: z.string().trim().max(40).optional(), givenOn: isoDate.optional(), nextDue: isoDate.optional() })
+  .openapi('VaccinationInput');
+export const Vaccination = VaccinationInput.extend({ id: z.string().uuid(), doseLabel: z.string().nullable(), givenOn: isoDate.nullable(), nextDue: isoDate.nullable(), dueSoon: z.boolean() }).openapi('Vaccination');
+export const VaccinationList = z.object({ vaccinations: z.array(Vaccination) }).openapi('VaccinationList');
+
+export const InsuranceInput = z
+  .object({ insurer: z.string().trim().min(1).max(120), policyNumber: z.string().trim().max(60).optional(), memberId: z.string().trim().max(60).optional(), validUntil: isoDate.optional() })
+  .openapi('InsuranceInput');
+export const Insurance = z
+  .object({
+    id: z.string().uuid(),
+    insurer: z.string(),
+    policyNumber: z.string().nullable(),
+    memberId: z.string().nullable(),
+    validUntil: isoDate.nullable(),
+    expired: z.boolean(),
+    /** An e-card image is on file (upload arrives with file storage). */
+    hasCard: z.boolean(),
+  })
+  .openapi('Insurance');
+export const InsuranceList = z.object({ policies: z.array(Insurance) }).openapi('InsuranceList');
+
+/** Bluetooth meters come later (brief); manual and phone health-app imports first. */
+export const DeviceInput = z
+  .object({ kind: z.enum(['bp_monitor', 'glucometer', 'oximeter', 'scale', 'thermometer', 'phone']), name: z.string().trim().min(1).max(80), connection: z.enum(['manual', 'health_connect', 'healthkit']) })
+  .openapi('DeviceInput');
+export const Device = z
+  .object({ id: z.string().uuid(), kind: DeviceInput.shape.kind, name: z.string(), connection: z.enum(['manual', 'bluetooth', 'health_connect', 'healthkit']), lastSyncAt: z.string().datetime().nullable() })
+  .openapi('Device');
+export const DeviceList = z.object({ devices: z.array(Device) }).openapi('DeviceList');

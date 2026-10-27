@@ -75,3 +75,28 @@ export const medicationDoses = pgTable(
   },
   (t) => [unique('medication_doses_medication_id_scheduled_at_key').on(t.medicationId, t.scheduledAt), index('medication_doses_user_idx').on(t.userId, t.scheduledAt.desc())],
 );
+
+export const vaccinations = pgTable('vaccinations', {
+  ...base,
+  name: text('name').notNull(),
+  doseLabel: text('dose_label'),
+  givenOn: date('given_on'),
+  nextDue: date('next_due'),
+});
+
+export const insurancePolicies = pgTable('insurance_policies', {
+  ...base,
+  insurer: text('insurer').notNull(),
+  policyNumberEnc: text('policy_number_enc'),
+  memberIdEnc: text('member_id_enc'),
+  validUntil: date('valid_until'),
+  cardPath: text('card_path'),
+});
+
+export const devices = pgTable('devices', {
+  ...base,
+  kind: text('kind').notNull(),
+  name: text('name').notNull(),
+  connection: text('connection').notNull(),
+  lastSyncAt: timestamp('last_sync_at', { withTimezone: true }),
+});

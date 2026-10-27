@@ -4,6 +4,15 @@ import {
   AllergyInput,
   Condition,
   ConditionInput,
+  Device,
+  DeviceInput,
+  DeviceList,
+  Insurance,
+  InsuranceInput,
+  InsuranceList,
+  Vaccination,
+  VaccinationInput,
+  VaccinationList,
   DoseMark,
   ErrorBody,
   HealthProfile,
@@ -24,7 +33,7 @@ import type { AppEnv } from '../../app';
 import { requireAuth, requireStaff } from '../../middleware/auth';
 import { isGranted } from '../consent/policy';
 import { canActFor } from '../households/service';
-import { encNotes, istDate, istSlot, prepareReading, toAllergy, toCondition, toMedication, toReading, toSummary } from './service';
+import { encNotes, istDate, istSlot, prepareReading, toAllergy, toCondition, toDevice, toInsurance, toMedication, toReading, toSummary, toVaccination } from './service';
 
 const security = [{ bearer: [] }];
 const json = <T extends z.ZodType>(schema: T, description: string) => ({ description, content: { 'application/json': { schema } } });
@@ -65,6 +74,15 @@ const r = {
   addMedication: createRoute({ method: 'post', path: '/people/{userId}/health/medications', operationId: 'addMedication', tags: ['health'], summary: 'Add a medicine with its dose times', ...authed, request: { params: person, ...body(MedicationInput) }, responses: { 201: json(Medication, 'Added'), ...failures } }),
   delMedication: createRoute({ method: 'delete', path: '/people/{userId}/health/medications/{id}', operationId: 'deleteMedication', tags: ['health'], summary: 'Remove a medicine', ...authed, request: { params: item }, responses: { 204: { description: 'Removed' }, ...failures } }),
   markDose: createRoute({ method: 'post', path: '/people/{userId}/health/medications/{id}/doses', operationId: 'markDose', tags: ['health'], summary: 'Tick a dose as taken (or skipped)', ...authed, request: { params: item, ...body(DoseMark) }, responses: { 200: json(Medication, 'Updated medicine'), ...failures } }),
+  listVaccinations: createRoute({ method: 'get', path: '/people/{userId}/health/vaccinations', operationId: 'listVaccinations', tags: ['health'], summary: 'Vaccinations, with doses due in the next 30 days flagged', ...authed, request: { params: person }, responses: { 200: json(VaccinationList, 'Vaccinations'), ...failures } }),
+  addVaccination: createRoute({ method: 'post', path: '/people/{userId}/health/vaccinations', operationId: 'addVaccination', tags: ['health'], summary: 'Record a vaccination', ...authed, request: { params: person, ...body(VaccinationInput) }, responses: { 201: json(Vaccination, 'Added'), ...failures } }),
+  delVaccination: createRoute({ method: 'delete', path: '/people/{userId}/health/vaccinations/{id}', operationId: 'deleteVaccination', tags: ['health'], summary: 'Remove a vaccination', ...authed, request: { params: item }, responses: { 204: { description: 'Removed' }, ...failures } }),
+  listInsurance: createRoute({ method: 'get', path: '/people/{userId}/health/insurance', operationId: 'listInsurance', tags: ['health'], summary: 'Insurance e-cards (numbers decrypted for the person and their manager only)', ...authed, request: { params: person }, responses: { 200: json(InsuranceList, 'Policies'), ...failures } }),
+  addInsurance: createRoute({ method: 'post', path: '/people/{userId}/health/insurance', operationId: 'addInsurance', tags: ['health'], summary: 'Add an insurance policy (numbers are encrypted at rest)', ...authed, request: { params: person, ...body(InsuranceInput) }, responses: { 201: json(Insurance, 'Added'), ...failures } }),
+  delInsurance: createRoute({ method: 'delete', path: '/people/{userId}/health/insurance/{id}', operationId: 'deleteInsurance', tags: ['health'], summary: 'Remove an insurance policy', ...authed, request: { params: item }, responses: { 204: { description: 'Removed' }, ...failures } }),
+  listDevices: createRoute({ method: 'get', path: '/people/{userId}/health/devices', operationId: 'listDevices', tags: ['health'], summary: 'Connected devices and health-app imports', ...authed, request: { params: person }, responses: { 200: json(DeviceList, 'Devices'), ...failures } }),
+  addDevice: createRoute({ method: 'post', path: '/people/{userId}/health/devices', operationId: 'addDevice', tags: ['health'], summary: 'Add a device (manual, Health Connect or HealthKit; Bluetooth comes later)', ...authed, request: { params: person, ...body(DeviceInput) }, responses: { 201: json(Device, 'Added'), ...failures } }),
+  delDevice: createRoute({ method: 'delete', path: '/people/{userId}/health/devices/{id}', operationId: 'deleteDevice', tags: ['health'], summary: 'Remove a device', ...authed, request: { params: item }, responses: { 204: { description: 'Removed' }, ...failures } }),
   staffView: createRoute({
     method: 'get',
     path: '/residents/{userId}/health',
@@ -190,6 +208,64 @@ export const healthRoutes = new OpenAPIHono<AppEnv>()
     if (date > istDate(now) || date < istDate(new Date(now.getTime() - 7 * DAY))) return error(c, 400, 'bad_date', 'Doses can be marked for today and the past week only.');
     await repo.markDose(me, userId, { medicationId: id, scheduledAt: istSlot(date, time), status });
     return c.json(toMedication(med, await repo.doses(me, userId, new Date(now.getTime() - 31 * DAY)), now), 200);
+  })
+  .openapi(r.listVaccinations, async (c) => {
+    const { userId } = c.req.valid('param');
+    if (!(await guard(c, userId))) return forbidden(c);
+    const rows = await c.get('deps').health.vaccinations(c.get('auth')!.userId, userId);
+    return c.json({ vaccinations: rows.map((v) => toVaccination(v)) }, 200);
+  })
+  .openapi(r.addVaccination, async (c) => {
+    const { userId } = c.req.valid('param');
+    if (!(await guard(c, userId))) return forbidden(c);
+    const b = c.req.valid('json');
+    if (b.givenOn && b.givenOn > istDate(new Date())) return error(c, 400, 'future', 'The vaccination date is in the future.');
+    const row = await c.get('deps').health.addVaccination(c.get('auth')!.userId, userId, { name: b.name, doseLabel: b.doseLabel ?? null, givenOn: b.givenOn ?? null, nextDue: b.nextDue ?? null });
+    return c.json(toVaccination(row), 201);
+  })
+  .openapi(r.delVaccination, async (c) => {
+    const { userId, id } = c.req.valid('param');
+    if (!(await guard(c, userId))) return forbidden(c);
+    if (!(await c.get('deps').health.softDelete(c.get('auth')!.userId, userId, 'vaccinations', id))) return error(c, 404, 'not_found', 'No such vaccination.');
+    return c.body(null, 204);
+  })
+  .openapi(r.listInsurance, async (c) => {
+    const { userId } = c.req.valid('param');
+    if (!(await guard(c, userId))) return forbidden(c);
+    const key = c.get('deps').config.fieldKey;
+    const rows = await c.get('deps').health.insurance(c.get('auth')!.userId, userId);
+    return c.json({ policies: rows.map((i) => toInsurance(i, key)) }, 200);
+  })
+  .openapi(r.addInsurance, async (c) => {
+    const { userId } = c.req.valid('param');
+    if (!(await guard(c, userId))) return forbidden(c);
+    const b = c.req.valid('json');
+    const key = c.get('deps').config.fieldKey;
+    const row = await c.get('deps').health.addInsurance(c.get('auth')!.userId, userId, { insurer: b.insurer, policyNumberEnc: encNotes(key, b.policyNumber), memberIdEnc: encNotes(key, b.memberId), validUntil: b.validUntil ?? null });
+    return c.json(toInsurance(row, key), 201);
+  })
+  .openapi(r.delInsurance, async (c) => {
+    const { userId, id } = c.req.valid('param');
+    if (!(await guard(c, userId))) return forbidden(c);
+    if (!(await c.get('deps').health.softDelete(c.get('auth')!.userId, userId, 'insurance_policies', id))) return error(c, 404, 'not_found', 'No such policy.');
+    return c.body(null, 204);
+  })
+  .openapi(r.listDevices, async (c) => {
+    const { userId } = c.req.valid('param');
+    if (!(await guard(c, userId))) return forbidden(c);
+    return c.json({ devices: (await c.get('deps').health.devices(c.get('auth')!.userId, userId)).map(toDevice) }, 200);
+  })
+  .openapi(r.addDevice, async (c) => {
+    const { userId } = c.req.valid('param');
+    if (!(await guard(c, userId))) return forbidden(c);
+    const b = c.req.valid('json');
+    return c.json(toDevice(await c.get('deps').health.addDevice(c.get('auth')!.userId, userId, { kind: b.kind, name: b.name, connection: b.connection })), 201);
+  })
+  .openapi(r.delDevice, async (c) => {
+    const { userId, id } = c.req.valid('param');
+    if (!(await guard(c, userId))) return forbidden(c);
+    if (!(await c.get('deps').health.softDelete(c.get('auth')!.userId, userId, 'devices', id))) return error(c, 404, 'not_found', 'No such device.');
+    return c.body(null, 204);
   })
   .openapi(r.staffView, async (c) => {
     const { userId } = c.req.valid('param');

@@ -19,7 +19,8 @@ From now on each feature is also clicked through in Chrome. The console flows (r
 
 ### Next
 1. Chrome walkthrough of console flows once Docker is up (and fixes from the first real database run).
-2. Vaccinations, insurance e-card, devices (remaining health-record parts).
+2. ~~Vaccinations, insurance, devices~~ done: vaccinations with due-in-30-days flag; insurance with policy/member numbers encrypted at rest, returned only to the person and their manager (not in the care team view); devices for manual entry and Health Connect / HealthKit (Bluetooth refused until it is built). E-card image upload waits for file storage (Supabase Storage). 120 API tests.
+   **Blocked for Chrome testing:** Docker Desktop needs WSL 2, which is not installed. The user installs it as admin (wsl --install --no-distribution) and restarts.
 3. Resident app screens on Android.
 
 ## 2026-10-27 · Phase 2, step 2: households & family API, console residents directory

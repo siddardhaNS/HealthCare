@@ -1,6 +1,6 @@
-import { allergies, and, asUser, conditions, desc, eq, gte, healthProfiles, isNull, medicationDoses, medications, recordShares, vitalReadings, type Db } from '@repo/db';
+import { allergies, and, asUser, conditions, desc, devices, eq, gte, healthProfiles, insurancePolicies, isNull, medicationDoses, medications, recordShares, vaccinations, vitalReadings, type Db } from '@repo/db';
 
-type Table = 'conditions' | 'allergies' | 'medications';
+type Table = 'conditions' | 'allergies' | 'medications' | 'vaccinations' | 'insurance_policies' | 'devices';
 
 export interface ProfileRow {
   bloodGroup: string | null;
@@ -43,6 +43,28 @@ export interface MedicationRow {
   endDate: string | null;
   active: boolean;
 }
+export interface VaccinationRow {
+  id: string;
+  name: string;
+  doseLabel: string | null;
+  givenOn: string | null;
+  nextDue: string | null;
+}
+export interface InsuranceRow {
+  id: string;
+  insurer: string;
+  policyNumberEnc: string | null;
+  memberIdEnc: string | null;
+  validUntil: string | null;
+  cardPath: string | null;
+}
+export interface DeviceRow {
+  id: string;
+  kind: string;
+  name: string;
+  connection: string;
+  lastSyncAt: Date | null;
+}
 export interface DoseRow {
   medicationId: string;
   scheduledAt: Date;
@@ -77,6 +99,12 @@ export interface HealthRepo {
   medications(actor: string, subject: string): Promise<MedicationRow[]>;
   addMedication(actor: string, subject: string, m: Omit<MedicationRow, 'id' | 'active'>): Promise<MedicationRow>;
   doses(actor: string, subject: string, since: Date): Promise<DoseRow[]>;
+  vaccinations(actor: string, subject: string): Promise<VaccinationRow[]>;
+  addVaccination(actor: string, subject: string, v: Omit<VaccinationRow, 'id'>): Promise<VaccinationRow>;
+  insurance(actor: string, subject: string): Promise<InsuranceRow[]>;
+  addInsurance(actor: string, subject: string, i: Omit<InsuranceRow, 'id' | 'cardPath'>): Promise<InsuranceRow>;
+  devices(actor: string, subject: string): Promise<DeviceRow[]>;
+  addDevice(actor: string, subject: string, d: Omit<DeviceRow, 'id' | 'lastSyncAt'>): Promise<DeviceRow>;
   markDose(actor: string, subject: string, d: DoseRow): Promise<void>;
   /** Care team read (service role); the route has already checked role + consent. */
   dataForStaff(subject: string, since: Date): Promise<HealthData>;
@@ -93,7 +121,10 @@ export function drizzleHealthRepo(db: Db): HealthRepo {
   const allergyCols = { id: allergies.id, substance: allergies.substance, severity: allergies.severity, reaction: allergies.reaction };
   const medCols = { id: medications.id, name: medications.name, strength: medications.strength, dose: medications.dose, frequency: medications.frequency, schedule: medications.schedule, startDate: medications.startDate, endDate: medications.endDate, active: medications.active };
   const profileCols = { bloodGroup: healthProfiles.bloodGroup, heightCm: healthProfiles.heightCm, dateOfBirth: healthProfiles.dateOfBirth, sex: healthProfiles.sex };
-  const tables = { conditions, allergies, medications, vital_readings: vitalReadings };
+  const tables = { conditions, allergies, medications, vital_readings: vitalReadings, vaccinations, insurance_policies: insurancePolicies, devices };
+  const vacCols = { id: vaccinations.id, name: vaccinations.name, doseLabel: vaccinations.doseLabel, givenOn: vaccinations.givenOn, nextDue: vaccinations.nextDue };
+  const insCols = { id: insurancePolicies.id, insurer: insurancePolicies.insurer, policyNumberEnc: insurancePolicies.policyNumberEnc, memberIdEnc: insurancePolicies.memberIdEnc, validUntil: insurancePolicies.validUntil, cardPath: insurancePolicies.cardPath };
+  const devCols = { id: devices.id, kind: devices.kind, name: devices.name, connection: devices.connection, lastSyncAt: devices.lastSyncAt };
 
   // Latest reading per type, newest first.
   const latestQuery = (tx: Pick<Db, 'selectDistinctOn'>, subject: string) =>
@@ -139,6 +170,12 @@ export function drizzleHealthRepo(db: Db): HealthRepo {
           .values({ userId: subject, enteredBy: actor, medicationId: d.medicationId, scheduledAt: d.scheduledAt, status: d.status, takenAt: d.status === 'taken' ? new Date() : null })
           .onConflictDoUpdate({ target: [medicationDoses.medicationId, medicationDoses.scheduledAt], set: { status: d.status, takenAt: d.status === 'taken' ? new Date() : null, enteredBy: actor } });
       }),
+    vaccinations: (actor, subject) => run(actor, (tx) => tx.select(vacCols).from(vaccinations).where(live(vaccinations, subject)).orderBy(desc(vaccinations.givenOn))),
+    addVaccination: (actor, subject, v) => run(actor, async (tx) => (await tx.insert(vaccinations).values({ ...v, userId: subject, enteredBy: actor }).returning(vacCols))[0]!),
+    insurance: (actor, subject) => run(actor, (tx) => tx.select(insCols).from(insurancePolicies).where(live(insurancePolicies, subject)).orderBy(insurancePolicies.createdAt)),
+    addInsurance: (actor, subject, i) => run(actor, async (tx) => (await tx.insert(insurancePolicies).values({ ...i, userId: subject, enteredBy: actor }).returning(insCols))[0]!),
+    devices: (actor, subject) => run(actor, (tx) => tx.select(devCols).from(devices).where(live(devices, subject)).orderBy(devices.createdAt)),
+    addDevice: (actor, subject, d) => run(actor, async (tx) => (await tx.insert(devices).values({ ...d, userId: subject, enteredBy: actor }).returning(devCols))[0]!),
     async dataForStaff(subject, since) {
       const [profile] = await db.select(profileCols).from(healthProfiles).where(live(healthProfiles, subject));
       return {
