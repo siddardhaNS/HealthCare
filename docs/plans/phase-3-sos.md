@@ -152,24 +152,25 @@ Realtime: private channels `sos:{incidentId}` (resident, family managers, assign
 
 ---
 
-## 9. Crew coverage areas (added 2026-10-27, awaiting approval)
+## 9. Coverage teams (added 2026-10-27, awaiting approval)
 
-Crews are stationed at strategic points chosen from where households are. Ops tag crews to **coverage areas**; an SOS inside an area is offered to its crews first. Decided: priority first (the 30 s widen still applies); managed by super admin and operations; the community desk can see which crews cover its community but not change them.
+Ops **manually** assign who covers whom: a **coverage team** (crew members and their ambulance, e.g. "ABC team, Gachibowli") covers a list of gated communities, apartment buildings and stand-alone homes. Every household is covered by **at most one team**, so there are never overlaps. An SOS from a covered household is offered to its team first. Decided: priority first (the 30 s widen still applies); managed by super admin and operations; the community desk can see which team covers its community but not change it.
 
 **Data** (migration, RLS, every change in `audit_events`):
-- `coverage_areas`: name, centre (geography point), radius in metres, active. Usually centred on a `standby_point`.
-- `crew_coverage`: crew ↔ area (many-to-many: a crew can cover two neighbouring areas; an area has several crews for shifts).
+- `coverage_teams`: name, area label (free text, e.g. "Gachibowli"), active.
+- Team members: `crews.team_id` and `ambulances.team_id` (a crew or ambulance belongs to one team at a time).
+- `coverage_assignments`: team + **either** a site (gated community or apartment building) **or** a stand-alone household. Unique per site and per household, enforced by the database, so a second team cannot be assigned to the same place.
+- Households inside a site follow the site's team. Only households without a site are assigned individually.
 
 **Dispatch** (step 3):
-- Area match uses the SOS location, or the household's home location when the phone sent none.
-- Ring 1 = the area's on-duty crews, nearest first, up to 3. Ring 2 at the widen threshold = the nearest other crews, as today. Drills: drill crews only, as today.
+- The team comes from the SOS's household (its site, or the household itself). No GPS needed for this.
+- Ring 1 = the team's on-duty crews, nearest first, up to 3 (see ⚑9). Ring 2 at the widen threshold = the nearest other crews, as today. Uncovered households: ring 1 is the nearest 3, as today. Drills: drill crews only.
 
 **Console** (step 6, with the command center):
-- Coverage page: list of areas with their crews, on-duty count and **how many households fall inside** (PostGIS, so ops can see where coverage is thin); create/edit an area (name, standby point or coordinates, radius); add or remove crews.
-- Map view of areas over the resident heatmap comes with the maps work.
+- **Coverage teams** page: each team with its crews, ambulance, on-duty count and how many households it covers; create/rename/deactivate a team; add or remove crews and the ambulance.
+- **Assign** communities, buildings and stand-alone homes to a team (searchable list, bulk select; filter "not covered by any team" so gaps are visible). Moving a place to another team is one action, audited.
+- Residents directory and the community page show the covering team.
 
 | # | Question | My recommendation |
 |---|---|---|
-| ⚑8 | **Area shape.** | A **circle** (standby point + radius, e.g. 3 km) to start: quick to set up and matches "stationed at a point". Polygons (draw on a map) later if ops need irregular areas. |
-| ⚑9 | **Ring 1 when fewer than 3 tagged crews are on duty.** | **Fill the remaining slots with the nearest other crews** in the same first offer, so a thin area never costs 30 s. With no tagged crew on duty, ring 1 is the normal nearest 3. |
-| ⚑10 | **An SOS inside two overlapping areas.** | Use the crews of both, nearest first. |
+| ⚑9 | **Ring 1 when fewer than 3 of the team's crews are on duty** (or none). | **Fill the remaining slots with the nearest other crews** in the same first offer, so a thin team never costs 30 s. The alternative is offering only to the team and waiting the full 30 s before anyone else is asked. |
