@@ -13,10 +13,10 @@
 - Resident: Profile (emergency contact added, family invite sent with masked number, privacy toggles, consent history), Bookings and Records (placeholders, as planned). Home shows the logged BP.
 - Fixed: page forms could leave fields under the keyboard (edge-to-edge); pages now use `KeyboardAwareScrollView` (`react-native-keyboard-controller` 1.22.7, with `react-native-reanimated` 4.7.1, versions from `expo install`).
 - Field app: first Android build; sign-in, the "field staff only" message without a role, then home with the crew role and the duty switch (persisted in step 4).
-- **Coverage teams** requested: ops manually assign each community, building or stand-alone home to one crew-and-ambulance team (no overlaps); priority-first offers; ops/super admin manage them. Planned in `docs/plans/phase-3-sos.md` §9; ⚑9 awaiting approval.
+- **Coverage teams** requested: ops manually assign each community, building or stand-alone home to one crew-and-ambulance team (no overlaps); priority-first offers; ops/super admin manage them. Planned in `docs/plans/phase-3-sos.md` §9, approved.
 
 ### Next
-- Phase 3 step 3 (dispatch), including coverage teams once ⚑9 is approved.
+- Phase 3 step 3 (dispatch), including coverage teams (§9 approved).
 
 ## 2026-10-27 · Phase 3, step 2: Workflows host and SOS escalation
 

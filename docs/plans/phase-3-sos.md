@@ -152,7 +152,7 @@ Realtime: private channels `sos:{incidentId}` (resident, family managers, assign
 
 ---
 
-## 9. Coverage teams (added 2026-10-27, awaiting approval)
+## 9. Coverage teams (added and approved 2026-10-27)
 
 Ops **manually** assign who covers whom: a **coverage team** (crew members and their ambulance, e.g. "ABC team, Gachibowli") covers a list of gated communities, apartment buildings and stand-alone homes. Every household is covered by **at most one team**, so there are never overlaps. An SOS from a covered household is offered to its team first. Decided: priority first (the 30 s widen still applies); managed by super admin and operations; the community desk can see which team covers its community but not change it.
 
@@ -171,6 +171,6 @@ Ops **manually** assign who covers whom: a **coverage team** (crew members and t
 - **Assign** communities, buildings and stand-alone homes to a team (searchable list, bulk select; filter "not covered by any team" so gaps are visible). Moving a place to another team is one action, audited.
 - Residents directory and the community page show the covering team.
 
-| # | Question | My recommendation |
-|---|---|---|
-| ⚑9 | **Ring 1 when fewer than 3 of the team's crews are on duty** (or none). | **Fill the remaining slots with the nearest other crews** in the same first offer, so a thin team never costs 30 s. The alternative is offering only to the team and waiting the full 30 s before anyone else is asked. |
+**Decided:**
+- ⚑9: when fewer than 3 of the team's crews are on duty (or none), the first offer is filled with the nearest other crews at once; a short-staffed team never costs the resident 30 s.
+- A crew member belongs to one team at a time (simplest; can become many-to-many later if crews work shifts for two teams).
