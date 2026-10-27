@@ -1,5 +1,33 @@
 # Progress
 
+## 2026-10-27 · Phase 3, step 1: SOS state machine, tables and raise/cancel API
+
+Plan approved today (all recommendations): `docs/plans/phase-3-sos.md`.
+
+### Done
+- **State machine** in `@repo/contracts/sos` (browser-safe):
+  - every legal transition and who may make it (resident, crew, desk, system); reasons required for desk cancels, reassignments and close-after-treatment-on-scene
+  - a resident can cancel until the ambulance is on its way; after that only the desk
+  - a crew can still accept after the 108 prompt
+  - 18 tests
+- **Migration `…_sos.sql`**:
+  - ambulances (company work number), crews (drill participants), crew shifts, standby points, hospitals (capacity), per-site thresholds (15–60 s / 60–180 s, defaults 30 / 90)
+  - incidents: **one open SOS per person** enforced by the database, idempotency key per sender
+  - append-only `sos_events` timeline, dispatch offers, hospital handovers (token hash, consented items)
+  - RLS: people and their managers read their own incidents and timeline
+- **API**:
+  - `POST /v1/sos`: idempotent; retries and second presses return the open incident; works without GPS; uses the community’s thresholds; rate-limited only against abuse
+  - `GET /v1/sos/current`, `GET /v1/sos/{id}` (with timeline), `POST /v1/sos/{id}/cancel`
+  - every state change is compare-and-set and writes `sos_events` **and** `audit_events` in one transaction
+- 130 API tests (10 new).
+
+### Next
+2. Workflows: serve the Hono API from a thin Next.js app (plan ⚑ 1), then the escalation workflow with simulated crews.
+3. Dispatch (Redis GEO, ETAs, offers, first-accept-wins), then the field app, resident SOS screens, console command center.
+
+### Console test login
+No staff accounts exist until the local database runs (needs WSL → Docker). Then: `pnpm --filter api staff:create --email … --role super_admin`, and TOTP set-up on first sign-in.
+
 ## 2026-10-27 · Phase 2, step 4: resident app screens (Android/iOS)
 
 ### Done

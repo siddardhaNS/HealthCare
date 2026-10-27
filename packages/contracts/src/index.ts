@@ -433,3 +433,43 @@ export const Device = z
   .object({ id: z.string().uuid(), kind: DeviceInput.shape.kind, name: z.string(), connection: z.enum(['manual', 'bluetooth', 'health_connect', 'healthkit']), lastSyncAt: z.string().datetime().nullable() })
   .openapi('Device');
 export const DeviceList = z.object({ devices: z.array(Device) }).openapi('DeviceList');
+
+// ── SOS ─────────────────────────────────────────────────────────────────
+
+export * from './sos';
+import { sosStates as _sosStates } from './sos';
+
+export const SosStateSchema = z.enum(_sosStates).openapi('SosState');
+
+export const GeoPoint = z
+  .object({ lat: z.number().min(6).max(37.5), lng: z.number().min(68).max(97.5), accuracyM: z.number().min(0).max(10000).optional() })
+  .openapi('GeoPoint', { description: 'WGS84; bounds cover India' });
+
+export const SosRaise = z
+  .object({
+    /** Generated once per press on the phone; retries reuse it so only one incident is created. */
+    idempotencyKey: z.string().uuid(),
+    /** Best location at the time (last known, then a fresh fix). Optional: never block an SOS on GPS. */
+    location: GeoPoint.optional(),
+  })
+  .openapi('SosRaise');
+
+export const SosCancel = z.object({ reason: z.string().trim().max(200).optional() }).openapi('SosCancel');
+
+export const SosEvent = z
+  .object({ at: z.string().datetime(), from: SosStateSchema.nullable(), to: SosStateSchema, by: z.enum(['resident', 'crew', 'desk', 'system']), reason: z.string().nullable() })
+  .openapi('SosEvent');
+
+export const SosIncident = z
+  .object({
+    id: z.string().uuid(),
+    state: SosStateSchema,
+    isDrill: z.boolean(),
+    createdAt: z.string().datetime(),
+    location: GeoPoint.nullable(),
+    widenAfterS: z.number().int(),
+    escalateAfterS: z.number().int(),
+    timeline: z.array(SosEvent),
+  })
+  .openapi('SosIncident');
+export type SosIncident = z.infer<typeof SosIncident>;

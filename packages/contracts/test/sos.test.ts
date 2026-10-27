@@ -1,0 +1,55 @@
+import { describe, expect, it } from 'vitest';
+import { checkTransition, isOpen, sosStates, type SosActor, type SosState } from '../src/sos';
+
+describe('SOS state machine', () => {
+  it('walks the full happy path with the right actor at each step', () => {
+    const path: [SosState, SosState, SosActor][] = [
+      ['raised', 'dispatching', 'system'],
+      ['dispatching', 'accepted', 'system'],
+      ['accepted', 'en_route', 'crew'],
+      ['en_route', 'on_scene', 'crew'],
+      ['on_scene', 'transporting', 'crew'],
+      ['transporting', 'handed_over', 'crew'],
+      ['handed_over', 'closed', 'desk'],
+    ];
+    for (const [from, to, by] of path) expect(checkTransition(from, to, by)).toEqual({ ok: true });
+  });
+
+  it('refuses skipping steps', () => {
+    expect(checkTransition('raised', 'accepted', 'system')).toMatchObject({ code: 'illegal_transition' });
+    expect(checkTransition('accepted', 'on_scene', 'crew')).toMatchObject({ code: 'illegal_transition' });
+    expect(checkTransition('dispatching', 'handed_over', 'crew')).toMatchObject({ code: 'illegal_transition' });
+  });
+
+  it('only the right actor can make a move', () => {
+    expect(checkTransition('accepted', 'en_route', 'resident')).toMatchObject({ code: 'not_your_move' });
+    expect(checkTransition('dispatching', 'accepted', 'crew')).toMatchObject({ code: 'not_your_move' });
+    expect(checkTransition('handed_over', 'closed', 'crew')).toMatchObject({ code: 'not_your_move' });
+  });
+
+  it('the desk needs a reason to cancel, reassign or close after treatment on scene', () => {
+    expect(checkTransition('dispatching', 'cancelled', 'desk')).toMatchObject({ code: 'reason_required' });
+    expect(checkTransition('dispatching', 'cancelled', 'desk', '  ')).toMatchObject({ code: 'reason_required' });
+    expect(checkTransition('dispatching', 'cancelled', 'desk', 'Duplicate alert')).toEqual({ ok: true });
+    expect(checkTransition('accepted', 'dispatching', 'desk', 'Vehicle breakdown')).toEqual({ ok: true });
+    expect(checkTransition('on_scene', 'closed', 'desk', 'Treated at home')).toEqual({ ok: true });
+  });
+
+  it('a resident can cancel until a crew is on the way, without a reason', () => {
+    expect(checkTransition('raised', 'cancelled', 'resident')).toEqual({ ok: true });
+    expect(checkTransition('accepted', 'cancelled', 'resident')).toEqual({ ok: true });
+    expect(checkTransition('en_route', 'cancelled', 'resident')).toMatchObject({ code: 'not_your_move' });
+  });
+
+  it('a crew can still accept after the 108 prompt', () => {
+    expect(checkTransition('dispatching', 'escalated_to_108', 'system')).toEqual({ ok: true });
+    expect(checkTransition('escalated_to_108', 'accepted', 'system')).toEqual({ ok: true });
+  });
+
+  it('closed and cancelled are final', () => {
+    for (const end of ['closed', 'cancelled'] as const) {
+      for (const to of sosStates) for (const by of ['resident', 'crew', 'desk', 'system'] as const) expect(checkTransition(end, to, by, 'x').ok).toBe(false);
+      expect(isOpen(end)).toBe(false);
+    }
+  });
+});

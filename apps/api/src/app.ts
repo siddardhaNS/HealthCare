@@ -10,6 +10,7 @@ import { consentRoutes } from './modules/consent/routes';
 import { healthRoutes } from './modules/health/routes';
 import { householdRoutes } from './modules/households/routes';
 import { residentRoutes } from './modules/residents/routes';
+import { sosRoutes } from './modules/sos/routes';
 import { leadsRoutes } from './modules/leads/routes';
 import { whatsappWebhookRoutes } from './modules/messaging/routes';
 import { systemRoutes } from './modules/system/routes';
@@ -58,7 +59,7 @@ export function createApp(options: CreateAppOptions = {}) {
   const webOrigins = options.webOrigins ?? (process.env.WEB_ORIGINS ?? 'http://localhost:3000,http://localhost:3003').split(',').map((o) => o.trim());
   app.use('/v1/leads', cors({ origin: webOrigins, allowMethods: ['POST'], allowHeaders: ['content-type'], maxAge: 600 }));
 
-  for (const path of ['/v1/auth/*', '/v1/me', '/v1/leads', '/v1/leads/*', '/v1/consents', '/v1/consents/*', '/v1/households', '/v1/households/*', '/v1/me/*', '/v1/people/*', '/v1/residents', '/v1/residents/*', '/webhooks/*']) app.use(path, withDeps);
+  for (const path of ['/v1/auth/*', '/v1/me', '/v1/leads', '/v1/leads/*', '/v1/consents', '/v1/consents/*', '/v1/households', '/v1/households/*', '/v1/me/*', '/v1/people/*', '/v1/residents', '/v1/residents/*', '/v1/sos', '/v1/sos/*', '/webhooks/*']) app.use(path, withDeps);
   app.route('/v1', authRoutes);
   app.route('/v1', authHookRoutes);
   app.route('/v1', leadsRoutes);
@@ -66,6 +67,7 @@ export function createApp(options: CreateAppOptions = {}) {
   app.route('/v1', householdRoutes);
   app.route('/v1', residentRoutes);
   app.route('/v1', healthRoutes);
+  app.route('/v1', sosRoutes);
   app.route('/', whatsappWebhookRoutes);
 
   app.notFound((c) => c.json<ErrorBody>({ error: { code: 'not_found', message: 'Not found', requestId: c.get('requestId') } }, 404));

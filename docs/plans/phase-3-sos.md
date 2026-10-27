@@ -1,6 +1,6 @@
 # Plan: Phase 3 (SOS and the field app)
 
-Status: **draft for your approval.** The brief requires approval before Phase 3 is built, and asks to check before changing the stack, adding paid services, or touching SOS escalation rules. The ⚑ items are the decisions I need from you.
+Status: **approved 2026-10-27**: all recommendations accepted (⚑1 Hono served from a thin Next.js app for Workflows; ⚑2 30 s / 90 s per-site thresholds; ⚑3 own + partner ambulances; ⚑4 preferred hospital within +10 min; ⚑5 drills only to drill crews, no external messages; ⚑6 work-number call first, in-app voice in Phase 4; ⚑7 accounts approved, sandbox keys until launch). **Your actions outside the code:** apply for Apple Critical Alerts; Play Store full-screen-intent and foreground-location declarations at submission.
 
 SOS must never fail silently: an alert reaches a human within seconds, even on a weak network, and every step is recorded.
 

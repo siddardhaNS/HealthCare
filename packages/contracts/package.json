@@ -8,7 +8,8 @@
     "./roles": "./src/roles.ts",
     "./leads": "./src/leads.ts",
     "./consent": "./src/consent.ts",
-    "./vitals": "./src/vitals.ts"
+    "./vitals": "./src/vitals.ts",
+    "./sos": "./src/sos.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

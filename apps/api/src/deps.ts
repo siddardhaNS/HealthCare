@@ -9,6 +9,7 @@ import { drizzleHealthRepo, type HealthRepo } from './modules/health/repo';
 import { drizzleHouseholdsRepo, type HouseholdsRepo } from './modules/households/repo';
 import { drizzleLeadsRepo, type LeadsRepo } from './modules/leads/repo';
 import { drizzleResidentsRepo, type ResidentsRepo } from './modules/residents/repo';
+import { drizzleSosRepo, type SosRepo } from './modules/sos/repo';
 import { drizzleMessagingRepo } from './modules/messaging/repo';
 import { logMailer, type Mailer } from './modules/notifications/mailer';
 import type { MessagingDeps } from './modules/messaging/service';
@@ -64,6 +65,7 @@ export interface Deps {
   households: HouseholdsRepo;
   residents: ResidentsRepo;
   health: HealthRepo;
+  sos: SosRepo;
   mailer: Mailer;
   messaging: MessagingDeps;
   verifyToken: TokenVerifier;
@@ -98,6 +100,7 @@ export function depsFromEnv(source: NodeJS.ProcessEnv = process.env): Deps {
     households: drizzleHouseholdsRepo(db),
     residents: drizzleResidentsRepo(db),
     health: drizzleHealthRepo(db),
+    sos: drizzleSosRepo(db),
     mailer: logMailer(),
     messaging: {
       kv,
