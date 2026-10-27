@@ -1,12 +1,11 @@
 import type { SosIncident } from '@repo/contracts';
-import { checkTransition, sosThresholds, type SosActor, type SosState } from '@repo/contracts/sos';
+import { sosThresholds, type SosActor } from '@repo/contracts/sos';
 import type { HouseholdsRepo } from '../households/repo';
 import { canActFor } from '../households/service';
 import type { EventRow, IncidentRow, SosRepo } from './repo';
+import { fail, type SosFailure } from './transition';
 
-export type SosFailure = { error: 'not_found' | 'forbidden' | 'illegal_transition' | 'not_your_move' | 'reason_required' | 'conflict'; message: string };
-const fail = (error: SosFailure['error'], message: string): SosFailure => ({ error, message });
-export const isSosFailure = (x: unknown): x is SosFailure => typeof x === 'object' && x !== null && 'error' in x;
+export { isSosFailure, move, type SosFailure } from './transition';
 
 export function toIncident(i: IncidentRow, events: EventRow[]): SosIncident {
   return {
@@ -73,17 +72,6 @@ export async function raise(
     }
     throw err;
   }
-}
-
-/** Applies a state change through the state machine (compare-and-set against concurrent changes). */
-export async function move(sos: SosRepo, incident: IncidentRow, to: SosState, actor: { id: string | null; role: SosActor }, reason: string | null): Promise<IncidentRow | SosFailure> {
-  const check = checkTransition(incident.state, to, actor.role, reason);
-  if (!check.ok) {
-    const message = { illegal_transition: `An SOS that is ${incident.state} cannot become ${to}.`, not_your_move: 'You cannot make this change.', reason_required: 'Give a reason for this change.' }[check.code];
-    return fail(check.code, message);
-  }
-  const next = await sos.transition(incident.id, incident.state, to, actor, reason);
-  return next ?? fail('conflict', 'The SOS changed meanwhile. Refresh and try again.');
 }
 
 /** The person or a family manager can see and cancel. */

@@ -21,6 +21,10 @@ allowBuilds:
   unrs-resolver: true
   # Downloads the sentry-cli binary (source-map upload for Sentry).
   '@sentry/cli': true
+  # Workflow SDK compiler (checks/installs its native binary).
+  '@swc/core': true
+  # Optional native CBOR speed-up under the Workflow SDK; the JS fallback is fine.
+  cbor-extract: false
 
 # One Upstash client version everywhere (drizzle-orm lists it as an optional peer).
 overrides:

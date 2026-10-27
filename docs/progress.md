@@ -1,5 +1,33 @@
 # Progress
 
+## 2026-10-27 · Phase 3, step 2: Workflows host and SOS escalation
+
+### Done
+- **API on Next.js (plan ⚑1):** `apps/api` is now a thin Next.js 16 app whose catch-all route (`app/[[...path]]/route.ts`) hands every request to the unchanged Hono app. `withWorkflow` adds the Workflow routes. `src/index.ts` and `src/dev.ts` are gone; `pnpm --filter api dev` still serves port 3001 and reads the root `.env`. CI now builds the API too.
+- **Escalation workflow** (`workflow` 5.2.3), one durable run per SOS (`modules/sos/escalation.ts`):
+  - raised → dispatching, desk alarm, offer ring 1
+  - no accept by the site's first threshold (default 30 s): offer ring 2 and alarm the desk to dispatch manually
+  - by the second (default 90 s): `escalated_to_108` with a reason, prompt 108; dispatch stays open (2 h) for a late accept
+  - stops as soon as the incident settles: an accept or cancel resumes the run's hook (`sos-escalation:{id}`); every step re-reads the state, so a lost signal is harmless
+  - ids only in workflow inputs and logs; non-state actions (offer rings) go to `audit_events`
+- `POST /v1/sos` starts the run and stores its id (a failure to start never fails the SOS; it is logged). Cancel signals the run.
+- **Accept** (`acceptForCrew`): compare-and-set assigns the crew; one winner among simultaneous accepts. The endpoint and Redis lock come with dispatch (step 3).
+- Alerts are a `SosAlerts` interface, logging for now; step 3 swaps in real offers, console alarms, push and WhatsApp.
+- **Tests:** 13 new unit tests, plus 6 whole-workflow tests on the Workflow runtime with simulated crews and fast-forwarded sleeps (accept before 30 s; widen then 108; accept after 108; cancel; three simultaneous accepts; missed signal). Total API: 149.
+- **Verified locally** on the real stack: an SOS widened at +31 s and escalated at +91 s, with timeline and audit rows.
+- Fixed local setup: staff password sign-in (email provider was disabled by `[auth.email] enable_signup = false`); `SUPABASE_JWT_SECRET` must stay empty with the current Supabase CLI.
+
+### Notes
+- Workflow tests load our workspace packages through a test-only Node resolve hook (`test/workflow-setup.ts`); Next builds bundle them normally.
+- Workflow tests keep their own data dir; sharing `.workflow-data` with the dev server let test setup wipe live local runs.
+- Not yet tested: API restart mid-run (needs a deployed or long-running environment; plan §7).
+
+### Next
+3. Dispatch: Redis GEO shortlist, Routes ETAs, `dispatch_offers`, accept/decline endpoints with the atomic lock, real alerts; a simulated-crews script for e2e and load tests.
+
+### Open questions
+- Staff self sign-up: the Supabase email provider must be on for staff password sign-in, so anyone could create an email account (it gets no console role and is turned away). Close it fully with a `before_user_created` hook? Also check the production project's setting.
+
 ## 2026-10-27 · Phase 3, step 1: SOS state machine, tables and raise/cancel API
 
 Plan approved today (all recommendations): `docs/plans/phase-3-sos.md`.
@@ -26,7 +54,7 @@ Plan approved today (all recommendations): `docs/plans/phase-3-sos.md`.
 3. Dispatch (Redis GEO, ETAs, offers, first-accept-wins), then the field app, resident SOS screens, console command center.
 
 ### Console test login
-No staff accounts exist until the local database runs (needs WSL → Docker). Then: `pnpm --filter api staff:create --email … --role super_admin`, and TOTP set-up on first sign-in.
+Local stack runs (Docker). Create staff with `pnpm --filter api staff:create --email … --role super_admin`, then TOTP set-up on first sign-in.
 
 ## 2026-10-27 · Phase 2, step 4: resident app screens (Android/iOS)
 

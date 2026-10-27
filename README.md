@@ -12,7 +12,7 @@ apps/
   field/      Expo app: crew, phlebotomists, companions, riders
   console/    Next.js: admin console + partner portal (port 3002)
   web/        Next.js: landing site (port 3000)
-  api/        Hono API (port 3001 locally; Vercel Functions in bom1)
+  api/        Hono API, hosted by a thin Next.js app for Vercel Workflows (port 3001; Vercel Functions in bom1)
 packages/
   brand/      the only place the product name, domains, contacts and logo live
   tokens/     design tokens (Aurora light + dark), CSS/Tailwind output, contrast test
@@ -44,7 +44,7 @@ cp apps/console/.env.example apps/console/.env.local
 cp apps/resident/.env.example apps/resident/.env   # likewise apps/field
 
 pnpm supabase start             # Postgres + PostGIS, Auth, Storage, Realtime
-pnpm --filter api dev           # http://localhost:3001/v1/health, /openapi.json
+pnpm --filter api dev           # http://localhost:3001/v1/health, /openapi.json (Next.js + Workflows)
 pnpm --filter web dev           # http://localhost:3000
 pnpm --filter console dev       # http://localhost:3002
 ```
@@ -64,6 +64,11 @@ pnpm dev                        # Metro for an installed dev build
 - Residents / field staff: test numbers +91 99999 00001 and +91 99999 00002, code `123456` (no message is sent).
 - Give the field number a role: insert into `user_roles` (e.g. `crew`) via `pnpm supabase db` / Studio.
 - Console staff: `pnpm --filter api staff:create --email you@example.in --role super_admin`, then set up TOTP on first sign-in.
+- `.env`: leave `SUPABASE_JWT_SECRET` empty with the current Supabase CLI (it signs tokens with asymmetric keys, verified through JWKS).
+
+### Workflows (SOS escalation)
+
+The API runs durable workflows locally with no extra service; run state lives in `apps/api/.workflow-data`. Inspect runs with `cd apps/api && npx workflow web` (or `npx workflow inspect runs`). Every SOS starts one escalation run: dispatch, widen at 30 s, prompt 108 at 90 s (per-site thresholds).
 
 ## Checks
 
@@ -71,7 +76,7 @@ pnpm dev                        # Metro for an installed dev build
 pnpm check       # brand name only in packages/brand; colours/fonts only in packages/tokens
 pnpm lint        # ESLint everywhere (includes the token rule) + pnpm check
 pnpm typecheck
-pnpm test        # unit tests, incl. WCAG AA contrast for every theme and mode
+pnpm test        # unit tests, incl. WCAG AA contrast for every theme and mode, and whole-workflow runs (sleeps fast-forwarded)
 pnpm --filter web e2e        # Playwright + axe (E2E_BASE_URL=http://localhost:3000 to reuse a dev server)
 pnpm --filter console e2e
 maestro test apps/resident/.maestro/sign-in.yaml   # needs an emulator + local stack

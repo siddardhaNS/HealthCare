@@ -29,7 +29,7 @@ jobs:
       # Generated files must be up to date.
       - run: pnpm assets && pnpm openapi && git diff --exit-code
       - run: pnpm turbo run lint typecheck test
-      - run: pnpm turbo run build --filter=web --filter=console
+      - run: pnpm turbo run build --filter=web --filter=console --filter=api
       - name: Expo config and dependency check
         run: |
           pnpm --filter resident exec expo install --check

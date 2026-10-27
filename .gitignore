@@ -26,3 +26,8 @@ Thumbs.db
 # Playwright
 test-results/
 playwright-report/
+
+# Workflow SDK local data, test bundles and SWC cache
+.workflow-data/
+.workflow-vitest/
+.swc/

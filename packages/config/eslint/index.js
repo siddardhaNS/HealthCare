@@ -19,7 +19,7 @@ export const tokenRules = {
 };
 
 export default tseslint.config(
-  { ignores: ['**/dist/**', '**/.next/**', '**/.expo/**', '**/generated/**', '**/android/**', '**/ios/**', '**/node_modules/**'] },
+  { ignores: ['**/dist/**', '**/.next/**', '**/.well-known/workflow/**', '**/.expo/**', '**/generated/**', '**/android/**', '**/ios/**', '**/node_modules/**'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

@@ -4,16 +4,19 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch --env-file-if-exists=../../.env src/dev.ts",
+    "dev": "next dev --port 3001",
     "openapi": "tsx scripts/openapi.ts",
-    "test": "vitest run",
+    "test": "vitest run && vitest run --config vitest.workflows.config.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "staff:create": "tsx --env-file-if-exists=../../.env scripts/staff-create.ts"
+    "staff:create": "tsx --env-file-if-exists=../../.env scripts/staff-create.ts",
+    "build": "next build",
+    "start": "next start --port 3001"
   },
   "dependencies": {
     "@hono/zod-openapi": "1.6.3",
     "@repo/brand": "workspace:*",
+    "@repo/config": "workspace:*",
     "@repo/contracts": "workspace:*",
     "@repo/db": "workspace:*",
     "@sentry/hono": "11.9.0",
@@ -21,14 +24,18 @@
     "@upstash/redis": "1.39.0",
     "hono": "4.13.14",
     "jose": "6.2.13",
+    "next": "16.4.3",
+    "react": "catalog:",
+    "react-dom": "catalog:",
     "standardwebhooks": "1.1.1",
-    "zod": "catalog:",
-    "@repo/config": "workspace:*"
+    "workflow": "5.2.3",
+    "zod": "catalog:"
   },
   "devDependencies": {
-    "@hono/node-server": "2.1.5",
     "@supabase/supabase-js": "2.118.0",
     "@types/node": "26.6.5",
+    "@types/react": "catalog:",
+    "@workflow/vitest": "5.0.6",
     "eslint": "10.13.0",
     "tsx": "4.23.15",
     "typescript": "catalog:",

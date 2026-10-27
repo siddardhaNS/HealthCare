@@ -10,6 +10,8 @@ import { drizzleHouseholdsRepo, type HouseholdsRepo } from './modules/households
 import { drizzleLeadsRepo, type LeadsRepo } from './modules/leads/repo';
 import { drizzleResidentsRepo, type ResidentsRepo } from './modules/residents/repo';
 import { drizzleSosRepo, type SosRepo } from './modules/sos/repo';
+import { logAlerts, type EscalationRunner, type SosAlerts } from './modules/sos/escalation-service';
+import { workflowEscalation } from './modules/sos/escalation-runner';
 import { drizzleMessagingRepo } from './modules/messaging/repo';
 import { logMailer, type Mailer } from './modules/notifications/mailer';
 import type { MessagingDeps } from './modules/messaging/service';
@@ -66,6 +68,8 @@ export interface Deps {
   residents: ResidentsRepo;
   health: HealthRepo;
   sos: SosRepo;
+  sosAlerts: SosAlerts;
+  escalation: EscalationRunner;
   mailer: Mailer;
   messaging: MessagingDeps;
   verifyToken: TokenVerifier;
@@ -80,7 +84,7 @@ export interface Deps {
   };
 }
 
-export function depsFromEnv(source: NodeJS.ProcessEnv = process.env): Deps {
+export function depsFromEnv(source: Record<string, string | undefined> = process.env): Deps {
   // Blank lines in .env files (FOO=) mean "not set", not "empty string".
   const parsed = Env.safeParse(Object.fromEntries(Object.entries(source).filter(([, v]) => v !== '')));
   if (!parsed.success) {
@@ -101,6 +105,8 @@ export function depsFromEnv(source: NodeJS.ProcessEnv = process.env): Deps {
     residents: drizzleResidentsRepo(db),
     health: drizzleHealthRepo(db),
     sos: drizzleSosRepo(db),
+    sosAlerts: logAlerts(),
+    escalation: workflowEscalation(),
     mailer: logMailer(),
     messaging: {
       kv,

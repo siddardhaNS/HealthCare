@@ -53,8 +53,13 @@ export interface SosRepo {
    * Moves the incident from `from` to `to` only if it is still in `from`
    * (compare-and-set), writing the timeline event and an audit event in the
    * same transaction. Returns null if another change got there first.
+   * `assign` sets the crew that took the job (on accept).
    */
-  transition(id: string, from: SosState, to: SosState, actor: { id: string | null; role: SosActor }, reason: string | null): Promise<IncidentRow | null>;
+  transition(id: string, from: SosState, to: SosState, actor: { id: string | null; role: SosActor }, reason: string | null, assign?: { crewId: string }): Promise<IncidentRow | null>;
+  /** Records the escalation workflow run that owns this incident. */
+  setWorkflowRun(id: string, runId: string): Promise<void>;
+  /** An SOS action that is not a state change (desk alarm, offer ring, 108 prompt). Ids only in metadata. */
+  recordAction(id: string, action: string, metadata: Record<string, unknown>): Promise<void>;
 }
 
 const OPEN_EXCLUDED = ['closed', 'cancelled'];
@@ -132,18 +137,24 @@ export function drizzleSosRepo(db: Db): SosRepo {
         .where(eq(sosEvents.incidentId, id))
         .orderBy(asc(sosEvents.createdAt))) as EventRow[];
     },
-    async transition(id, from, to, actor, reason) {
+    async transition(id, from, to, actor, reason, assign) {
       return db.transaction(async (tx) => {
         const [row] = await tx
           .update(sosIncidents)
-          .set({ state: to, closedAt: to === 'closed' || to === 'cancelled' ? new Date() : null })
+          .set({ state: to, closedAt: to === 'closed' || to === 'cancelled' ? new Date() : null, ...(assign ? { crewId: assign.crewId } : {}) })
           .where(and(eq(sosIncidents.id, id), eq(sosIncidents.state, from)))
           .returning(cols);
         if (!row) return null;
         await tx.insert(sosEvents).values({ incidentId: id, fromState: from, toState: to, actorId: actor.id, actorRole: actor.role, reason });
-        await tx.insert(auditEvents).values(audit(id, actor.id, actor.role, `sos_${to}`, { subject_id: row.userId, from }));
+        await tx.insert(auditEvents).values(audit(id, actor.id, actor.role, `sos_${to}`, { subject_id: row.userId, from, ...(assign ? { crew_id: assign.crewId } : {}) }));
         return row;
       });
+    },
+    async setWorkflowRun(id, runId) {
+      await db.update(sosIncidents).set({ workflowRunId: runId }).where(eq(sosIncidents.id, id));
+    },
+    async recordAction(id, action, metadata) {
+      await db.insert(auditEvents).values(audit(id, null, 'system', action, metadata));
     },
   };
 }

@@ -1,4 +1,8 @@
 {
-  "extends": "@repo/config/tsconfig/node.json",
-  "include": ["src", "scripts", "test"]
+  "extends": "@repo/config/tsconfig/nextjs.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": ["next-env.d.ts", "app", "src", "scripts", "test", "*.ts", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
 }
