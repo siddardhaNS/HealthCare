@@ -76,6 +76,8 @@ pnpm dev                        # Metro for an installed dev build
 
 The API runs durable workflows locally with no extra service; run state lives in `apps/api/.workflow-data`. Inspect runs with `cd apps/api && npx workflow web` (or `npx workflow inspect runs`). Every SOS starts one escalation run: dispatch, widen at 30 s, prompt 108 at 90 s (per-site thresholds).
 
+Simulated crews (local stack, API running): `pnpm --filter api simulate:crews --count 5 --team 2 --sos` puts 5 test crews on duty around Hyderabad (2 in a coverage team), raises a test SOS and accepts offers; Ctrl+C takes them off duty. Options: `--near lat,lng`, `--decline 0.3`.
+
 ## Checks
 
 ```sh

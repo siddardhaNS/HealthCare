@@ -11,7 +11,8 @@
     "lint": "eslint .",
     "staff:create": "tsx --env-file-if-exists=../../.env scripts/staff-create.ts",
     "build": "next build",
-    "start": "next start --port 3001"
+    "start": "next start --port 3001",
+    "simulate:crews": "tsx --env-file-if-exists=../../.env scripts/simulate-crews.ts"
   },
   "dependencies": {
     "@hono/zod-openapi": "1.6.3",
