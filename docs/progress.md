@@ -1,5 +1,36 @@
 # Progress
 
+## 2026-10-27 · Phase 3, step 3: dispatch with coverage teams (core done)
+
+### Done
+- **Coverage teams** (plan §9, approved): migration `…_coverage.sql`: `coverage_teams`, `coverage_assignments` (one team per site or stand-alone household, enforced by unique keys), `crews.team_id`, `ambulances.team_id`.
+- **Who is offered:**
+  - ring 1 is the household's team (nearest first; team crews without a position still get it), topped up with the nearest other crews to three
+  - ring 2 at the widen threshold: the next nearest
+  - drills: drill crews only
+  - skipped: off-duty, inactive, busy and already-offered crews
+  - no GPS: the home's location
+- **Live positions:** Redis GEO (`geo:crews:on_duty` + `pos:crew:{id}`, stale after 10 min). In-process locally, shared by request handlers and workflow steps.
+- **First accept wins:** Redis lock plus the state compare-and-set; other offers released; escalation run signalled. Decline.
+- **Endpoints:** `GET /v1/crew/me`, `PUT /v1/crew/duty`, `POST /v1/crew/location`, `GET /v1/crew/offers`, `POST /v1/dispatch/offers/{id}/accept|decline`. Crews see location and distance only, never medical details.
+- The escalation workflow now sends real offers (desk alarm and 108 prompt still logged).
+- **Simulated crews:** `pnpm --filter api simulate:crews --count 5 --team 2 --sos`. Verified on the local stack: team crews plus the nearest other crew offered, one accept wins, others released, timeline `raised → dispatching → accepted`.
+- **Tests:** 18 new; API total 161, plus 6 workflow tests.
+
+### Not yet
+- Google Routes ETAs (straight-line × 1.4 at 25 km/h until a Maps key is configured).
+- Ringing push to crews comes with the field app (step 4); until then crews poll `GET /v1/crew/offers`.
+- Console screens for teams and assignments (step 6).
+- Load test (step 7).
+
+### Next (tomorrow)
+- Step 4, field app: duty switch on the API, ringing offer screen with accept/decline, status buttons, location streaming.
+
+### Needs from you
+- Google Maps API key (sandbox) for road ETAs.
+- Upstash Redis account before the first deploy.
+- Staff self-sign-up hook decision (open question above).
+
 ## 2026-10-27 · Resident app on Android (emulator)
 
 ### Done
