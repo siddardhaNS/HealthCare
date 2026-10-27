@@ -1,5 +1,17 @@
 # Progress
 
+## 2026-10-27 · Resident app on Android (emulator)
+
+### Done
+- First Android development build of the resident app on an API 37 emulator. Clicked through it against the local API and Supabase: phone OTP sign-in (test number), onboarding (profile, own home, consent), Home, Health (logged a BP reading → 128/84 "Elevated").
+- **Fixed:**
+  - `verify` crashed when opened without a phone number (the router's first signed-out screen on launch); it now redirects to sign-in (resident and field).
+  - The bottom sheet ("Log a reading") stayed under the keyboard on Android, hiding the fields and Save; it now lifts by the keyboard height. Reading fields capped at 6 characters.
+- **Local setup:** phone login needed a placeholder SMS provider in `supabase/config.toml` (the CLI ignores the send-SMS hook); `virtualStoreDirMaxLength: 24` shortens pnpm store paths; README covers the Windows Android setup (JDK 17, long paths, CMake/Ninja).
+
+### Next
+- Rest of the resident click-through (Bookings, Records, Profile, family invites) and the field app's first build; then Phase 3 step 3 (dispatch).
+
 ## 2026-10-27 · Phase 3, step 2: Workflows host and SOS escalation
 
 ### Done

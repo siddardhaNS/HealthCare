@@ -5,6 +5,11 @@ packages:
 # Expo SDK 54+ supports pnpm's default isolated installs. If native module
 # resolution breaks on a device build, switch to `nodeLinker: hoisted` here.
 
+# Short store folder names: Android native builds (CMake/ninja) write deep
+# paths inside node_modules/.pnpm/<name>/…, which passed Windows' 260-char
+# limit with the default (60) and failed the build.
+virtualStoreDirMaxLength: 24
+
 # One React for every app and shared package (Expo SDK 58 pins 19.3.0).
 catalog:
   react: 19.3.0

@@ -49,7 +49,13 @@ pnpm --filter web dev           # http://localhost:3000
 pnpm --filter console dev       # http://localhost:3002
 ```
 
-Mobile apps use development builds (never Expo Go, because calling and SOS need native modules):
+Mobile apps use development builds (never Expo Go, because calling and SOS need native modules).
+
+Windows, one-time setup for Android builds:
+- JDK 17 (`winget install Microsoft.OpenJDK.17`); user env vars `JAVA_HOME` (that JDK), `ANDROID_HOME` (`%LOCALAPPDATA%\Android\Sdk`), and `platform-tools` + `emulator` on `Path`.
+- Long paths: native modules compile to paths over 260 characters. Enable them (admin PowerShell: `New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name LongPathsEnabled -Value 1 -PropertyType DWORD -Force`) and use a long-path-aware CMake/Ninja (`winget install Kitware.CMake Ninja-build.Ninja`); the SDK's CMake 3.22 ships an older Ninja that fails.
+- After every `expo prebuild`, point Gradle at that CMake in `apps/<app>/android/local.properties`: `cmake.dir=C\:\\Program Files\\CMake` (with Ninja on `Path`).
+- The first native build takes 15–20 minutes; later ones a few minutes, and JS changes reload through Metro without a rebuild.
 
 ```sh
 cd apps/resident

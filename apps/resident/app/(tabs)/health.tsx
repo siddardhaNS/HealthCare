@@ -154,8 +154,8 @@ function LogSheet({ who, open, initial, onClose }: { who: string; open: boolean;
   return (
     <Sheet visible={open} title={t('healthTab.logTitle')} onClose={onClose}>
       <Segmented label={t('healthTab.logTitle')} options={vitalTypes.map((v) => ({ value: v, label: t(`health.vitals.${v}`) }))} value={type} onChange={(v) => { setType(v); log.reset(); }} />
-      <TextField label={type === 'bp' ? t('healthTab.systolic') : `${t('healthTab.value')}`} value={v1} onChangeText={setV1} keyboardType="decimal-pad" testID="reading-value" />
-      {type === 'bp' ? <TextField label={t('healthTab.diastolic')} value={v2} onChangeText={setV2} keyboardType="number-pad" testID="reading-value2" /> : null}
+      <TextField label={type === 'bp' ? t('healthTab.systolic') : `${t('healthTab.value')}`} value={v1} onChangeText={setV1} keyboardType="decimal-pad" maxLength={6} testID="reading-value" />
+      {type === 'bp' ? <TextField label={t('healthTab.diastolic')} value={v2} onChangeText={setV2} keyboardType="number-pad" maxLength={6} testID="reading-value2" /> : null}
       <Text variant="small" tone="muted">
         {t('healthTab.target', { range: t(`healthTab.targets.${type}`) })}
       </Text>

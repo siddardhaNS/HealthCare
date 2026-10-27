@@ -298,12 +298,13 @@ uri = "http://host.docker.internal:3001/v1/auth/hooks/send-sms"
 secrets = "env(SEND_SMS_HOOK_SECRET)"
 
 # Configure one of the supported SMS providers: `twilio`, `twilio_verify`, `messagebird`, `textlocal`, `vonage`.
+# Placeholder, never called: the CLI turns phone login off unless a provider is
+# enabled, and Auth sends every OTP through the send_sms hook above when it is on.
 [auth.sms.twilio]
-enabled = false
-account_sid = ""
-message_service_sid = ""
-# DO NOT commit your Twilio auth token to git. Use environment variable substitution instead:
-auth_token = "env(SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN)"
+enabled = true
+account_sid = "local-unused"
+message_service_sid = "local-unused"
+auth_token = "local-unused"
 
 # Multi-factor-authentication is available to Supabase Pro plan.
 [auth.mfa]

@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, RefreshControl, ScrollView, View, type ViewStyle } from 'react-native';
+import { useEffect, useState, type ReactNode } from 'react';
+import { ActivityIndicator, Keyboard, Modal, Platform, Pressable, RefreshControl, ScrollView, View, type ViewStyle } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Icon, Screen, Text, useTheme } from '@repo/ui-native';
@@ -74,9 +74,11 @@ export function ErrorState({ onRetry }: { onRetry: () => void }) {
 export function Sheet({ visible, title, onClose, children }: { visible: boolean; title: string; onClose: () => void; children: ReactNode }) {
   const { colors, radius, space } = useTheme();
   const { t } = useTranslation();
+  const keyboard = useKeyboardHeight();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      {/* Lift the sheet above the keyboard. KeyboardAvoidingView cannot do this in an Android modal (edge-to-edge). */}
+      <View style={{ flex: 1, paddingBottom: keyboard }}>
         <Pressable style={{ flex: 1, backgroundColor: colors.scrim }} onPress={onClose} accessibilityLabel={t('healthTab.close')} />
         <View
           accessibilityViewIsModal
@@ -90,9 +92,23 @@ export function Sheet({ visible, title, onClose, children }: { visible: boolean;
           </View>
           {children}
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
+}
+
+function useKeyboardHeight() {
+  const [height, setHeight] = useState(0);
+  useEffect(() => {
+    const ios = Platform.OS === 'ios';
+    const show = Keyboard.addListener(ios ? 'keyboardWillShow' : 'keyboardDidShow', (e) => setHeight(e.endCoordinates.height));
+    const hide = Keyboard.addListener(ios ? 'keyboardWillHide' : 'keyboardDidHide', () => setHeight(0));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+  return height;
 }
 
 export function IconButton({ icon, label, onPress, color, style }: { icon: Parameters<typeof Icon>[0]['name']; label: string; onPress: () => void; color?: string; style?: ViewStyle }) {
