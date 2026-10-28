@@ -34,12 +34,19 @@
 - Registration, life support and "Call ambulance crew" (opened the dialer with the work number); on scene → transporting → handed over; home "SOS active" card; startup error screen with Call 108 (API stopped).
 - Fixed during the run: cancel confirmation hidden below the fold; ETA wrapping; map label clipped / over the route; on-scene card said "arriving in"; after hand-over the screen fell back to "Looking for an ambulance"; last step shown in progress instead of done.
 
+### Same day: location asked during onboarding (your decision)
+- New last onboarding step **"Let help find you"**: "Allow location" shows the system prompt, "Not now" moves on. Either answer completes the step; anyone who said "Not now" is asked again by the system at their first SOS. Stored on the phone (it is the phone's permission, not a consent record). Existing users see it once.
+- Verified on the emulator: permission revoked → step shown → allow → home → SOS countdown opens with no prompt.
+- Also fixed: the SOS timer froze at 0:00 when the phone clock was behind the server (the emulator was ~1 min behind); it now starts no later than when the phone first saw the SOS.
+- **Slow raise seen for real:** right after an API restart, two raise attempts failed with a 500 before the third landed (201). The app showed "Still trying… Call 108" during the retries and only one incident was created: the fallback path working as designed. The cause of the 500s did not reproduce; the API now logs the error message in local development only, so the next occurrence shows it.
+- The dev build froze ("isn't responding") twice when it lost its connection to Metro under load (logcat: dev-client websocket reconnects). Development tooling only; not in release builds.
+
 ### Not verified yet
-- **SOS pressed while the API is down** (fallback buttons after 4 s, then the retry landing once): the run raced the app's startup and wasn't repeated. Do this first next session, then add a Maestro flow for it.
+- **SOS pressed while the API is completely down mid-session** (retries until it comes back): the slow-API case above is covered; the fully-down case still needs a Maestro flow.
+- The two unexplained 500s on POST /v1/sos after an API restart (see above).
 - iOS (needs a Mac or EAS + Apple account).
 
 ### Notes and follow-ups
-- The location permission prompt appears over the countdown on the first SOS. The countdown keeps running, so it does not block, but asking for permission during onboarding would be calmer. Your call (it's a consent-adjacent screen).
 - The home screen needs the API to load. A resident offline at launch now gets the phone fallbacks, but can't raise an in-app SOS until the service is reachable. An offline-capable home (cached profile) would fix this.
 - "Hospital handover" card is a placeholder until step 6.
 
