@@ -1,8 +1,10 @@
 // Dispatch: who is offered an SOS, and the first-accept-wins rule.
 // docs/plans/phase-3-sos.md §3.4 and §9 (coverage teams).
-import type { CrewStep } from '@repo/contracts/sos';
+import { estimateEtaS, type CrewStep } from '@repo/contracts/sos';
 import type { Kv } from '../../lib/kv';
 import type { CrewLocator, LatLng } from '../../lib/crew-locator';
+import type { Realtime } from '../../lib/realtime';
+import { publishCrewPosition } from '../sos/live';
 import type { IncidentRow, SosRepo } from '../sos/repo';
 import { acceptForCrew, type EscalationRunner, type SosAlerts } from '../sos/escalation-service';
 import { isSosFailure, move, type SosFailure } from '../sos/transition';
@@ -15,11 +17,7 @@ export const SEARCH_RADIUS_M = { 1: 20_000, 2: 40_000 } as const;
 /** How long the first accept holds the incident against a racing second accept. */
 const ACCEPT_LOCK_S = 120;
 
-/**
- * Road ETA without a maps call: straight-line distance × 1.4 road factor at
- * 25 km/h city speed. Replaced by Google Routes once a key is configured.
- */
-export const estimateEtaS = (distanceM: number) => Math.round((distanceM * 1.4) / (25_000 / 3600));
+export { estimateEtaS } from '@repo/contracts/sos';
 
 export interface DispatchDeps {
   dispatch: DispatchRepo;
@@ -171,10 +169,16 @@ export async function advanceJob(d: { sos: SosRepo }, crew: CrewRow, incidentId:
   return move(d.sos, incident, to, { id: crew.userId, role: 'crew' }, null);
 }
 
-/** Batched fixes from the field app; the newest one is the crew's position. Only while on duty. */
-export async function reportLocation(d: DispatchDeps, crew: CrewRow, points: (LatLng & { at: string })[]): Promise<true | DispatchFailure> {
+/**
+ * Batched fixes from the field app; the newest one is the crew's position.
+ * Only while on duty. During a job it is also pushed to the incident's
+ * channel, so the resident and the desk see the ambulance move.
+ */
+export async function reportLocation(d: DispatchDeps & { sos: SosRepo; realtime: Realtime }, crew: CrewRow, points: (LatLng & { at: string })[]): Promise<true | DispatchFailure> {
   if (!(await d.dispatch.isOnDuty(crew.id))) return { error: 'conflict', message: 'Go on duty to share your location.' };
   const latest = [...points].sort((a, b) => Date.parse(a.at) - Date.parse(b.at)).at(-1)!;
   await d.locator.set(crew.id, { lat: latest.lat, lng: latest.lng });
+  const job = await d.sos.activeForCrew(crew.id);
+  if (job) await publishCrewPosition(d.realtime, job.id, latest);
   return true;
 }

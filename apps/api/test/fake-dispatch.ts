@@ -16,6 +16,7 @@ export function fakeDispatch(incidents: () => IncidentRow[]) {
   const siteTeam = new Map<string, string>();
   const householdAt = new Map<string, LatLng>();
   const audit: { crewId: string; action: string }[] = [];
+  const vehicles = new Map<string, { registration: string; equipment: 'bls' | 'als'; workPhone: string }>();
   let clock = Date.parse('2026-10-27T10:00:00Z');
 
   const repo: DispatchRepo = {
@@ -83,6 +84,9 @@ export function fakeDispatch(incidents: () => IncidentRow[]) {
     async releaseOthers(incidentId, keep) {
       for (const o of offers) if (o.incidentId === incidentId && o.id !== keep && !o.response) o.response = 'released';
     },
+    async vehicle(crewId) {
+      return vehicles.get(crewId) ?? null;
+    },
   };
 
   /** Adds a crew (on duty unless told otherwise). */
@@ -98,5 +102,5 @@ export function fakeDispatch(incidents: () => IncidentRow[]) {
     return id;
   };
 
-  return { repo, crews, offers, onDuty, audit, addCrew, addTeam, householdTeam, householdSite, siteTeam, householdAt };
+  return { repo, crews, offers, onDuty, audit, vehicles, addCrew, addTeam, householdTeam, householdSite, siteTeam, householdAt };
 }

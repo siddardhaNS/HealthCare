@@ -330,4 +330,46 @@ describe('the crew job', () => {
     await move(t.sos.repo, incident, 'cancelled', { id: MOM, role: 'resident' }, null);
     expect(await (await call('GET', '/v1/crew/job')).json()).toBeNull();
   });
+  it('the resident sees the ambulance while a crew has the job: work number, position, distance and ETA, never crew names', async () => {
+    const { t, crew, call, step, incidentId } = await onJob();
+    t.dispatch.vehicles.set(crew.id, { registration: 'TS09 EA 1234', equipment: 'als', workPhone: '+919000000001' });
+    const resident = { authorization: `Bearer ${await t.token({ sub: MOM })}` };
+    const view = async () => (await (await t.app.request(`/v1/sos/${incidentId}`, { headers: resident })).json()) as { state: string; crew: Record<string, unknown> | null };
+
+    const accepted = await view();
+    expect(accepted.crew).toEqual({ ambulance: { registration: 'TS09 EA 1234', equipment: 'als' }, workPhone: '+919000000001', position: expect.objectContaining({ lat: expect.any(Number) }), distanceM: expect.closeTo(1000, -2), etaS: expect.any(Number) });
+    expect(JSON.stringify(accepted.crew)).not.toMatch(/userId|crewId|name/i);
+
+    await call('POST', '/v1/crew/location', { points: [{ ...north(0.5), at: new Date().toISOString() }] });
+    expect((await view()).crew).toMatchObject({ distanceM: expect.closeTo(500, -2) });
+
+    for (const to of ['en_route', 'on_scene', 'transporting', 'handed_over']) await step(to);
+    expect(await view()).toMatchObject({ state: 'handed_over', crew: null });
+  });
+
+  it('before a crew accepts there is no ambulance to show', async () => {
+    const t = await testContext();
+    const resident = { authorization: `Bearer ${await t.token({ sub: MOM })}`, 'content-type': 'application/json' };
+    const res = await t.app.request('/v1/sos', { method: 'POST', headers: resident, body: JSON.stringify({ idempotencyKey: randomUUID(), location: HOME }) });
+    expect(res.status).toBe(201);
+    expect(await res.json()).toMatchObject({ state: 'raised', crew: null });
+  });
+
+  it('state changes and the ambulance position go out on the incident channel; standby positions do not', async () => {
+    const { t, call, step, incidentId } = await onJob();
+    const topic = `sos:${incidentId}`;
+    expect(t.published).toContainEqual({ topic, event: 'state', payload: expect.objectContaining({ state: 'accepted', by: 'system' }) });
+    await step('en_route');
+    expect(t.published.at(-1)).toEqual({ topic, event: 'state', payload: expect.objectContaining({ state: 'en_route', from: 'accepted', by: 'crew' }) });
+
+    const fix = { ...north(0.8), at: '2026-10-27T10:00:09Z' };
+    await call('POST', '/v1/crew/location', { points: [fix] });
+    expect(t.published.at(-1)).toEqual({ topic, event: 'position', payload: fix });
+
+    for (const to of ['on_scene', 'transporting', 'handed_over']) await step(to);
+    const before = t.published.length;
+    await call('POST', '/v1/crew/location', { points: [{ ...north(2), at: '2026-10-27T10:30:00Z' }] });
+    expect(t.published).toHaveLength(before);
+    expect(JSON.stringify(t.published)).not.toMatch(/allerg|condition|medic|blood/i);
+  });
 });

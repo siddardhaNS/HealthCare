@@ -6,6 +6,7 @@ import { decryptJson, encryptJson, verifyMetaSignature } from '../src/lib/crypto
 import { memoryKv } from '../src/lib/kv';
 import { maskPhone, normalizeIndianPhone } from '../src/lib/phone';
 import { checkLimits } from '../src/lib/rate-limit';
+import { supabaseRealtime } from '../src/lib/realtime';
 import { requireStaff, type AccessClaims } from '../src/middleware/auth';
 
 describe('crypto', () => {
@@ -65,4 +66,30 @@ describe('requireStaff', () => {
   it('allows a staff role at aal2', async () => expect((await app(base).request('/x')).status).toBe(200));
   it('requires TOTP (aal2)', async () => expect((await app({ ...base, aal: 'aal1' }).request('/x')).status).toBe(403));
   it('refuses field and resident users', async () => expect((await app({ ...base, roles: ['crew'] }).request('/x')).status).toBe(403));
+});
+
+describe('realtime publish', () => {
+  it('posts the payload to the private broadcast endpoint with the secret key', async () => {
+    const calls: { url: string; init: RequestInit }[] = [];
+    const rt = supabaseRealtime({
+      supabaseUrl: 'http://supabase.test/',
+      secretKey: 'sb_secret_x',
+      fetch: async (url, init) => {
+        calls.push({ url: String(url), init: init! });
+        return new Response(null, { status: 202 });
+      },
+    });
+    await rt.publish('sos:abc', 'state', { state: 'accepted' });
+    expect(calls).toHaveLength(1);
+    expect(calls[0]!.url).toBe('http://supabase.test/realtime/v1/api/broadcast/sos%3Aabc/events/state?private=true');
+    expect(calls[0]!.init.headers).toMatchObject({ apikey: 'sb_secret_x' });
+    expect(JSON.parse(String(calls[0]!.init.body))).toEqual({ state: 'accepted' });
+  });
+
+  it('never throws: a push failing must not fail the SOS change that caused it', async () => {
+    const down = supabaseRealtime({ supabaseUrl: 'http://supabase.test', secretKey: 'k', fetch: async () => Promise.reject(new TypeError('fetch failed')) });
+    await expect(down.publish('sos:abc', 'state', {})).resolves.toBeUndefined();
+    const refused = supabaseRealtime({ supabaseUrl: 'http://supabase.test', secretKey: 'k', fetch: async () => new Response('no', { status: 500 }) });
+    await expect(refused.publish('sos:abc', 'state', {})).resolves.toBeUndefined();
+  });
 });

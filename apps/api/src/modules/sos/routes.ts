@@ -1,11 +1,11 @@
 import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi';
-import { ErrorBody, SosCancel, SosIncident, SosRaise, type ErrorBody as ErrorBodyT } from '@repo/contracts';
+import { ErrorBody, ResidentSos, SosCancel, SosRaise, type ErrorBody as ErrorBodyT } from '@repo/contracts';
 import type { Context } from 'hono';
 import type { AppEnv } from '../../app';
 import type { Deps } from '../../deps';
 import { checkLimits } from '../../lib/rate-limit';
 import { requireAuth } from '../../middleware/auth';
-import { isSosFailure, loadForPerson, move, raise, toIncident, type SosFailure } from './service';
+import { isSosFailure, loadForPerson, move, raise, residentView, type SosFailure } from './service';
 
 const security = [{ bearer: [] }];
 const json = <T extends z.ZodType>(schema: T, description: string) => ({ description, content: { 'application/json': { schema } } });
@@ -23,10 +23,10 @@ const r = {
     summary: 'Raise an SOS. Idempotent: retries and second presses return the same open incident (200); a new one is 201.',
     ...authed,
     request: { body: { content: { 'application/json': { schema: SosRaise } }, required: true } },
-    responses: { 201: json(SosIncident, 'Raised'), 200: json(SosIncident, 'Already open'), ...failures },
+    responses: { 201: json(ResidentSos, 'Raised'), 200: json(ResidentSos, 'Already open'), ...failures },
   }),
-  current: createRoute({ method: 'get', path: '/sos/current', operationId: 'currentSos', tags: ['sos'], summary: 'My open SOS, if any (the app checks this on launch)', ...authed, responses: { 200: json(SosIncident.nullable(), 'Open incident or null'), ...failures } }),
-  get: createRoute({ method: 'get', path: '/sos/{id}', operationId: 'getSos', tags: ['sos'], summary: 'An SOS with its full timeline (the person or their manager)', ...authed, request: { params: z.object({ id: z.string().uuid() }) }, responses: { 200: json(SosIncident, 'Incident'), ...failures } }),
+  current: createRoute({ method: 'get', path: '/sos/current', operationId: 'currentSos', tags: ['sos'], summary: 'My open SOS, if any (the app checks this on launch)', ...authed, responses: { 200: json(ResidentSos.nullable(), 'Open incident or null'), ...failures } }),
+  get: createRoute({ method: 'get', path: '/sos/{id}', operationId: 'getSos', tags: ['sos'], summary: 'An SOS with its full timeline and the ambulance on its way (the person or their manager)', ...authed, request: { params: z.object({ id: z.string().uuid() }) }, responses: { 200: json(ResidentSos, 'Incident'), ...failures } }),
   cancel: createRoute({
     method: 'post',
     path: '/sos/{id}/cancel',
@@ -35,7 +35,7 @@ const r = {
     summary: 'Cancel an SOS (allowed until a crew is on the way; after that the desk cancels)',
     ...authed,
     request: { params: z.object({ id: z.string().uuid() }), body: { content: { 'application/json': { schema: SosCancel } }, required: true } },
-    responses: { 200: json(SosIncident, 'Cancelled'), ...failures },
+    responses: { 200: json(ResidentSos, 'Cancelled'), ...failures },
   }),
 };
 
@@ -65,19 +65,19 @@ export const sosRoutes = new OpenAPIHono<AppEnv>()
     }
     const { incident, created } = await raise({ sos: deps.sos, households: deps.households }, { id: me, role: 'resident' }, me, c.req.valid('json'));
     if (created) await startEscalation(deps, incident.id, c.get('requestId'));
-    const view = toIncident(incident, await deps.sos.events(incident.id));
+    const view = await residentView(deps, incident);
     return created ? c.json(view, 201) : c.json(view, 200);
   })
   .openapi(r.current, async (c) => {
     const deps = c.get('deps');
     const open = await deps.sos.openForUser(c.get('auth')!.userId);
-    return c.json(open ? toIncident(open, await deps.sos.events(open.id)) : null, 200);
+    return c.json(open ? await residentView(deps, open) : null, 200);
   })
   .openapi(r.get, async (c) => {
     const deps = c.get('deps');
     const i = await loadForPerson({ sos: deps.sos, households: deps.households }, c.get('auth')!.userId, c.req.valid('param').id);
     if (isSosFailure(i)) return failure(c, i);
-    return c.json(toIncident(i, await deps.sos.events(i.id)), 200);
+    return c.json(await residentView(deps, i), 200);
   })
   .openapi(r.cancel, async (c) => {
     const deps = c.get('deps');
@@ -87,5 +87,5 @@ export const sosRoutes = new OpenAPIHono<AppEnv>()
     const next = await move(deps.sos, i, 'cancelled', { id: me, role: 'resident' }, c.req.valid('json').reason ?? null);
     if (isSosFailure(next)) return failure(c, next);
     await deps.escalation.signal(next.id, { kind: 'settled', state: next.state });
-    return c.json(toIncident(next, await deps.sos.events(next.id)), 200);
+    return c.json(await residentView(deps, next), 200);
   });

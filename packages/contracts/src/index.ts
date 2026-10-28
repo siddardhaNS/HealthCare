@@ -474,6 +474,23 @@ export const SosIncident = z
   .openapi('SosIncident');
 export type SosIncident = z.infer<typeof SosIncident>;
 
+/** The ambulance on its way, as the resident sees it: no crew names or personal numbers. */
+export const SosCrewView = z
+  .object({
+    ambulance: z.object({ registration: z.string(), equipment: z.enum(['bls', 'als']) }).nullable(),
+    /** Company-issued number (plan ⚑6); null when no ambulance is linked yet. */
+    workPhone: z.string().nullable(),
+    position: z.object({ lat: z.number(), lng: z.number(), at: z.string().datetime() }).nullable(),
+    distanceM: z.number().int().nullable(),
+    etaS: z.number().int().nullable(),
+  })
+  .openapi('SosCrewView');
+export type SosCrewView = z.infer<typeof SosCrewView>;
+
+/** An SOS as the person (or their family manager) sees it: the incident plus the ambulance while one is assigned. */
+export const ResidentSos = SosIncident.extend({ crew: SosCrewView.nullable() }).openapi('ResidentSos');
+export type ResidentSos = z.infer<typeof ResidentSos>;
+
 // ── Dispatch (field app) ────────────────────────────────────────────────
 
 export const CrewDuty = z

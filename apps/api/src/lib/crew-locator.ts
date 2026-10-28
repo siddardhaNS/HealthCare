@@ -1,4 +1,7 @@
 import type { Redis } from '@upstash/redis';
+import { distanceM } from '@repo/contracts/sos';
+
+export { distanceM };
 
 export interface LatLng {
   lat: number;
@@ -12,20 +15,14 @@ export const POSITION_FRESH_S = 10 * 60;
 export interface CrewLocator {
   set(crewId: string, at: LatLng): Promise<void>;
   remove(crewId: string): Promise<void>;
+  /** The crew's fresh position and when it was reported (ms since epoch), or null. */
+  position(crewId: string): Promise<(LatLng & { at: number }) | null>;
   /** Crews with a fresh position within `radiusM` of `from`, nearest first. */
   nearby(from: LatLng, radiusM: number, limit: number): Promise<{ crewId: string; distanceM: number }[]>;
   /** Straight-line distance to each crew with a fresh position (others are left out). */
   distances(from: LatLng, crewIds: string[]): Promise<Map<string, number>>;
 }
 
-/** Great-circle distance in metres. */
-export function distanceM(a: LatLng, b: LatLng): number {
-  const rad = Math.PI / 180;
-  const dLat = (b.lat - a.lat) * rad;
-  const dLng = (b.lng - a.lng) * rad;
-  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLng / 2) ** 2;
-  return Math.round(2 * 6371000 * Math.asin(Math.sqrt(h)));
-}
 
 const GEO_KEY = 'geo:crews:on_duty';
 const posKey = (crewId: string) => `pos:crew:${crewId}`;
@@ -35,11 +32,15 @@ export function upstashCrewLocator(redis: Redis): CrewLocator {
     async set(crewId, at) {
       await redis.geoadd(GEO_KEY, { latitude: at.lat, longitude: at.lng, member: crewId });
       // The timestamped copy expires, which is how stale positions drop out.
-      await redis.set(posKey(crewId), at, { ex: POSITION_FRESH_S });
+      await redis.set(posKey(crewId), { lat: at.lat, lng: at.lng, at: Date.now() }, { ex: POSITION_FRESH_S });
     },
     async remove(crewId) {
       await redis.zrem(GEO_KEY, crewId);
       await redis.del(posKey(crewId));
+    },
+    async position(crewId) {
+      const p = await redis.get<LatLng & { at?: number }>(posKey(crewId));
+      return p ? { lat: p.lat, lng: p.lng, at: p.at ?? Date.now() } : null;
     },
     async nearby(from, radiusM, limit) {
       const hits = await redis.geosearch<string>(GEO_KEY, { type: 'FROMLONLAT', coordinate: { lon: from.lng, lat: from.lat } }, { type: 'BYRADIUS', radius: radiusM, radiusType: 'M' }, 'ASC', {
@@ -76,6 +77,10 @@ export function memoryCrewLocator(now: () => number = Date.now): CrewLocator {
     },
     async remove(crewId) {
       positions.delete(crewId);
+    },
+    async position(crewId) {
+      const p = fresh(crewId);
+      return p ? { ...p } : null;
     },
     async nearby(from, radiusM, limit) {
       return [...positions.keys()]

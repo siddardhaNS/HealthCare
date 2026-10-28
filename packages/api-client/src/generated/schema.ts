@@ -701,7 +701,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** An SOS with its full timeline (the person or their manager) */
+        /** An SOS with its full timeline and the ambulance on its way (the person or their manager) */
         get: operations["getSos"];
         put?: never;
         post?: never;
@@ -1311,17 +1311,8 @@ export interface components {
             /** @enum {string} */
             connection: "manual" | "health_connect" | "healthkit";
         };
-        SosIncident: {
-            /** Format: uuid */
-            id: string;
-            state: components["schemas"]["SosState"];
-            isDrill: boolean;
-            /** Format: date-time */
-            createdAt: string;
-            location: components["schemas"]["GeoPoint"];
-            widenAfterS: number;
-            escalateAfterS: number;
-            timeline: components["schemas"]["SosEvent"][];
+        ResidentSos: components["schemas"]["SosIncident"] & {
+            crew: components["schemas"]["SosCrewView"];
         };
         /** @enum {string} */
         SosState: "raised" | "dispatching" | "accepted" | "en_route" | "on_scene" | "transporting" | "handed_over" | "closed" | "cancelled" | "escalated_to_108";
@@ -1339,6 +1330,34 @@ export interface components {
             /** @enum {string} */
             by: "resident" | "crew" | "desk" | "system";
             reason: string | null;
+        };
+        SosCrewView: {
+            ambulance: {
+                registration: string;
+                /** @enum {string} */
+                equipment: "bls" | "als";
+            } | null;
+            workPhone: string | null;
+            position: {
+                lat: number;
+                lng: number;
+                /** Format: date-time */
+                at: string;
+            } | null;
+            distanceM: number | null;
+            etaS: number | null;
+        } | null;
+        SosIncident: {
+            /** Format: uuid */
+            id: string;
+            state: components["schemas"]["SosState"];
+            isDrill: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            location: components["schemas"]["GeoPoint"];
+            widenAfterS: number;
+            escalateAfterS: number;
+            timeline: components["schemas"]["SosEvent"][];
         };
         SosRaise: {
             /** Format: uuid */
@@ -4006,7 +4025,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SosIncident"];
+                    "application/json": components["schemas"]["ResidentSos"];
                 };
             };
             /** @description Raised */
@@ -4015,7 +4034,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SosIncident"];
+                    "application/json": components["schemas"]["ResidentSos"];
                 };
             };
             /** @description Invalid */
@@ -4089,7 +4108,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SosIncident"] & (Record<string, never> | null);
+                    "application/json": components["schemas"]["ResidentSos"];
                 };
             };
             /** @description Invalid */
@@ -4165,7 +4184,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SosIncident"];
+                    "application/json": components["schemas"]["ResidentSos"];
                 };
             };
             /** @description Invalid */
@@ -4245,7 +4264,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SosIncident"];
+                    "application/json": components["schemas"]["ResidentSos"];
                 };
             };
             /** @description Invalid */

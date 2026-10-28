@@ -4,7 +4,7 @@ import * as schema from './schema';
 
 export * from './schema';
 // Query helpers, re-exported so every consumer uses this package's drizzle-orm.
-export { and, asc, desc, eq, gt, gte, ilike, inArray, isNull, lt, ne, notInArray, or, sql } from 'drizzle-orm';
+export { aliasedTable, and, asc, desc, eq, gt, gte, ilike, inArray, isNull, lt, ne, notInArray, or, sql } from 'drizzle-orm';
 export { schema };
 
 /**

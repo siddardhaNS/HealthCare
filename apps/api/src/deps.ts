@@ -2,6 +2,7 @@ import { Redis } from '@upstash/redis';
 import { z } from 'zod';
 import { createDb } from '@repo/db';
 import { processMemoryKv, upstashKv, type Kv } from './lib/kv';
+import { silentRealtime, supabaseRealtime, type Realtime } from './lib/realtime';
 import { processMemoryCrewLocator, upstashCrewLocator, type CrewLocator } from './lib/crew-locator';
 import { drizzleDispatchRepo, type DispatchRepo } from './modules/dispatch/repo';
 import { dispatchAlerts } from './modules/dispatch/service';
@@ -13,6 +14,7 @@ import { drizzleHouseholdsRepo, type HouseholdsRepo } from './modules/households
 import { drizzleLeadsRepo, type LeadsRepo } from './modules/leads/repo';
 import { drizzleResidentsRepo, type ResidentsRepo } from './modules/residents/repo';
 import { drizzleSosRepo, type SosRepo } from './modules/sos/repo';
+import { publishingSosRepo } from './modules/sos/live';
 import type { EscalationRunner, SosAlerts } from './modules/sos/escalation-service';
 import { workflowEscalation } from './modules/sos/escalation-runner';
 import { drizzleMessagingRepo } from './modules/messaging/repo';
@@ -23,6 +25,8 @@ const Env = z
   .object({
     NODE_ENV: z.string().default('development'),
     SUPABASE_URL: z.string().url(),
+    /** Secret key (sb_secret_…): publishes live SOS updates over Realtime. Without it the apps poll. */
+    SUPABASE_SECRET_KEY: z.string().optional(),
     /** Local Supabase CLI only, when the stack signs tokens with HS256. Never set in production. */
     SUPABASE_JWT_SECRET: z.string().optional(),
     DATABASE_URL: z.string().min(1),
@@ -51,6 +55,7 @@ const Env = z
       keys.filter((k) => !e[k]).forEach((k) => ctx.addIssue({ code: 'custom', path: [k], message: `required ${why}` }));
     if (e.NODE_ENV === 'production') {
       need(['UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN'], 'in production (functions are stateless)');
+      need(['SUPABASE_SECRET_KEY'], 'in production (live SOS updates)');
       if (e.SUPABASE_JWT_SECRET) ctx.addIssue({ code: 'custom', path: ['SUPABASE_JWT_SECRET'], message: 'must not be set in production' });
     }
     if (e.MESSAGING_MODE === 'live') {
@@ -75,6 +80,7 @@ export interface Deps {
   escalation: EscalationRunner;
   dispatch: DispatchRepo;
   locator: CrewLocator;
+  realtime: Realtime;
   mailer: Mailer;
   messaging: MessagingDeps;
   verifyToken: TokenVerifier;
@@ -102,7 +108,8 @@ export function depsFromEnv(source: Record<string, string | undefined> = process
   const locator = redis ? upstashCrewLocator(redis) : processMemoryCrewLocator();
   const live = env.MESSAGING_MODE === 'live';
   const db = createDb(env.DATABASE_URL);
-  const sos = drizzleSosRepo(db);
+  const realtime = env.SUPABASE_SECRET_KEY ? supabaseRealtime({ supabaseUrl: env.SUPABASE_URL, secretKey: env.SUPABASE_SECRET_KEY }) : silentRealtime();
+  const sos = publishingSosRepo(drizzleSosRepo(db), realtime);
   const dispatch = drizzleDispatchRepo(db);
   return {
     kv,
@@ -116,6 +123,7 @@ export function depsFromEnv(source: Record<string, string | undefined> = process
     escalation: workflowEscalation(),
     dispatch,
     locator,
+    realtime,
     mailer: logMailer(),
     messaging: {
       kv,

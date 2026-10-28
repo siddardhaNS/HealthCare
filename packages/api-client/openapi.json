@@ -2015,48 +2015,22 @@
           "connection"
         ]
       },
-      "SosIncident": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
+      "ResidentSos": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SosIncident"
           },
-          "state": {
-            "$ref": "#/components/schemas/SosState"
-          },
-          "isDrill": {
-            "type": "boolean"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "location": {
-            "$ref": "#/components/schemas/GeoPoint"
-          },
-          "widenAfterS": {
-            "type": "integer"
-          },
-          "escalateAfterS": {
-            "type": "integer"
-          },
-          "timeline": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SosEvent"
-            }
+          {
+            "type": "object",
+            "properties": {
+              "crew": {
+                "$ref": "#/components/schemas/SosCrewView"
+              }
+            },
+            "required": [
+              "crew"
+            ]
           }
-        },
-        "required": [
-          "id",
-          "state",
-          "isDrill",
-          "createdAt",
-          "location",
-          "widenAfterS",
-          "escalateAfterS",
-          "timeline"
         ]
       },
       "SosState": {
@@ -2147,6 +2121,128 @@
           "to",
           "by",
           "reason"
+        ]
+      },
+      "SosCrewView": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "ambulance": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "registration": {
+                "type": "string"
+              },
+              "equipment": {
+                "type": "string",
+                "enum": [
+                  "bls",
+                  "als"
+                ]
+              }
+            },
+            "required": [
+              "registration",
+              "equipment"
+            ]
+          },
+          "workPhone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "position": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "lat": {
+                "type": "number"
+              },
+              "lng": {
+                "type": "number"
+              },
+              "at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "lat",
+              "lng",
+              "at"
+            ]
+          },
+          "distanceM": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "etaS": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "ambulance",
+          "workPhone",
+          "position",
+          "distanceM",
+          "etaS"
+        ]
+      },
+      "SosIncident": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "state": {
+            "$ref": "#/components/schemas/SosState"
+          },
+          "isDrill": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "location": {
+            "$ref": "#/components/schemas/GeoPoint"
+          },
+          "widenAfterS": {
+            "type": "integer"
+          },
+          "escalateAfterS": {
+            "type": "integer"
+          },
+          "timeline": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SosEvent"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "state",
+          "isDrill",
+          "createdAt",
+          "location",
+          "widenAfterS",
+          "escalateAfterS",
+          "timeline"
         ]
       },
       "SosRaise": {
@@ -5803,7 +5899,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SosIncident"
+                  "$ref": "#/components/schemas/ResidentSos"
                 }
               }
             }
@@ -5813,7 +5909,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SosIncident"
+                  "$ref": "#/components/schemas/ResidentSos"
                 }
               }
             }
@@ -5899,17 +5995,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "allOf": [
-                    {
-                      "$ref": "#/components/schemas/SosIncident"
-                    },
-                    {
-                      "type": [
-                        "object",
-                        "null"
-                      ]
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ResidentSos"
                 }
               }
             }
@@ -5983,7 +6069,7 @@
         "tags": [
           "sos"
         ],
-        "summary": "An SOS with its full timeline (the person or their manager)",
+        "summary": "An SOS with its full timeline and the ambulance on its way (the person or their manager)",
         "security": [
           {
             "bearer": []
@@ -6006,7 +6092,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SosIncident"
+                  "$ref": "#/components/schemas/ResidentSos"
                 }
               }
             }
@@ -6113,7 +6199,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SosIncident"
+                  "$ref": "#/components/schemas/ResidentSos"
                 }
               }
             }

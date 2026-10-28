@@ -1,5 +1,7 @@
-import type { SosIncident } from '@repo/contracts';
-import { sosThresholds, type SosActor } from '@repo/contracts/sos';
+import type { ResidentSos, SosCrewView, SosIncident } from '@repo/contracts';
+import { crewActiveStates, distanceM, estimateEtaS, sosThresholds, type SosActor } from '@repo/contracts/sos';
+import type { CrewLocator, LatLng } from '../../lib/crew-locator';
+import type { DispatchRepo } from '../dispatch/repo';
 import type { HouseholdsRepo } from '../households/repo';
 import { canActFor } from '../households/service';
 import type { EventRow, IncidentRow, SosRepo } from './repo';
@@ -18,6 +20,35 @@ export function toIncident(i: IncidentRow, events: EventRow[]): SosIncident {
     escalateAfterS: i.escalateAfterS,
     timeline: events.map((e) => ({ at: e.createdAt.toISOString(), from: e.fromState, to: e.toState, by: e.actorRole, reason: e.reason })),
   };
+}
+
+/** Where the ambulance is heading: the phone's location, else the household's home. */
+export async function incidentPoint(dispatch: DispatchRepo, i: IncidentRow): Promise<LatLng | null> {
+  if (i.lat !== null && i.lng !== null) return { lat: i.lat, lng: i.lng };
+  return i.householdId ? dispatch.householdLocation(i.householdId) : null;
+}
+
+/**
+ * The ambulance as the resident sees it, only while a crew has the job:
+ * registration, the company work number, its last position and a fresh
+ * distance and ETA (the app refetches every 30 s, brief §6).
+ */
+export async function crewView(d: { dispatch: DispatchRepo; locator: CrewLocator }, i: IncidentRow): Promise<SosCrewView | null> {
+  if (!i.crewId || !crewActiveStates.includes(i.state)) return null;
+  const [vehicle, at, to] = await Promise.all([d.dispatch.vehicle(i.crewId), d.locator.position(i.crewId), incidentPoint(d.dispatch, i)]);
+  const m = at && to ? distanceM(at, to) : null;
+  return {
+    ambulance: vehicle ? { registration: vehicle.registration, equipment: vehicle.equipment } : null,
+    workPhone: vehicle?.workPhone ?? null,
+    position: at ? { lat: at.lat, lng: at.lng, at: new Date(at.at).toISOString() } : null,
+    distanceM: m,
+    etaS: m === null ? null : estimateEtaS(m),
+  };
+}
+
+export async function residentView(d: { sos: SosRepo; dispatch: DispatchRepo; locator: CrewLocator }, i: IncidentRow): Promise<ResidentSos> {
+  const [events, crew] = await Promise.all([d.sos.events(i.id), crewView(d, i)]);
+  return { ...toIncident(i, events), crew };
 }
 
 interface RaiseInput {

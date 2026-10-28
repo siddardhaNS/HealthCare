@@ -1,5 +1,5 @@
 import { crewActiveStates } from '@repo/contracts/sos';
-import { and, auditEvents, coverageAssignments, coverageTeams, crewShifts, crews, dispatchOffers, eq, homes, households, inArray, isNull, sosIncidents, sql, type Db } from '@repo/db';
+import { aliasedTable, ambulances, and, auditEvents, coverageAssignments, coverageTeams, crewShifts, crews, dispatchOffers, eq, homes, households, inArray, isNull, sosIncidents, sql, type Db } from '@repo/db';
 import type { LatLng } from '../../lib/crew-locator';
 
 export interface CrewRow {
@@ -48,6 +48,14 @@ export interface DispatchRepo {
   respond(id: string, response: 'accepted' | 'declined' | 'released'): Promise<boolean>;
   /** Releases every other open offer on the incident (the job was taken). */
   releaseOthers(incidentId: string, keepOfferId: string): Promise<void>;
+  /** The crew's ambulance (their own, else their team's) as the resident sees it. */
+  vehicle(crewId: string): Promise<Vehicle | null>;
+}
+
+export interface Vehicle {
+  registration: string;
+  equipment: 'bls' | 'als';
+  workPhone: string;
 }
 
 const OFFER_COLS = {
@@ -172,6 +180,21 @@ export function drizzleDispatchRepo(db: Db): DispatchRepo {
         .update(dispatchOffers)
         .set({ response: 'released', respondedAt: new Date() })
         .where(and(eq(dispatchOffers.incidentId, incidentId), isNull(dispatchOffers.response), sql`${dispatchOffers.id} <> ${keepOfferId}`));
+    },
+    async vehicle(crewId) {
+      // A crew's own ambulance first; otherwise the active ambulance of their team.
+      const teamAmb = aliasedTable(ambulances, 'team_ambulance');
+      const [r] = await db
+        .select({
+          own: { registration: ambulances.registration, equipment: ambulances.equipment, workPhone: ambulances.workPhone },
+          team: { registration: teamAmb.registration, equipment: teamAmb.equipment, workPhone: teamAmb.workPhone },
+        })
+        .from(crews)
+        .leftJoin(ambulances, and(eq(ambulances.id, crews.ambulanceId), eq(ambulances.active, true)))
+        .leftJoin(teamAmb, and(eq(teamAmb.teamId, crews.teamId), eq(teamAmb.active, true)))
+        .where(eq(crews.id, crewId))
+        .limit(1);
+      return r?.own ?? r?.team ?? null;
     },
   };
 }

@@ -96,3 +96,18 @@ export function nextCrewStep(state: SosState): CrewStep | null {
 
 /** Escalation thresholds (seconds). Plan ⚑2: defaults 30 / 90, per site within these bounds. */
 export const sosThresholds = { widenDefault: 30, escalateDefault: 90, widenMin: 15, widenMax: 60, escalateMin: 60, escalateMax: 180 } as const;
+
+/** Great-circle distance in metres. */
+export function distanceM(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+  const rad = Math.PI / 180;
+  const dLat = (b.lat - a.lat) * rad;
+  const dLng = (b.lng - a.lng) * rad;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLng / 2) ** 2;
+  return Math.round(2 * 6371000 * Math.asin(Math.sqrt(h)));
+}
+
+/**
+ * Road ETA without a maps call: straight-line distance × 1.4 road factor at
+ * 25 km/h city speed. Used by dispatch and the apps until Google Routes is configured.
+ */
+export const estimateEtaS = (distance: number) => Math.round((distance * 1.4) / (25_000 / 3600));
