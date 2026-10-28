@@ -77,7 +77,13 @@ export function createApp(options: CreateAppOptions = {}) {
   // Never echo internals (or health data) back to the client or into logs.
   app.onError((err, c) => {
     // Config errors name the variables (never values) so operators can fix them.
-    const detail = err instanceof ConfigError ? { message: err.message } : {};
+    // Local development only: the message and top of the stack, to debug unexplained 500s.
+    const detail =
+      err instanceof ConfigError
+        ? { message: err.message }
+        : process.env.NODE_ENV === 'development'
+          ? { message: err.message, stack: String(err.stack).split('\n').slice(1, 4).join(' | ') }
+          : {};
     console.error(JSON.stringify({ level: 'error', requestId: c.get('requestId'), name: err.name, path: c.req.path, ...detail }));
     return c.json<ErrorBody>({ error: { code: 'internal', message: 'Something went wrong', requestId: c.get('requestId') } }, 500);
   });
