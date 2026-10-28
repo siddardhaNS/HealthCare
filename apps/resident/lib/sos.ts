@@ -11,14 +11,11 @@ import type { Schemas } from '@repo/api-client';
 import { distanceM, estimateEtaS } from '@repo/contracts/sos';
 import { useSession } from '@repo/mobile';
 import { ApiError, unwrap, useHousehold } from './data';
+import { raiseWithRetry } from './raise';
 
 export type ResidentSos = Schemas['ResidentSos'];
 type GeoPoint = NonNullable<Schemas['GeoPoint']>;
 
-/** Brief: offer the fallbacks if raising takes longer than this. */
-export const RAISE_TIMEOUT_MS = 4_000;
-/** Retry delays after a failed raise (the last one repeats until it lands or the person leaves). */
-const RETRY_DELAYS_MS = [1_000, 2_000, 4_000, 8_000, 15_000];
 /** Polling: often while the live channel is down, as a safety net while it is up (brief: ETA every 30 s). */
 export const POLL_LIVE_MS = 30_000;
 export const POLL_FALLBACK_MS = 5_000;
@@ -105,30 +102,21 @@ export function useRaiseSos() {
     async (location: GeoPoint | null) => {
       key.current ??= randomUUID();
       const body: Schemas['SosRaise'] = { idempotencyKey: key.current, ...(location ? { location } : {}) };
-      for (let attempt = 1; !stopped.current; attempt++) {
-        setState((s) => ({ status: 'sending', attempt, slow: s.status === 'sending' && s.slow }));
-        const abort = new AbortController();
-        const slowTimer = setTimeout(() => {
-          setState((s) => (s.status === 'sending' ? { ...s, slow: true } : s));
-          abort.abort();
-        }, RAISE_TIMEOUT_MS);
-        try {
-          const incident = await unwrap(api.POST('/v1/sos', { body, signal: abort.signal }));
-          clearTimeout(slowTimer);
-          qc.setQueryData(sosKeys.current, incident);
-          qc.setQueryData(sosKeys.one(incident.id), incident);
-          setState({ status: 'sent', incident });
-          return incident;
-        } catch (e) {
-          clearTimeout(slowTimer);
-          if (!retryable(e)) {
-            setState({ status: 'refused', message: (e as Error).message });
-            return null;
-          }
-          setState((s) => (s.status === 'sending' ? { ...s, slow: true } : s));
-          await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[Math.min(attempt - 1, RETRY_DELAYS_MS.length - 1)]));
-        }
+      const outcome = await raiseWithRetry({
+        attempt: (signal) => unwrap(api.POST('/v1/sos', { body, signal })),
+        retryable,
+        onAttempt: (attempt) => setState((s) => ({ status: 'sending', attempt, slow: s.status === 'sending' && s.slow })),
+        onSlow: () => setState((s) => (s.status === 'sending' ? { ...s, slow: true } : s)),
+        stopped: () => stopped.current,
+      });
+      if (outcome.status === 'sent') {
+        const incident = outcome.value;
+        qc.setQueryData(sosKeys.current, incident);
+        qc.setQueryData(sosKeys.one(incident.id), incident);
+        setState({ status: 'sent', incident });
+        return incident;
       }
+      if (outcome.status === 'refused') setState({ status: 'refused', message: (outcome.error as Error).message });
       return null;
     },
     [api, qc],

@@ -49,7 +49,6 @@ function Countdown({ onSent }: { onSent: (id: string) => void }) {
   const { colors, space, radius, fonts } = useTheme();
   const bestLocation = useSosLocation();
   const { state, send } = useRaiseSos();
-  const deskPhone = useDeskPhone();
   const [count, setCount] = useState(COUNTDOWN_S);
   const started = state.status !== 'idle';
 
@@ -110,14 +109,11 @@ function Countdown({ onSent }: { onSent: (id: string) => void }) {
         <View style={{ padding: space[5], gap: space[3] }}>
           {!started ? (
             <>
-              <Button label={t('sos.sendNow')} tone="danger" onPress={() => void send(bestLocation())} />
-              <Button label={t('sos.imOk')} tone="neutral" onPress={goHome} />
+              <Button label={t('sos.sendNow')} tone="danger" onPress={() => void send(bestLocation())} testID="sos-send-now" />
+              <Button label={t('sos.imOk')} tone="neutral" onPress={goHome} testID="sos-im-ok" />
             </>
           ) : fallbacks ? (
-            <>
-              {deskPhone ? <Button label={t('sos.callDesk')} tone="danger" onPress={() => dial(deskPhone)} /> : null}
-              <Button label={t('sos.call108')} tone={deskPhone ? 'neutral' : 'danger'} onPress={() => dial('108')} />
-            </>
+            <EmergencyCalls />
           ) : null}
         </View>
       </SafeAreaView>
@@ -149,7 +145,7 @@ function LiveSos({ id }: { id: string }) {
   const canCancel = checkTransition(s.state, 'cancelled', 'resident').ok;
 
   return (
-    <Screen>
+    <Screen testID="sos-live">
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[3], padding: space[4], backgroundColor: open ? colors.dangerSoft : colors.surface }}>
           <Pressable
@@ -228,7 +224,7 @@ function LiveSos({ id }: { id: string }) {
         {confirmCancel && canCancel ? (
           <Card style={{ gap: space[3], marginHorizontal: space[4] }} accessibilityLiveRegion="polite">
             <Text>{t('sos.cancelConfirm')}</Text>
-            <Button label={t('sos.cancelYes')} tone="danger" disabled={cancel.isPending} onPress={() => cancel.mutate(undefined, { onSettled: () => setConfirmCancel(false) })} />
+            <Button testID="sos-cancel-yes" label={t('sos.cancelYes')} tone="danger" disabled={cancel.isPending} onPress={() => cancel.mutate(undefined, { onSettled: () => setConfirmCancel(false) })} />
             <Button label={t('sos.cancelNo')} tone="neutral" onPress={() => setConfirmCancel(false)} />
           </Card>
         ) : null}
@@ -238,7 +234,7 @@ function LiveSos({ id }: { id: string }) {
           ) : (
             <>
               {canCancel ? (
-                <Button label={t('sos.cancel')} tone="neutral" style={{ flex: 1 }} onPress={() => setConfirmCancel(true)} disabled={confirmCancel} />
+                <Button testID="sos-cancel" label={t('sos.cancel')} tone="neutral" style={{ flex: 1 }} onPress={() => setConfirmCancel(true)} disabled={confirmCancel} />
               ) : (
                 <Button label={t('sos.call108')} tone="neutral" style={{ flex: 1 }} onPress={() => dial('108')} />
               )}

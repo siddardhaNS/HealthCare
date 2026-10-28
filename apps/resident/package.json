@@ -8,7 +8,8 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "vitest run"
   },
   "dependencies": {
     "@expo-google-fonts/dm-sans": "0.4.2",
@@ -49,6 +50,7 @@
   "devDependencies": {
     "@types/react": "catalog:",
     "eslint": "10.13.0",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

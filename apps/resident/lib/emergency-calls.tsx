@@ -16,8 +16,8 @@ export function EmergencyCalls() {
   const deskPhone = useDeskPhone();
   return (
     <View style={{ gap: space[3] }}>
-      {deskPhone ? <Button label={t('sos.callDesk')} tone="danger" onPress={() => dial(deskPhone)} /> : null}
-      <Button label={t('sos.call108')} tone={deskPhone ? 'neutral' : 'danger'} onPress={() => dial('108')} />
+      {deskPhone ? <Button label={t('sos.callDesk')} tone="danger" onPress={() => dial(deskPhone)} testID="call-desk" /> : null}
+      <Button label={t('sos.call108')} tone={deskPhone ? 'neutral' : 'danger'} onPress={() => dial('108')} testID="call-108" />
     </View>
   );
 }

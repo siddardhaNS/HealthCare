@@ -95,6 +95,7 @@ export default function Home() {
         accessibilityRole="button"
         accessibilityLabel={activeSos ? `${t('sos.activeCard', { status: t(`sos.short.${activeSos.state}`) })}. ${t('sos.activeOpen')}` : `${t('home.sosTitle')}. ${t('home.sosSubtitle')}`}
         onPress={() => router.push('/sos')}
+        testID="sos-card"
         style={({ pressed }) => ({
           flexDirection: 'row',
           alignItems: 'center',

@@ -1,0 +1,39 @@
+# SOS with the network completely down (plan §7 failure path): the alert is
+# sent with no network, "Call 108" appears within 4 s while the app keeps
+# retrying, and when the network comes back the SOS lands once and the live
+# screen opens. Android only (Maestro's airplane mode); iOS simulators have none.
+#
+# Needs: the emulator, the local stack and API running, and a signed-in
+# resident who has finished onboarding (run sign-in.yaml first).
+# Run: maestro test apps/resident/.maestro/sos-offline.yaml
+appId: in.example.resident
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: sos-card
+    timeout: 20000
+- setAirplaneMode: enabled
+- tapOn:
+    id: sos-card
+- tapOn:
+    id: sos-send-now
+# Never block on the network: the phone fallback shows within the 4 s attempt timeout.
+- extendedWaitUntil:
+    visible:
+      id: call-108
+    timeout: 6000
+- assertNotVisible:
+    id: sos-live
+- setAirplaneMode: disabled
+# Retries back off up to 15 s; the SOS lands on the next one after the network returns.
+- extendedWaitUntil:
+    visible:
+      id: sos-live
+    timeout: 40000
+# Clean up: cancel the test SOS.
+- tapOn:
+    id: sos-cancel
+- tapOn:
+    id: sos-cancel-yes
+- assertVisible: "SOS cancelled"
