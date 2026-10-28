@@ -41,6 +41,16 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-router',
     'expo-dev-client',
     'expo-font',
+    // SOS only: one fix when the person presses SOS. No background location.
+    [
+      'expo-location',
+      {
+        locationWhenInUsePermission: 'When you press SOS, your location is sent to the ambulance crew and the community desk so help can find you.',
+        isIosBackgroundLocationEnabled: false,
+        isAndroidBackgroundLocationEnabled: false,
+        isAndroidForegroundServiceEnabled: false,
+      },
+    ],
     // Uploads source maps during EAS builds when SENTRY_AUTH_TOKEN is set.
     ['@sentry/react-native/expo', { url: 'https://sentry.io/', organization: process.env.SENTRY_ORG, project: process.env.SENTRY_PROJECT }],
     [

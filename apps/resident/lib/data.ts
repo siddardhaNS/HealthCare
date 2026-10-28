@@ -19,7 +19,7 @@ export class ApiError extends Error {
   }
 }
 
-async function unwrap<T>(p: Promise<{ data?: T; error?: unknown; response: Response }>): Promise<T> {
+export async function unwrap<T>(p: Promise<{ data?: T; error?: unknown; response: Response }>): Promise<T> {
   const { data, error, response } = await p;
   if (response.ok) return data as T;
   const e = (error as { error?: { code?: string; message?: string } } | undefined)?.error;

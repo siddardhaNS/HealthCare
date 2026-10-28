@@ -15,6 +15,7 @@ import { Screen, ThemeProvider, useTheme } from '@repo/ui-native';
 import { scrubSentryEvent, sentryTracesSampleRate } from '@repo/config/sentry';
 import { config } from '../lib/config';
 import { queryClient, useOnboardingStep, useProfile } from '../lib/data';
+import { EmergencyCalls } from '../lib/emergency-calls';
 import { ErrorState } from '../lib/ui';
 
 // No-op without EXPO_PUBLIC_SENTRY_DSN. Screenshots, view hierarchy and
@@ -52,8 +53,10 @@ function Routes({ fontsReady }: { fontsReady: boolean }) {
   if (!ready) return null;
   if (onboarding.error) {
     return (
-      <Screen style={{ justifyContent: 'center', padding: t.space[5] }}>
+      <Screen style={{ justifyContent: 'center', padding: t.space[5], gap: t.space[6] }}>
         <ErrorState onRetry={onboarding.retry} />
+        {/* Offline or the service is down: the emergency numbers must still be one tap away. */}
+        <EmergencyCalls />
       </Screen>
     );
   }
@@ -65,6 +68,8 @@ function Routes({ fontsReady }: { fontsReady: boolean }) {
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.colors.bg } }}>
         <Stack.Protected guard={signedIn && !onboarding.step}>
           <Stack.Screen name="(tabs)" />
+          {/* No swipe-to-dismiss: leaving is a deliberate tap (minimise, cancel or done). */}
+          <Stack.Screen name="sos" options={{ presentation: 'fullScreenModal', gestureEnabled: false, animation: 'fade' }} />
         </Stack.Protected>
         <Stack.Protected guard={signedIn && !!onboarding.step}>
           <Stack.Screen name="onboarding" />

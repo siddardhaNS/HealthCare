@@ -47,8 +47,7 @@
     "medsToday": "Medicines today",
     "markTaken": "Mark taken",
     "taken": "Taken",
-    "noMeds": "No medicines with dose times yet.",
-    "sosSoon": "Emergency SOS goes live soon. In an emergency, call 108."
+    "noMeds": "No medicines with dose times yet."
   },
   "tabs": {
     "home": "Home",
@@ -387,5 +386,90 @@
     "historyEmpty": "No changes yet.",
     "historyGranted": "Turned on: {{title}}",
     "historyWithdrawn": "Turned off: {{title}}"
+  },
+  "sos": {
+    "confirmLead": "Alerting ambulances and the community desk in",
+    "confirmNote": "Your location is shared with the responding crew. Your medical details go to the hospital only as your consent settings allow.",
+    "sendNow": "Send alert now",
+    "imOk": "Cancel, I'm OK",
+    "countdownA11y": "Sending SOS in {{count}} seconds",
+    "sending": "Sending your SOS…",
+    "slow": "Still trying to reach us. Call now if you need help:",
+    "refused": "Your SOS could not be sent. Please call now:",
+    "callDesk": "Call community desk",
+    "call108": "Call 108",
+    "callDeskShort": "Call desk",
+    "callCrew": "Call ambulance crew",
+    "cancel": "Cancel SOS",
+    "cancelConfirm": "Cancel this SOS? The ambulance and desk will be told you are OK.",
+    "cancelYes": "Yes, cancel",
+    "cancelNo": "Keep SOS on",
+    "minimise": "Minimise to home",
+    "done": "Back to home",
+    "drill": "DRILL · no real ambulance",
+    "liveOff": "Live updates paused. Checking every few seconds.",
+    "activeCard": "SOS active · {{status}}",
+    "activeOpen": "Open",
+    "title": {
+      "raised": "SOS sent",
+      "dispatching": "Finding an ambulance",
+      "escalated_to_108": "Call 108 now",
+      "accepted": "Help is on the way",
+      "en_route": "Help is on the way",
+      "on_scene": "Crew is with you",
+      "transporting": "On the way to hospital",
+      "handed_over": "Handed over at the hospital",
+      "closed": "SOS closed",
+      "cancelled": "SOS cancelled"
+    },
+    "subtitle": {
+      "raised": "Stay where you are.",
+      "dispatching": "Alerting the nearest ambulances. Stay where you are.",
+      "escalated_to_108": "No ambulance has accepted yet. We are still trying.",
+      "accepted": "Stay where you are.",
+      "en_route": "Stay where you are.",
+      "on_scene": "The crew is looking after you.",
+      "transporting": "The crew is taking you to hospital.",
+      "handed_over": "The hospital team has taken over.",
+      "closed": "This emergency is closed.",
+      "cancelled": "No ambulance will come."
+    },
+    "short": {
+      "raised": "alert sent",
+      "dispatching": "finding an ambulance",
+      "escalated_to_108": "call 108",
+      "accepted": "ambulance assigned",
+      "en_route": "ambulance on the way",
+      "on_scene": "crew with you",
+      "transporting": "going to hospital",
+      "handed_over": "at the hospital"
+    },
+    "escalatedBanner": "No ambulance has accepted in time. Call 108 now; we will keep looking and tell you if one accepts.",
+    "etaLabel": "Ambulance arriving in",
+    "etaUnknown": "Location coming",
+    "etaMinutes": "{{count}} min",
+    "distance": "{{km}} km away",
+    "findingLabel": "Looking for the nearest ambulance",
+    "elapsed": "Sent {{time}} ago",
+    "equipment": {
+      "bls": "basic life support",
+      "als": "advanced life support"
+    },
+    "mapA11y": "Ambulance {{km}} km from you",
+    "mapA11yNone": "Your location. No ambulance position yet.",
+    "mapYou": "You",
+    "mapNote": "Straight-line distance. Street map coming soon.",
+    "steps": {
+      "raised": "Alert sent",
+      "dispatching": "Alerting the nearest ambulances",
+      "accepted": "Ambulance accepted",
+      "en_route": "On the way to you",
+      "on_scene": "Ambulance at your door",
+      "transporting": "On the way to hospital",
+      "handed_over": "Handed over at the hospital"
+    },
+    "now": "now",
+    "erTitle": "Hospital handover",
+    "erPending": "Shown here once a hospital is chosen. Only what your consent settings allow is shared."
   }
 }

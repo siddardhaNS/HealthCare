@@ -1,9 +1,9 @@
-import { useState } from 'react';
-import { Linking, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Button, Card, Icon, ServiceTile, Text, useTheme } from '@repo/ui-native';
 import { useHealthSummary, useMarkDose, useMyId, useProfile } from '../../lib/data';
+import { useCurrentSos } from '../../lib/sos';
 import { doseTime, initials, todayIST, vitalValue } from '../../lib/format';
 import { ErrorState, Page, SectionLabel, StatusChip } from '../../lib/ui';
 
@@ -24,7 +24,8 @@ export default function Home() {
   const profile = useProfile();
   const summary = useHealthSummary(me);
   const markDose = useMarkDose(me);
-  const [sosNote, setSosNote] = useState(false);
+  // Checked on launch: an open SOS turns the card into "SOS active" and reopens the live screen.
+  const activeSos = useCurrentSos().data;
 
   const latest = summary.data?.latest;
   const meds = (summary.data?.medications ?? []).filter((m) => m.schedule.length > 0);
@@ -92,8 +93,8 @@ export default function Home() {
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${t('home.sosTitle')}. ${t('home.sosSubtitle')}`}
-        onPress={() => setSosNote((v) => !v)}
+        accessibilityLabel={activeSos ? `${t('sos.activeCard', { status: t(`sos.short.${activeSos.state}`) })}. ${t('sos.activeOpen')}` : `${t('home.sosTitle')}. ${t('home.sosSubtitle')}`}
+        onPress={() => router.push('/sos')}
         style={({ pressed }) => ({
           flexDirection: 'row',
           alignItems: 'center',
@@ -112,19 +113,14 @@ export default function Home() {
         </View>
         <View style={{ flex: 1 }}>
           <Text variant="bodyLg" weight="bold" tone="danger">
-            {t('home.sosTitle')}
+            {activeSos ? t('sos.activeCard', { status: t(`sos.short.${activeSos.state}`) }) : t('home.sosTitle')}
           </Text>
           <Text variant="small" tone="danger">
-            {t('home.sosSubtitle')}
+            {activeSos ? t(`sos.subtitle.${activeSos.state}`) : t('home.sosSubtitle')}
           </Text>
         </View>
+        {activeSos ? <Icon name="chevronRight" color={colors.dangerText} /> : null}
       </Pressable>
-      {sosNote ? (
-        <Card style={{ gap: space[3] }} accessibilityLiveRegion="polite">
-          <Text>{t('home.sosSoon')}</Text>
-          <Button label="108" tone="danger" onPress={() => void Linking.openURL('tel:108')} />
-        </Card>
-      ) : null}
 
       <SectionLabel>{t('home.careServices')}</SectionLabel>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[3] }}>
