@@ -1,6 +1,7 @@
 import type { ResidentSos, SosCrewView, SosIncident } from '@repo/contracts';
 import { crewActiveStates, distanceM, estimateEtaS, sosThresholds, type SosActor } from '@repo/contracts/sos';
 import type { CrewLocator, LatLng } from '../../lib/crew-locator';
+import { isUniqueViolation } from '@repo/db';
 import type { DispatchRepo } from '../dispatch/repo';
 import type { HouseholdsRepo } from '../households/repo';
 import { canActFor } from '../households/service';
@@ -97,7 +98,7 @@ export async function raise(
     return { incident, created: true };
   } catch (err) {
     // Two presses raced: the database's one-open-incident rule won; return that one.
-    if ((err as { code?: string }).code === '23505') {
+    if (isUniqueViolation(err)) {
       const existing = (await repos.sos.byIdempotency(actor.id, input.idempotencyKey)) ?? (await repos.sos.openForUser(subject));
       if (existing) return { incident: existing, created: false };
     }

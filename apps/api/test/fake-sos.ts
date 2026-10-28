@@ -66,7 +66,9 @@ export function fakeSos() {
       return r ? strip(r) : null;
     },
     async create(n) {
-      if (incidents.some((i) => i.userId === n.userId && isOpen(i.state))) throw Object.assign(new Error('duplicate key'), { code: '23505' });
+      // Thrown the way Drizzle does: the Postgres code is on `cause`, not on the error itself.
+      const duplicate = incidents.some((i) => i.userId === n.userId && isOpen(i.state)) || incidents.some((i) => i.raisedBy === n.raisedBy && i.idempotencyKey === n.idempotencyKey);
+      if (duplicate) throw new Error('Failed query: insert into "sos_incidents" …', { cause: Object.assign(new Error('duplicate key value violates unique constraint'), { code: '23505' }) });
       const row = {
         id: randomUUID(),
         userId: n.userId,

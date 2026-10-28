@@ -7,6 +7,7 @@ import { memoryKv } from '../src/lib/kv';
 import { maskPhone, normalizeIndianPhone } from '../src/lib/phone';
 import { checkLimits } from '../src/lib/rate-limit';
 import { supabaseRealtime } from '../src/lib/realtime';
+import { isUniqueViolation, pgErrorCode } from '@repo/db';
 import { requireStaff, type AccessClaims } from '../src/middleware/auth';
 
 describe('crypto', () => {
@@ -91,5 +92,16 @@ describe('realtime publish', () => {
     await expect(down.publish('sos:abc', 'state', {})).resolves.toBeUndefined();
     const refused = supabaseRealtime({ supabaseUrl: 'http://supabase.test', secretKey: 'k', fetch: async () => new Response('no', { status: 500 }) });
     await expect(refused.publish('sos:abc', 'state', {})).resolves.toBeUndefined();
+  });
+});
+
+describe('postgres error codes', () => {
+  it('finds the code on the error or, as Drizzle wraps it, on its cause', () => {
+    const driver = Object.assign(new Error('duplicate key value violates unique constraint'), { code: '23505' });
+    expect(pgErrorCode(driver)).toBe('23505');
+    expect(isUniqueViolation(new Error('Failed query: insert …', { cause: driver }))).toBe(true);
+    expect(isUniqueViolation(new Error('Failed query: insert …', { cause: Object.assign(new Error('fk'), { code: '23503' }) }))).toBe(false);
+    expect(pgErrorCode(new Error('network down'))).toBeUndefined();
+    expect(pgErrorCode(null)).toBeUndefined();
   });
 });

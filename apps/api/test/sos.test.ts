@@ -52,6 +52,26 @@ describe('raising an SOS', () => {
     expect(t.sos.incidents).toHaveLength(1);
   });
 
+  it('a retry that overlaps the first attempt (same key, in flight together) returns the one incident, never a 500', async () => {
+    // The app gives up waiting after 4 s and retries while the first request is still running on the server.
+    const t = await testContext();
+    const mom = await client(t, MOM);
+    const key = randomUUID();
+    const [a, b] = await Promise.all([mom.post('/v1/sos', press(key)), mom.post('/v1/sos', press(key))]);
+    expect([a.status, b.status].sort()).toEqual([200, 201]);
+    const [ja, jb] = (await Promise.all([a.json(), b.json()])) as { id: string }[];
+    expect(ja!.id).toBe(jb!.id);
+    expect(t.sos.incidents).toHaveLength(1);
+  });
+
+  it('two presses at the same moment (different keys) also end in one incident', async () => {
+    const t = await testContext();
+    const mom = await client(t, MOM);
+    const [a, b] = await Promise.all([mom.post('/v1/sos', press()), mom.post('/v1/sos', press())]);
+    expect([a.status, b.status].sort()).toEqual([200, 201]);
+    expect(t.sos.incidents).toHaveLength(1);
+  });
+
   it('works without a location (never blocked on GPS)', async () => {
     const t = await testContext();
     const res = await (await client(t, MOM)).post('/v1/sos', { idempotencyKey: randomUUID() });

@@ -47,7 +47,7 @@ export interface SosRepo {
   openForUser(userId: string): Promise<IncidentRow | null>;
   /** The job a crew has taken and not yet handed over, if any. */
   activeForCrew(crewId: string): Promise<IncidentRow | null>;
-  /** Creates the incident and its first timeline event in one transaction. Throws { code: '23505' } on a duplicate. */
+  /** Creates the incident and its first timeline event in one transaction. On a duplicate it throws a unique violation (see isUniqueViolation in @repo/db). */
   create(i: NewIncident): Promise<IncidentRow>;
   get(id: string): Promise<IncidentRow | null>;
   events(id: string): Promise<EventRow[]>;

@@ -1,6 +1,6 @@
 import { randomInt } from 'node:crypto';
 import type { Lead, LeadRequest } from '@repo/contracts';
-import { desc, eq, leads, type Db } from '@repo/db';
+import { desc, eq, isUniqueViolation, leads, type Db } from '@repo/db';
 
 type LeadStatus = Lead['status'];
 
@@ -55,7 +55,7 @@ export function drizzleLeadsRepo(db: Db): LeadsRepo {
             .returning({ id: leads.id, ref: leads.ref });
           return row!;
         } catch (err) {
-          if (attempt >= 1 || (err as { code?: string }).code !== '23505') throw err;
+          if (attempt >= 1 || !isUniqueViolation(err)) throw err;
         }
       }
     },
