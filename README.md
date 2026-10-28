@@ -90,6 +90,7 @@ pnpm test        # unit tests, incl. WCAG AA contrast for every theme and mode, 
 pnpm --filter web e2e        # Playwright + axe (E2E_BASE_URL=http://localhost:3000 to reuse a dev server)
 pnpm --filter console e2e
 maestro test apps/resident/.maestro/sign-in.yaml   # needs an emulator + local stack
+maestro test apps/resident/.maestro/sos-offline.yaml   # SOS with airplane mode on (Android)
 ```
 
 ## Generated files (committed)

@@ -41,9 +41,17 @@
 - **Slow raise seen for real:** right after an API restart, two raise attempts failed with a 500 before the third landed (201). The app showed "Still trying… Call 108" during the retries and only one incident was created: the fallback path working as designed. The cause of the 500s did not reproduce; the API now logs the error message in local development only, so the next occurrence shows it.
 - The dev build froze ("isn't responding") twice when it lost its connection to Metro under load (logcat: dev-client websocket reconnects). Development tooling only; not in release builds.
 
+### Same day: open items closed
+- **The 500s on POST /v1/sos, found and fixed.** Reproduced with two SOS requests at the same moment (a retry overlapping a slow first attempt, or two presses). The database correctly refused the second open incident, but `raise()` checked `err.code` for 23505 and Drizzle puts the Postgres code on `err.cause`, so the race fell through to a 500. The same bug was in the lead-reference retry. Fixed with `pgErrorCode` / `isUniqueViolation` in `@repo/db`; the test fakes now throw errors wrapped like Drizzle's. Re-run against the real database: 3 simultaneous requests → one 201, two 200, one incident (same key and different keys).
+- **SOS with the network completely down.** The raise loop moved out of the hook into `apps/resident/lib/raise.ts` and is unit-tested (the resident app now has vitest; 5 tests run in CI): fallbacks at once when unreachable, abandon a hung request at 4 s, retry with backoff, stop on refusal, stop when the screen closes. On the emulator with airplane mode: Call 108 within 4 s, offline ~20 s, SOS landed 17 s after the network returned, exactly one incident.
+- Maestro flow `apps/resident/.maestro/sos-offline.yaml` (airplane mode) written with test IDs on the SOS buttons. **Not run yet: installing Maestro needs your OK** (download from GitHub, see README).
+- Tests: API 177 + 6 workflow, resident 5.
+
 ### Not verified yet
-- **SOS pressed while the API is completely down mid-session** (retries until it comes back): the slow-API case above is covered; the fully-down case still needs a Maestro flow.
-- The two unexplained 500s on POST /v1/sos after an API restart (see above).
+- The Maestro flows (Maestro not installed).
+
+### Options (your call)
+- Retry the moment the network returns instead of waiting up to 15 s for the next backoff: needs `@react-native-community/netinfo` (free, Expo-supported).
 - iOS (needs a Mac or EAS + Apple account).
 
 ### Notes and follow-ups
