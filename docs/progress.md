@@ -1,5 +1,42 @@
 # Progress
 
+## 2026-10-28 · Phase 3, step 4: field app (duty, offers, job steps, location)
+
+### Done
+- **API:**
+  - `GET /v1/crew/job`: the job a crew has taken, with the next status button (no medical details)
+  - `POST /v1/sos/{id}/status`: en route → on scene → transporting → handed over, assigned crew only, one step at a time; pressing the same step again is a harmless retry
+  - going off duty mid-job is refused (409); the desk reassigns instead
+  - `nextCrewStep` and `crewSteps` added to the shared state machine
+  - 10 new tests (API 169 + 6 workflow; contracts 30)
+- **Field app (crew):**
+  - duty switch through the API, with a location fix capped at 8 s so GPS never blocks going on duty
+  - polls offers every 3 s while on duty, free and in the foreground
+  - full-screen vibrating "Emergency job" ring with distance/ETA, DRILL label, accept / decline ("another crew took it" on 409)
+  - job card with Google Maps hand-off and one big status button per step
+  - notice when the desk cancels or reassigns a job
+  - other field roles see "jobs for your role arrive in a later update"
+- **Location:**
+  - standby: foreground-only updates every 30 s / 50 m
+  - active job: background task every ~4 s through an Android foreground service (persistent notification) plus an in-app "Sharing your location" indicator; stops at hand-over, cancel or reassign
+  - Android needs only while-in-use permission; no "Allow all the time" (no background-location permission in the manifest)
+- Strings in en/te/hi (te/hi machine-written, still need native review).
+- **Verified on the Android emulator** against the local stack: sign-in as crew, on duty, real SOS raised → ring screen → accept → four status steps → timeline `raised → dispatching → accepted → en_route → on_scene → transporting → handed_over` (crew steps by `crew`), 6 background location fixes received, back to standby.
+- **Fixed on device:** a crash right after accepting (expo-task-manager needs `RECEIVE_BOOT_COMPLETED`), and going on duty hanging on a GPS fix.
+
+### Notes
+- Patient summary and first-aid notes are stored on the hospital handover, so they come with step 6 (handover), not here.
+- The job location service is killed with the app (`killServiceOnDestroy`); reopening the app restarts tracking. Ringing with the app closed needs FCM push (comes with the push setup).
+- `expo install --fix` wanted expo 58.0.20 / expo-router 58.0.27 / expo-dev-client 58.0.16. It did that by adding exclusions to pnpm's release-age gate, so I reverted it. CI's `expo install --check` will flag these patches until they pass the age gate; then run `npx expo install --fix` in both apps.
+- After `expo prebuild`, copy `apps/resident/android/local.properties` into `apps/field/android/` (prebuild deletes it).
+- Local test data: crew record for +91 99999 00002 (drill participant, in "Simulated team").
+
+### Next
+- Step 5: resident SOS screens (countdown, live tracking over Realtime with polling fallback, crew call to the work number, 108 / desk fallbacks), and broadcasting crew positions on the incident channel.
+
+### Needs from you
+- Unchanged: Google Maps key (sandbox), Upstash account before the first deploy, the staff self-sign-up hook decision.
+
 ## 2026-10-27 · Phase 3, step 3: dispatch with coverage teams (core done)
 
 ### Done
