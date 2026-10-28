@@ -50,8 +50,7 @@
 ### Not verified yet
 - The Maestro flows (Maestro not installed).
 
-### Options (your call)
-- Retry the moment the network returns instead of waiting up to 15 s for the next backoff: needs `@react-native-community/netinfo` (free, Expo-supported).
+- **Retry the moment the network returns (approved):** `@react-native-community/netinfo` 12.0.1 (via `expo install`). The backoff wait is cut short on an offline → online change (not on every network event; unknown counts as online), including when the network returns mid-request. 2 more unit tests (resident: 7). On the emulator: offline ~25 s, then the SOS landed **2.7 s** after the network returned (17 s before), one incident. Native module: rebuild dev clients (`expo prebuild` + `expo run:android`).
 - iOS (needs a Mac or EAS + Apple account).
 
 ### Notes and follow-ups
