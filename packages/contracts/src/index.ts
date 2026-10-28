@@ -437,7 +437,7 @@ export const DeviceList = z.object({ devices: z.array(Device) }).openapi('Device
 // ── SOS ─────────────────────────────────────────────────────────────────
 
 export * from './sos';
-import { sosStates as _sosStates } from './sos';
+import { crewSteps as _crewSteps, sosStates as _sosStates } from './sos';
 
 export const SosStateSchema = z.enum(_sosStates).openapi('SosState');
 
@@ -509,3 +509,13 @@ export const DispatchOffer = z
   })
   .openapi('DispatchOffer');
 export type DispatchOffer = z.infer<typeof DispatchOffer>;
+
+export const CrewStepSchema = z.enum(_crewSteps).openapi('CrewStep');
+
+/** The job a crew has taken: the incident (no medical details) and the next status button. */
+export const CrewJob = z
+  .object({ incident: SosIncident, nextStep: CrewStepSchema.nullable() })
+  .openapi('CrewJob');
+export type CrewJob = z.infer<typeof CrewJob>;
+
+export const CrewStepUpdate = z.object({ to: CrewStepSchema }).openapi('CrewStepUpdate');

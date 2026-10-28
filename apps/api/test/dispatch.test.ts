@@ -4,7 +4,7 @@ import { memoryKv } from '../src/lib/kv';
 import { memoryCrewLocator, type LatLng } from '../src/lib/crew-locator';
 import { acceptOffer, chooseCandidates, declineOffer, dispatchAlerts, estimateEtaS } from '../src/modules/dispatch/service';
 import { beginDispatch } from '../src/modules/sos/escalation-service';
-import { raise } from '../src/modules/sos/service';
+import { move, raise } from '../src/modules/sos/service';
 import { fakeDispatch } from './fake-dispatch';
 import { fakeEscalation, fakeSos } from './fake-sos';
 import { fakeHouseholds } from './fake-households';
@@ -237,5 +237,97 @@ describe('crew endpoints', () => {
     expect(await taken.json()).toMatchObject({ id: sos.id, state: 'accepted' });
     expect(t.sos.incidents[0]!.crewId).toBe(crew.id);
     expect((await (await call('GET', '/v1/crew/offers')).json()) as unknown[]).toEqual([]);
+  });
+});
+
+describe('the crew job', () => {
+  const CREW_USER = 'c1000000-0000-4000-8000-000000000002';
+
+  /** A crew that has accepted a freshly raised SOS, driven through the HTTP API. */
+  async function onJob(opts: { isDrill?: boolean } = {}) {
+    const t = await testContext();
+    const crew = t.dispatch.addCrew({ userId: CREW_USER, drillParticipant: opts.isDrill ?? false }, { onDuty: false });
+    const h = { authorization: `Bearer ${await t.token({ sub: CREW_USER, app_roles: ['crew'] })}`, 'content-type': 'application/json' };
+    const call = (method: string, p: string, b?: unknown) => t.app.request(p, { method, headers: h, ...(b === undefined ? {} : { body: JSON.stringify(b) }) });
+    await call('PUT', '/v1/crew/duty', { onDuty: true, location: north(1) });
+    const { incident } = await raise({ sos: t.sos.repo, households: t.hh.repo }, { id: MOM, role: 'resident' }, MOM, { idempotencyKey: randomUUID(), location: HOME }, { isDrill: opts.isDrill });
+    await beginDispatch({ sos: t.sos.repo, alerts: dispatchAlerts({ dispatch: t.dispatch.repo, locator: t.locator, sos: t.sos.repo }) }, incident.id);
+    const [offer] = (await (await call('GET', '/v1/crew/offers')).json()) as { id: string }[];
+    expect((await call('POST', `/v1/dispatch/offers/${offer!.id}/accept`)).status).toBe(200);
+    const step = (to: string, id = incident.id) => call('POST', `/v1/sos/${id}/status`, { to });
+    return { t, crew, call, step, incidentId: incident.id };
+  }
+
+  it('no job: null', async () => {
+    const t = await testContext();
+    t.dispatch.addCrew({ userId: CREW_USER });
+    const res = await t.app.request('/v1/crew/job', { headers: { authorization: `Bearer ${await t.token({ sub: CREW_USER, app_roles: ['crew'] })}` } });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toBeNull();
+  });
+
+  it('after accepting, the job shows with the next status button and no medical details', async () => {
+    const { call, incidentId } = await onJob();
+    const job = (await (await call('GET', '/v1/crew/job')).json()) as { incident: { id: string; state: string }; nextStep: string };
+    expect(job).toMatchObject({ incident: { id: incidentId, state: 'accepted' }, nextStep: 'en_route' });
+    expect(JSON.stringify(job)).not.toMatch(/allerg|condition|medic|blood/i);
+  });
+
+  it('status buttons go en route → on scene → transporting → handed over, each in the timeline as the crew', async () => {
+    const { t, call, step, incidentId } = await onJob();
+    const seen: unknown[] = [];
+    for (const to of ['en_route', 'on_scene', 'transporting', 'handed_over']) {
+      const res = await step(to);
+      expect(res.status).toBe(200);
+      seen.push(((await res.json()) as { nextStep: string | null }).nextStep);
+    }
+    expect(seen).toEqual(['on_scene', 'transporting', 'handed_over', null]);
+    expect(t.sos.events.get(incidentId)!.filter((e) => e.actorRole === 'crew').map((e) => e.toState)).toEqual(['en_route', 'on_scene', 'transporting', 'handed_over']);
+    // Handed over: the job is done for the crew, who can take the next one.
+    expect(await (await call('GET', '/v1/crew/job')).json()).toBeNull();
+  });
+
+  it('pressing the same step twice (a retry) is harmless; skipping a step is refused', async () => {
+    const { t, step, incidentId } = await onJob();
+    expect((await step('en_route')).status).toBe(200);
+    expect((await step('en_route')).status).toBe(200);
+    expect(t.sos.events.get(incidentId)!.filter((e) => e.toState === 'en_route')).toHaveLength(1);
+    expect((await step('transporting')).status).toBe(409);
+  });
+
+  it('only the assigned crew can move the job', async () => {
+    const { t, step, incidentId } = await onJob();
+    const other = t.dispatch.addCrew({ userId: 'c1000000-0000-4000-8000-000000000003' });
+    const res = await t.app.request(`/v1/sos/${incidentId}/status`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${await t.token({ sub: other.userId, app_roles: ['crew'] })}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ to: 'en_route' }),
+    });
+    expect(res.status).toBe(404);
+    expect((await step('en_route', randomUUID())).status).toBe(404);
+  });
+
+  it('a resident cannot use the crew status endpoint', async () => {
+    const { t, incidentId } = await onJob();
+    const res = await t.app.request(`/v1/sos/${incidentId}/status`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${await t.token({ sub: MOM })}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ to: 'en_route' }),
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it('going off duty mid-job is refused; after hand-over it works', async () => {
+    const { call, step } = await onJob();
+    expect((await call('PUT', '/v1/crew/duty', { onDuty: false })).status).toBe(409);
+    for (const to of ['en_route', 'on_scene', 'transporting', 'handed_over']) await step(to);
+    expect((await call('PUT', '/v1/crew/duty', { onDuty: false })).status).toBe(200);
+  });
+
+  it('a job cancelled by the resident disappears from the crew app', async () => {
+    const { t, call, incidentId } = await onJob();
+    const incident = (await t.sos.repo.get(incidentId))!;
+    await move(t.sos.repo, incident, 'cancelled', { id: MOM, role: 'resident' }, null);
+    expect(await (await call('GET', '/v1/crew/job')).json()).toBeNull();
   });
 });

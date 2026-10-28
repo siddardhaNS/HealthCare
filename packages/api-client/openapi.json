@@ -2294,6 +2294,48 @@
           "distanceM",
           "etaS"
         ]
+      },
+      "CrewJob": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "incident": {
+            "$ref": "#/components/schemas/SosIncident"
+          },
+          "nextStep": {
+            "$ref": "#/components/schemas/CrewStep"
+          }
+        },
+        "required": [
+          "incident",
+          "nextStep"
+        ]
+      },
+      "CrewStep": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "enum": [
+          "en_route",
+          "on_scene",
+          "transporting",
+          "handed_over",
+          null
+        ]
+      },
+      "CrewStepUpdate": {
+        "type": "object",
+        "properties": {
+          "to": {
+            "$ref": "#/components/schemas/CrewStep"
+          }
+        },
+        "required": [
+          "to"
+        ]
       }
     },
     "parameters": {}
@@ -6486,6 +6528,179 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SosIncident"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not ambulance crew",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not possible now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/crew/job": {
+      "get": {
+        "operationId": "crewJob",
+        "tags": [
+          "dispatch"
+        ],
+        "summary": "The job I have taken and not yet handed over (the app checks this on launch)",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job or null",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrewJob"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not ambulance crew",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not possible now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sos/{id}/status": {
+      "post": {
+        "operationId": "advanceCrewJob",
+        "tags": [
+          "dispatch"
+        ],
+        "summary": "Crew status button: en route → on scene → transporting → handed over (assigned crew only)",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrewStepUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrewJob"
                 }
               }
             }

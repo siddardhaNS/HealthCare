@@ -1,10 +1,11 @@
 // Dispatch: who is offered an SOS, and the first-accept-wins rule.
 // docs/plans/phase-3-sos.md §3.4 and §9 (coverage teams).
+import type { CrewStep } from '@repo/contracts/sos';
 import type { Kv } from '../../lib/kv';
 import type { CrewLocator, LatLng } from '../../lib/crew-locator';
 import type { IncidentRow, SosRepo } from '../sos/repo';
 import { acceptForCrew, type EscalationRunner, type SosAlerts } from '../sos/escalation-service';
-import { isSosFailure, type SosFailure } from '../sos/transition';
+import { isSosFailure, move, type SosFailure } from '../sos/transition';
 import type { CrewRow, DispatchRepo } from './repo';
 
 /** Crews offered at once in each ring (plan: "the nearest 3 at the same time"). */
@@ -145,11 +146,29 @@ export async function declineOffer(d: DispatchDeps, crew: CrewRow, offerId: stri
   return true;
 }
 
-/** On duty: open a shift and (with a location) become findable. Off duty: close it and drop out of the index. */
-export async function setDuty(d: DispatchDeps, crew: CrewRow, onDuty: boolean, at?: LatLng) {
+/**
+ * On duty: open a shift and (with a location) become findable. Off duty:
+ * close it and drop out of the index, but never in the middle of a job
+ * (the resident is waiting; the desk reassigns if the crew cannot go on).
+ */
+export async function setDuty(d: DispatchDeps & { sos: SosRepo }, crew: CrewRow, onDuty: boolean, at?: LatLng): Promise<true | DispatchFailure> {
+  if (!onDuty && (await d.sos.activeForCrew(crew.id))) return { error: 'conflict', message: 'Hand over your current job before going off duty, or ask the desk to reassign it.' };
   await d.dispatch.setDuty(crew, onDuty);
   if (!onDuty) await d.locator.remove(crew.id);
   else if (at) await d.locator.set(crew.id, at);
+  return true;
+}
+
+/**
+ * The assigned crew's status buttons: en route → on scene → transporting →
+ * handed over, one step at a time through the state machine. Pressing the
+ * same step again (a retry on a weak network) returns the job unchanged.
+ */
+export async function advanceJob(d: { sos: SosRepo }, crew: CrewRow, incidentId: string, to: CrewStep): Promise<IncidentRow | DispatchFailure> {
+  const incident = await d.sos.get(incidentId);
+  if (!incident || incident.crewId !== crew.id) return { error: 'not_found', message: 'No such job.' };
+  if (incident.state === to) return incident;
+  return move(d.sos, incident, to, { id: crew.userId, role: 'crew' }, null);
 }
 
 /** Batched fixes from the field app; the newest one is the crew's position. Only while on duty. */

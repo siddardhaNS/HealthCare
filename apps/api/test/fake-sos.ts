@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { crewActiveStates } from '@repo/contracts/sos';
 import type { EventRow, IncidentRow, SosRepo } from '../src/modules/sos/repo';
 import type { EscalationRunner, EscalationSignal, SosAlerts } from '../src/modules/sos/escalation-service';
 
@@ -58,6 +59,10 @@ export function fakeSos() {
     },
     async openForUser(userId) {
       const r = incidents.find((i) => i.userId === userId && isOpen(i.state));
+      return r ? strip(r) : null;
+    },
+    async activeForCrew(crewId) {
+      const r = incidents.find((i) => i.crewId === crewId && crewActiveStates.includes(i.state));
       return r ? strip(r) : null;
     },
     async create(n) {

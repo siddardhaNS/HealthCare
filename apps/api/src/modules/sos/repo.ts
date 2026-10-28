@@ -1,5 +1,5 @@
-import type { SosActor, SosState } from '@repo/contracts/sos';
-import { and, asc, auditEvents, eq, notInArray, siteSosSettings, sosEvents, sosIncidents, sql, type Db } from '@repo/db';
+import { crewActiveStates, type SosActor, type SosState } from '@repo/contracts/sos';
+import { and, asc, auditEvents, eq, inArray, notInArray, siteSosSettings, sosEvents, sosIncidents, sql, type Db } from '@repo/db';
 
 export interface IncidentRow {
   id: string;
@@ -45,6 +45,8 @@ export interface SosRepo {
   siteSettings(siteId: string): Promise<{ widenAfterS: number; escalateAfterS: number } | null>;
   byIdempotency(raisedBy: string, key: string): Promise<IncidentRow | null>;
   openForUser(userId: string): Promise<IncidentRow | null>;
+  /** The job a crew has taken and not yet handed over, if any. */
+  activeForCrew(crewId: string): Promise<IncidentRow | null>;
   /** Creates the incident and its first timeline event in one transaction. Throws { code: '23505' } on a duplicate. */
   create(i: NewIncident): Promise<IncidentRow>;
   get(id: string): Promise<IncidentRow | null>;
@@ -101,6 +103,10 @@ export function drizzleSosRepo(db: Db): SosRepo {
     },
     async openForUser(userId) {
       const [r] = await db.select(cols).from(sosIncidents).where(and(eq(sosIncidents.userId, userId), notInArray(sosIncidents.state, OPEN_EXCLUDED)));
+      return r ?? null;
+    },
+    async activeForCrew(crewId) {
+      const [r] = await db.select(cols).from(sosIncidents).where(and(eq(sosIncidents.crewId, crewId), inArray(sosIncidents.state, [...crewActiveStates])));
       return r ?? null;
     },
     async create(i) {

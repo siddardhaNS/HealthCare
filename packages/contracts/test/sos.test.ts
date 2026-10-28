@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { checkTransition, isOpen, sosStates, type SosActor, type SosState } from '../src/sos';
+import { checkTransition, crewSteps, isOpen, nextCrewStep, sosStates, type SosActor, type SosState } from '../src/sos';
 
 describe('SOS state machine', () => {
   it('walks the full happy path with the right actor at each step', () => {
@@ -51,5 +51,21 @@ describe('SOS state machine', () => {
       for (const to of sosStates) for (const by of ['resident', 'crew', 'desk', 'system'] as const) expect(checkTransition(end, to, by, 'x').ok).toBe(false);
       expect(isOpen(end)).toBe(false);
     }
+  });
+});
+
+describe('crew status buttons', () => {
+  it('each step is a legal crew move from the state before it, ending at handed over', () => {
+    let state: SosState = 'accepted';
+    for (const step of crewSteps) {
+      expect(nextCrewStep(state)).toBe(step);
+      expect(checkTransition(state, step, 'crew').ok).toBe(true);
+      state = step;
+    }
+    expect(nextCrewStep(state)).toBeNull();
+  });
+
+  it('no button before a crew has the job or after it is settled', () => {
+    for (const s of ['raised', 'dispatching', 'escalated_to_108', 'closed', 'cancelled'] as const) expect(nextCrewStep(s)).toBeNull();
   });
 });
