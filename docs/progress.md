@@ -1,5 +1,54 @@
 # Progress
 
+## 2026-10-28 · Phase 3, step 5: resident SOS screens, live tracking, fallbacks
+
+### Done
+- **API:**
+  - Live updates over Supabase Realtime Broadcast (REST endpoint, so the API never holds a socket): every state change goes out as `state` on the private channel `sos:{id}`, whoever made it (resident, crew, desk, workflow), and crew positions go out as `position` during an active job. Payloads carry no medical details. A failed push never fails the change behind it.
+  - Needs `SUPABASE_SECRET_KEY` (now required in production); without it nothing is pushed and the apps poll.
+  - Resident SOS endpoints return `ResidentSos`: the incident plus, while a crew has the job, the ambulance (registration, life-support level), the company work number, its last position, and distance / ETA (straight line × 1.4 at 25 km/h until Google Routes). No crew names or personal numbers.
+  - Distance and ETA formulas moved into `@repo/contracts/sos`, so the app updates them from position pushes with the same maths.
+  - 5 new tests (API 174 + 6 workflow).
+- **Migration `…_sos_realtime.sql`:** only the person and their family managers may listen on `sos:{id}`. It reuses the `sos_incidents` RLS policy.
+- **Resident app:**
+  - Home SOS card opens a 5 s countdown with "Send alert now" / "Cancel, I'm OK". Location: last known at once, then a fresh fix; the alert never waits for GPS.
+  - Raising uses one idempotency key per press, 4 s per attempt, and retries with backoff. After the first slow or failed attempt, "Call community desk" (number saved on the phone) and "Call 108" appear while retries continue. Back is blocked while sending.
+  - Live screen:
+    - state and elapsed timer
+    - relative map: your position and the ambulance's bearing and distance. A street map needs the Google Maps key.
+    - ETA card with registration and "Call ambulance crew" (work number)
+    - step list with times
+    - 108 banner on escalation
+    - DRILL label
+    - "live updates paused" note when the channel is down
+    - cancel with confirmation while allowed
+  - Polling: every 5 s while the channel is down, every 30 s while it is up.
+  - Home shows "SOS active · …" while an incident is open.
+  - **Startup error screen now has "Call 108" / "Call community desk".** Before this, a resident opening the app while the service was unreachable got only "Something went wrong".
+  - `expo-location` added (while-in-use only; no background location in the manifest). Strings in en/te/hi (te/hi machine-written).
+- **Simulator:** `--drive` (the winning crew drives to the patient, streaming fixes, then on scene → transporting → handed over) and `--speed` (m/s; default 11, use 100 for quick runs).
+
+### Verified on the Android emulator (local stack, Realtime on)
+- Countdown → raise → "Finding an ambulance" → widen at 30 s → **"Call 108 now" at 90 s**, shown about 3 s after the server event → cancel with confirmation → "SOS cancelled".
+- With 3 simulated crews: one accepted, the other two got 409. Ambulance bearing and distance went 7.0 → 0 km. **On-screen distance tracked the simulator fix by fix (6292 m → 6.3, 6204 m → 6.2 within 10 s), faster than polling could, so the Realtime pushes arrive.** Private channel joined, so the RLS policy works.
+- Registration, life support and "Call ambulance crew" (opened the dialer with the work number); on scene → transporting → handed over; home "SOS active" card; startup error screen with Call 108 (API stopped).
+- Fixed during the run: cancel confirmation hidden below the fold; ETA wrapping; map label clipped / over the route; on-scene card said "arriving in"; after hand-over the screen fell back to "Looking for an ambulance"; last step shown in progress instead of done.
+
+### Not verified yet
+- **SOS pressed while the API is down** (fallback buttons after 4 s, then the retry landing once): the run raced the app's startup and wasn't repeated. Do this first next session, then add a Maestro flow for it.
+- iOS (needs a Mac or EAS + Apple account).
+
+### Notes and follow-ups
+- The location permission prompt appears over the countdown on the first SOS. The countdown keeps running, so it does not block, but asking for permission during onboarding would be calmer. Your call (it's a consent-adjacent screen).
+- The home screen needs the API to load. A resident offline at launch now gets the phone fallbacks, but can't raise an in-app SOS until the service is reachable. An offline-capable home (cached profile) would fix this.
+- "Hospital handover" card is a placeholder until step 6.
+
+### Next
+- Step 6: console command center (live map, incident panel, reassign, test SOS, thresholds, coverage teams), hospital handover + partner confirm, desk channel `desk:{siteId}`.
+
+### Needs from you
+- Unchanged: Google Maps key (sandbox; also turns the relative map into a street map), Upstash account before the first deploy, staff self-sign-up hook decision.
+
 ## 2026-10-28 · Phase 3, step 4: field app (duty, offers, job steps, location)
 
 ### Done

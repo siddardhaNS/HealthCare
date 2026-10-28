@@ -76,7 +76,9 @@ pnpm dev                        # Metro for an installed dev build
 
 The API runs durable workflows locally with no extra service; run state lives in `apps/api/.workflow-data`. Inspect runs with `cd apps/api && npx workflow web` (or `npx workflow inspect runs`). Every SOS starts one escalation run: dispatch, widen at 30 s, prompt 108 at 90 s (per-site thresholds).
 
-Simulated crews (local stack, API running): `pnpm --filter api simulate:crews --count 5 --team 2 --sos` puts 5 test crews on duty around Hyderabad (2 in a coverage team), raises a test SOS and accepts offers; Ctrl+C takes them off duty. Options: `--near lat,lng`, `--decline 0.3`.
+Simulated crews (local stack, API running): `pnpm --filter api simulate:crews --count 5 --team 2 --sos` puts 5 test crews on duty around Hyderabad (2 in a coverage team), raises a test SOS and accepts offers; Ctrl+C takes them off duty. Options: `--near lat,lng`, `--decline 0.3`, `--drive` with `--speed 100` for a quick run (the winning crew drives to the patient, default ~40 km/h, streaming its position, then steps through on scene → transporting → handed over).
+
+Live SOS updates: the API pushes state changes and ambulance positions on each incident's private Realtime channel `sos:{id}` when `SUPABASE_SECRET_KEY` is set in `.env`; without it the apps fall back to polling every 5 s. To test the resident SOS screen on the emulator, set a location with `adb emu geo fix 78.35 17.44` and run the simulator with `--near 17.44,78.35 --drive`. To link a test ambulance (registration and work number on the resident's screen), set `crews.ambulance_id` in Studio.
 
 ## Checks
 
