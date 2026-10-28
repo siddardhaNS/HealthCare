@@ -316,7 +316,16 @@
     "theirHousehold": "their household",
     "accept": "Join this household",
     "consentContinue": "Save and continue",
-    "consentRequired": "Keeping your health record is needed to use the health features."
+    "consentRequired": "Keeping your health record is needed to use the health features.",
+    "location": {
+      "title": "Let help find you",
+      "body": "When you press SOS, your location goes to the ambulance crew and the community desk so they can reach you fast.",
+      "whenTitle": "Only when you press SOS",
+      "when": "Your location is never tracked in the background. It is read once, at the moment you ask for help.",
+      "allow": "Allow location",
+      "notNow": "Not now",
+      "later": "You can change this any time in your phone settings. Without it, help is sent to your home address."
+    }
   },
   "healthTab": {
     "title": "My health",

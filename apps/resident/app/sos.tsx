@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, BackHandler, Pressable, ScrollView, useWindowDimensions, Vibration, View } from 'react-native';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -15,11 +15,15 @@ const COUNTDOWN_S = 5;
 /** Seconds since `iso`, ticking. */
 function useElapsed(iso: string | undefined) {
   const [now, setNow] = useState(Date.now());
+  // A phone clock behind the server would put the start in the future and
+  // freeze the timer at 0:00; start no later than when this phone first saw it.
+  const anchor = useRef<{ iso: string; at: number } | null>(null);
+  if (iso && anchor.current?.iso !== iso) anchor.current = { iso, at: Math.min(Date.parse(iso), Date.now()) };
   useEffect(() => {
     const iv = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(iv);
   }, []);
-  return iso ? Math.max(0, Math.floor((now - Date.parse(iso)) / 1000)) : 0;
+  return anchor.current ? Math.max(0, Math.floor((now - anchor.current.at) / 1000)) : 0;
 }
 const mmss = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 

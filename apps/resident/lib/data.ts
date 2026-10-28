@@ -1,4 +1,6 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import * as Location from 'expo-location';
 import type { Schemas } from '@repo/api-client';
 import { purposeMeta, type ConsentPurpose } from '@repo/contracts/consent';
 import { useSession } from '@repo/mobile';
@@ -231,11 +233,47 @@ export function useRemoveContact(who: string) {
 }
 
 /** What still needs doing before the main app opens. */
-export function useOnboardingStep(): { loading: boolean; error: boolean; retry: () => void; step: 'profile' | 'household' | 'consent' | null } {
+// ── Location for SOS (onboarding) ────────────────────────────────────────
+
+const LOCATION_ASKED_KEY = 'onboarding.locationAsked';
+const locationStepKey = ['onboarding', 'location'] as const;
+
+/**
+ * Whether onboarding has offered location for SOS: done once the phone has
+ * granted it, or the person answered the step either way. Kept on the phone
+ * (it is the phone's permission, not a consent record). Anyone who said
+ * "Not now" is asked again by the system at their first SOS.
+ */
+export function useLocationStepDone() {
+  return useQuery({
+    queryKey: locationStepKey,
+    staleTime: Infinity,
+    queryFn: async () => {
+      const asked = await AsyncStorage.getItem(LOCATION_ASKED_KEY).catch(() => null);
+      if (asked) return true;
+      return (await Location.getForegroundPermissionsAsync().catch(() => null))?.granted ?? false;
+    },
+  });
+}
+
+/** Records the answer to the onboarding location step (the system prompt is shown first when allowing). */
+export function useAnswerLocationStep() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (allow: boolean) => {
+      if (allow) await Location.requestForegroundPermissionsAsync().catch(() => null);
+      await AsyncStorage.setItem(LOCATION_ASKED_KEY, new Date().toISOString()).catch(() => undefined);
+    },
+    onSettled: () => qc.setQueryData(locationStepKey, true),
+  });
+}
+
+export function useOnboardingStep(): { loading: boolean; error: boolean; retry: () => void; step: 'profile' | 'household' | 'consent' | 'location' | null } {
   const { session } = useSession();
   const profile = useProfile();
   const household = useHousehold();
   const consents = useConsents();
+  const location = useLocationStepDone();
   const retry = () => {
     void profile.refetch();
     void household.refetch();
@@ -244,10 +282,11 @@ export function useOnboardingStep(): { loading: boolean; error: boolean; retry: 
   const base = { loading: false, error: false, retry };
   if (!session) return { ...base, step: null };
   if (profile.isError || household.isError || consents.isError) return { ...base, error: true, step: null };
-  if (profile.isPending || household.isPending || consents.isPending) return { ...base, loading: true, step: null };
+  if (profile.isPending || household.isPending || consents.isPending || location.isPending) return { ...base, loading: true, step: null };
   if (!profile.data) return { ...base, step: 'profile' };
   if (!household.data?.household) return { ...base, step: 'household' };
   const care = consents.data?.consents.find((c) => c.purpose === 'care_record');
   if (!care || care.status !== 'granted' || care.outdated) return { ...base, step: 'consent' };
+  if (!location.data) return { ...base, step: 'location' };
   return { ...base, step: null };
 }

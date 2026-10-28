@@ -2,7 +2,7 @@ import { Redirect, Stack, useSegments } from 'expo-router';
 import { useTheme } from '@repo/ui-native';
 import { useOnboardingStep } from '../../lib/data';
 
-// Onboarding: profile → household → consent. Always resumes at the first
+// Onboarding: profile → household → consent → location (for SOS). Always resumes at the first
 // unfinished step; when all are done the root layout opens the tabs.
 export default function OnboardingLayout() {
   const { colors } = useTheme();
