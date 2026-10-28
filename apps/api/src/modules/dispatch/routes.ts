@@ -133,13 +133,7 @@ export const dispatchRoutes = new OpenAPIHono<AppEnv>()
     if (isSosFailure(done)) return failure(c, done);
     return c.json(toIncident(done, await deps.sos.events(done.id)), 200);
   })
-  .openapi(r.job, async (c) => {
-    const crew = await crewOf(c);
-    if (isSosFailure(crew)) return failure(c, crew);
-    const deps = c.get('deps');
-    const job = await deps.sos.activeForCrew(crew.id);
-    return c.json(job ? toJob(job, await deps.sos.events(job.id)) : null, 200);
-  })
+  // Registered before the nullable job route, so the CrewJob component itself is not nullable.
   .openapi(r.step, async (c) => {
     const crew = await crewOf(c);
     if (isSosFailure(crew)) return failure(c, crew);
@@ -147,6 +141,13 @@ export const dispatchRoutes = new OpenAPIHono<AppEnv>()
     const done = await advanceJob(deps, crew, c.req.valid('param').id, c.req.valid('json').to);
     if (isSosFailure(done)) return failure(c, done);
     return c.json(toJob(done, await deps.sos.events(done.id)), 200);
+  })
+  .openapi(r.job, async (c) => {
+    const crew = await crewOf(c);
+    if (isSosFailure(crew)) return failure(c, crew);
+    const deps = c.get('deps');
+    const job = await deps.sos.activeForCrew(crew.id);
+    return c.json(job ? toJob(job, await deps.sos.events(job.id)) : null, 200);
   })
   .openapi(r.decline, async (c) => {
     const crew = await crewOf(c);

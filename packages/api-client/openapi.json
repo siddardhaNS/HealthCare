@@ -2296,34 +2296,28 @@
         ]
       },
       "CrewJob": {
-        "type": [
-          "object",
-          "null"
-        ],
+        "type": "object",
         "properties": {
           "incident": {
             "$ref": "#/components/schemas/SosIncident"
           },
           "nextStep": {
-            "$ref": "#/components/schemas/CrewStep"
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "en_route",
+              "on_scene",
+              "transporting",
+              "handed_over",
+              null
+            ]
           }
         },
         "required": [
           "incident",
           "nextStep"
-        ]
-      },
-      "CrewStep": {
-        "type": [
-          "string",
-          "null"
-        ],
-        "enum": [
-          "en_route",
-          "on_scene",
-          "transporting",
-          "handed_over",
-          null
         ]
       },
       "CrewStepUpdate": {
@@ -2335,6 +2329,15 @@
         },
         "required": [
           "to"
+        ]
+      },
+      "CrewStep": {
+        "type": "string",
+        "enum": [
+          "en_route",
+          "on_scene",
+          "transporting",
+          "handed_over"
         ]
       }
     },
@@ -6585,21 +6588,42 @@
         }
       }
     },
-    "/v1/crew/job": {
-      "get": {
-        "operationId": "crewJob",
+    "/v1/sos/{id}/status": {
+      "post": {
+        "operationId": "advanceCrewJob",
         "tags": [
           "dispatch"
         ],
-        "summary": "The job I have taken and not yet handed over (the app checks this on launch)",
+        "summary": "Crew status button: en route → on scene → transporting → handed over (assigned crew only)",
         "security": [
           {
             "bearer": []
           }
         ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrewStepUpdate"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "Job or null",
+            "description": "Updated",
             "content": {
               "application/json": {
                 "schema": {
@@ -6661,46 +6685,35 @@
         }
       }
     },
-    "/v1/sos/{id}/status": {
-      "post": {
-        "operationId": "advanceCrewJob",
+    "/v1/crew/job": {
+      "get": {
+        "operationId": "crewJob",
         "tags": [
           "dispatch"
         ],
-        "summary": "Crew status button: en route → on scene → transporting → handed over (assigned crew only)",
+        "summary": "The job I have taken and not yet handed over (the app checks this on launch)",
         "security": [
           {
             "bearer": []
           }
         ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CrewStepUpdate"
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
-            "description": "Updated",
+            "description": "Job or null",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CrewJob"
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/CrewJob"
+                    },
+                    {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  ]
                 }
               }
             }

@@ -67,7 +67,41 @@
       "phlebotomist": "Phlebotomist",
       "companion": "Visit companion",
       "rider": "Pharmacy rider"
-    }
+    },
+    "standbyHint": "While on duty, keep the app open so emergency jobs reach you.",
+    "notCrew": "This account isn't set up as ambulance crew yet. Ask operations to add you.",
+    "locationNeeded": "Allow location so the nearest emergency jobs reach you.",
+    "offDutyBlocked": "Hand over your current job before going off duty, or ask the desk to reassign it.",
+    "networkError": "Couldn't reach the server. Check your connection and try again.",
+    "incoming": "Emergency job",
+    "drill": "DRILL · not a real emergency",
+    "distance": "{{km}} km away",
+    "eta": "About {{min}} min by road",
+    "noLocation": "No location shared. Confirm the address with the desk.",
+    "accept": "Accept job",
+    "decline": "Decline",
+    "taken": "Another crew took this job.",
+    "job": "Your job",
+    "navigate": "Navigate with Google Maps",
+    "sharingLocation": "Sharing your location with the desk",
+    "locationOff": "Location is off. Turn it on so the patient and desk can see you.",
+    "jobEnded": "The desk cancelled or reassigned this job.",
+    "ok": "OK",
+    "trackingTitle": "On an emergency job",
+    "trackingBody": "Sharing your location with the desk until hand-over.",
+    "states": {
+      "accepted": "Accepted",
+      "en_route": "On the way",
+      "on_scene": "With the patient",
+      "transporting": "Going to hospital"
+    },
+    "steps": {
+      "en_route": "Start: on the way",
+      "on_scene": "Reached the patient",
+      "transporting": "Leaving for hospital",
+      "handed_over": "Handed over at hospital"
+    },
+    "laterRoles": "Jobs for your role arrive in a later update."
   },
   "web": {
     "heroTitle": "Doctors, medicines, lab tests and a 24×7 SOS for every home",

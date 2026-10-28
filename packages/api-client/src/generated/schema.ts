@@ -813,23 +813,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/crew/job": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** The job I have taken and not yet handed over (the app checks this on launch) */
-        get: operations["crewJob"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/sos/{id}/status": {
         parameters: {
             query?: never;
@@ -841,6 +824,23 @@ export interface paths {
         put?: never;
         /** Crew status button: en route → on scene → transporting → handed over (assigned crew only) */
         post: operations["advanceCrewJob"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/crew/job": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The job I have taken and not yet handed over (the app checks this on launch) */
+        get: operations["crewJob"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1380,13 +1380,14 @@ export interface components {
         };
         CrewJob: {
             incident: components["schemas"]["SosIncident"];
-            nextStep: components["schemas"]["CrewStep"];
-        } | null;
-        /** @enum {string|null} */
-        CrewStep: "en_route" | "on_scene" | "transporting" | "handed_over" | null;
+            /** @enum {string|null} */
+            nextStep: "en_route" | "on_scene" | "transporting" | "handed_over" | null;
+        };
         CrewStepUpdate: {
             to: components["schemas"]["CrewStep"];
         };
+        /** @enum {string} */
+        CrewStep: "en_route" | "on_scene" | "transporting" | "handed_over";
     };
     responses: never;
     parameters: never;
@@ -4636,16 +4637,22 @@ export interface operations {
             };
         };
     };
-    crewJob: {
+    advanceCrewJob: {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                id: string;
+            };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CrewStepUpdate"];
+            };
+        };
         responses: {
-            /** @description Job or null */
+            /** @description Updated */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -4701,28 +4708,22 @@ export interface operations {
             };
         };
     };
-    advanceCrewJob: {
+    crewJob: {
         parameters: {
             query?: never;
             header?: never;
-            path: {
-                id: string;
-            };
+            path?: never;
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CrewStepUpdate"];
-            };
-        };
+        requestBody?: never;
         responses: {
-            /** @description Updated */
+            /** @description Job or null */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CrewJob"];
+                    "application/json": components["schemas"]["CrewJob"] & (Record<string, never> | null);
                 };
             };
             /** @description Invalid */

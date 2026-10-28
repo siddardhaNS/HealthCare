@@ -41,6 +41,18 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-router',
     'expo-dev-client',
     'expo-font',
+    // Location streams only during an active job, through a foreground
+    // service with a visible notification, so Android needs only the
+    // while-in-use permission (never "Allow all the time").
+    [
+      'expo-location',
+      {
+        locationWhenInUsePermission: 'Your location is shared with the dispatch desk while you are on duty, so the nearest emergency jobs reach you and patients can see you arrive.',
+        isIosBackgroundLocationEnabled: true,
+        isAndroidBackgroundLocationEnabled: false,
+        isAndroidForegroundServiceEnabled: true,
+      },
+    ],
     // Uploads source maps during EAS builds when SENTRY_AUTH_TOKEN is set.
     ['@sentry/react-native/expo', { url: 'https://sentry.io/', organization: process.env.SENTRY_ORG, project: process.env.SENTRY_PROJECT }],
     [

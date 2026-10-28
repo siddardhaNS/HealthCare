@@ -514,7 +514,7 @@ export const CrewStepSchema = z.enum(_crewSteps).openapi('CrewStep');
 
 /** The job a crew has taken: the incident (no medical details) and the next status button. */
 export const CrewJob = z
-  .object({ incident: SosIncident, nextStep: CrewStepSchema.nullable() })
+  .object({ incident: SosIncident, nextStep: z.enum(_crewSteps).nullable() })
   .openapi('CrewJob');
 export type CrewJob = z.infer<typeof CrewJob>;
 

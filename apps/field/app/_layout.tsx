@@ -4,6 +4,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { I18nextProvider } from 'react-i18next';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { createI18n } from '@repo/i18n';
@@ -12,6 +13,9 @@ import { nativeFonts } from '@repo/tokens/native-fonts';
 import { ThemeProvider, useTheme } from '@repo/ui-native';
 import { scrubSentryEvent, sentryTracesSampleRate } from '@repo/config/sentry';
 import { config } from '../lib/config';
+import { queryClient } from '../lib/data';
+// Defines the background location task at startup (it must exist before any update arrives).
+import '../lib/location';
 
 // No-op without EXPO_PUBLIC_SENTRY_DSN. Screenshots, view hierarchy and
 // Session Replay stay off: screens show health data.
@@ -66,7 +70,9 @@ function RootLayout() {
       <I18nextProvider i18n={i18n}>
         <ThemeProvider>
           <SessionProvider config={config}>
-            <Routes fontsReady={fontsLoaded || !!fontError} />
+            <QueryClientProvider client={queryClient}>
+              <Routes fontsReady={fontsLoaded || !!fontError} />
+            </QueryClientProvider>
           </SessionProvider>
         </ThemeProvider>
       </I18nextProvider>
