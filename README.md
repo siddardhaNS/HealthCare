@@ -89,7 +89,7 @@ pnpm typecheck
 pnpm test        # unit tests, incl. WCAG AA contrast for every theme and mode, and whole-workflow runs (sleeps fast-forwarded)
 pnpm --filter web e2e        # Playwright + axe (E2E_BASE_URL=http://localhost:3000 to reuse a dev server)
 pnpm --filter console e2e
-maestro test apps/resident/.maestro/sign-in.yaml   # needs an emulator + local stack
+maestro test -e DEV_SERVER=http://10.0.2.2:8081 apps/resident/.maestro/sign-in.yaml   # dev build; needs an emulator + local stack
 maestro test apps/resident/.maestro/sos-offline.yaml   # SOS with airplane mode on (Android)
 ```
 

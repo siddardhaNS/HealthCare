@@ -47,8 +47,10 @@
 - Maestro flow `apps/resident/.maestro/sos-offline.yaml` (airplane mode) written with test IDs on the SOS buttons. **Not run yet: installing Maestro needs your OK** (download from GitHub, see README).
 - Tests: API 177 + 6 workflow, resident 5.
 
+- **Maestro 2.12.0 installed** (`%LOCALAPPDATA%\maestro\bin\maestro.bat`, not on PATH). **`sos-offline.yaml` passes on the emulator (12/12 steps).**
+
 ### Not verified yet
-- The Maestro flows (Maestro not installed).
+- `sign-in.yaml` (both apps): `clearState` also wipes the dev build's Metro address, so the resident flow now reconnects when run with `-e DEV_SERVER=http://10.0.2.2:8081` (release builds need nothing). Not passing yet: on this laptop Maestro hung connecting to the emulator under load (emulator + Docker + API + Metro). Retry with fewer things running; the field app's flow needs the same change.
 
 - **Retry the moment the network returns (approved):** `@react-native-community/netinfo` 12.0.1 (via `expo install`). The backoff wait is cut short on an offline → online change (not on every network event; unknown counts as online), including when the network returns mid-request. 2 more unit tests (resident: 7). On the emulator: offline ~25 s, then the SOS landed **2.7 s** after the network returned (17 s before), one incident. Native module: rebuild dev clients (`expo prebuild` + `expo run:android`).
 - iOS (needs a Mac or EAS + Apple account).

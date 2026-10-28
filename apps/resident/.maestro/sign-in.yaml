@@ -1,10 +1,21 @@
 # Phone OTP sign-in against the local Supabase stack, using the test number
 # from supabase/config.toml ([auth.sms.test_otp]; no message is sent).
 # Run: maestro test apps/resident/.maestro/sign-in.yaml
+# Development build: add -e DEV_SERVER=http://10.0.2.2:8081 (clearing the app
+# also clears the dev build's Metro address, so the flow reconnects it).
 appId: in.example.resident
 ---
 - launchApp:
     clearState: true
+- runFlow:
+    when:
+      true: ${typeof DEV_SERVER !== 'undefined' && DEV_SERVER !== ''}
+    commands:
+      - openLink: in.example.resident://expo-development-client/?url=${encodeURIComponent(DEV_SERVER)}
+- extendedWaitUntil:
+    visible:
+      id: phone-input
+    timeout: 90000
 - tapOn:
     id: phone-input
 - inputText: "9999900001"
