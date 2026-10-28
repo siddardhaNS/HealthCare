@@ -44,11 +44,16 @@ export async function hasLocationPermission(): Promise<boolean> {
   return (await Location.requestForegroundPermissionsAsync()).granted;
 }
 
-/** Best fix available now: last known if recent, else a fresh one. Null without permission or GPS. */
+/** A fresh fix can take long indoors (or never come); going on duty never waits longer than this. */
+const FIX_TIMEOUT_MS = 8_000;
+
+/** Best fix available now: last known if recent, else a fresh one. Null without permission, GPS or a fix in time. */
 export async function currentPoint(): Promise<Schemas['GeoPoint'] | null> {
   try {
     if (!(await hasLocationPermission())) return null;
-    const fix = (await Location.getLastKnownPositionAsync({ maxAge: 60_000 })) ?? (await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }));
+    const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), FIX_TIMEOUT_MS));
+    const fix = (await Location.getLastKnownPositionAsync({ maxAge: 60_000 })) ?? (await Promise.race([Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }), timeout]));
+    if (!fix) return null;
     const { at: _at, ...point } = toPoint(fix);
     return point;
   } catch {

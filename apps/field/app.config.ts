@@ -24,6 +24,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   android: {
     package: ids.applicationId,
+    // VIBRATE: the incoming-job ring. RECEIVE_BOOT_COMPLETED: expo-task-manager
+    // persists a job for each background location update and Android refuses
+    // persisted jobs without it (the app crashed on the first job fix).
+    permissions: ['VIBRATE', 'RECEIVE_BOOT_COMPLETED'],
     adaptiveIcon: {
       foregroundImage: './assets/generated/adaptive-icon.png',
       backgroundColor: theme.dark.accent,
