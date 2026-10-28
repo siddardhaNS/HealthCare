@@ -9,7 +9,8 @@ class HttpError extends Error {
 const retryable = (e: unknown) => !(e instanceof HttpError) || e.status >= 500;
 const offline = () => Promise.reject(new TypeError('Network request failed'));
 /** Never answers until aborted (the request hangs on a dead network). */
-const hang = (signal: AbortSignal) => new Promise<never>((_, reject) => signal.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError'))));
+const hang = (signal: AbortSignal) =>
+  new Promise<never>((_, reject) => signal.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError'))));
 
 function harness(attempt: RaiseLoop<string>['attempt']) {
   const log: string[] = [];
@@ -76,5 +77,57 @@ describe('raising an SOS when the network or API is down', () => {
     stop();
     await vi.advanceTimersByTimeAsync(15_000);
     await expect(run).resolves.toEqual({ status: 'stopped' });
+  });
+});
+
+describe('back online', () => {
+  /** A fake network signal the test switches on. */
+  function network() {
+    let wake: (() => void) | null = null;
+    return { subscribe: (w: () => void) => ((wake = w), () => (wake = null)), backOnline: () => wake?.(), subscribed: () => wake !== null };
+  }
+
+  it('retries the moment the phone is back online instead of waiting out the backoff', async () => {
+    const net = network();
+    let up = false;
+    const log: number[] = [];
+    const run = raiseWithRetry({
+      attempt: async () => (up ? 'incident-1' : offline()),
+      retryable,
+      onAttempt: (n) => log.push(n),
+      onSlow: () => {},
+      stopped: () => false,
+      subscribeOnline: net.subscribe,
+    });
+    await vi.advanceTimersByTimeAsync(1_000 + 2_000 + 4_000 + 1);
+    expect(log).toEqual([1, 2, 3, 4]); // now in the 8 s wait
+    up = true;
+    net.backOnline();
+    await vi.advanceTimersByTimeAsync(0);
+    await expect(run).resolves.toEqual({ status: 'sent', value: 'incident-1' });
+    expect(log).toEqual([1, 2, 3, 4, 5]);
+    expect(net.subscribed()).toBe(false); // unsubscribed once done
+  });
+
+  it('back online while a request is still in flight: the next attempt does not wait', async () => {
+    const net = network();
+    let calls = 0;
+    const run = raiseWithRetry({
+      attempt: (signal) => {
+        calls++;
+        if (calls === 1) {
+          setTimeout(() => net.backOnline(), 1_000); // the network returns mid-request
+          return hang(signal);
+        }
+        return Promise.resolve('incident-1');
+      },
+      retryable,
+      onSlow: () => {},
+      stopped: () => false,
+      subscribeOnline: net.subscribe,
+    });
+    await vi.advanceTimersByTimeAsync(RAISE_TIMEOUT_MS);
+    await expect(run).resolves.toEqual({ status: 'sent', value: 'incident-1' });
+    expect(calls).toBe(2);
   });
 });

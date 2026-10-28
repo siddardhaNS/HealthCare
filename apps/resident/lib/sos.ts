@@ -4,6 +4,7 @@
 // Realtime with polling underneath, so a lost push is never a lost update.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import NetInfo from '@react-native-community/netinfo';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { randomUUID } from 'expo-crypto';
 import * as Location from 'expo-location';
@@ -79,6 +80,20 @@ export type RaiseState =
 const retryable = (e: unknown) => !(e instanceof ApiError) || e.status >= 500 || e.status === 408;
 
 /**
+ * Calls `wake` when the phone goes from offline to online (not on every
+ * network event), so the SOS retries the moment it can. Unknown (null) counts
+ * as online: only a definite "no connection" is offline.
+ */
+function onBackOnline(wake: () => void) {
+  let offline = false;
+  return NetInfo.addEventListener((state) => {
+    const nowOffline = state.isConnected === false || state.isInternetReachable === false;
+    if (offline && !nowOffline) wake();
+    offline = nowOffline;
+  });
+}
+
+/**
  * Raises the SOS with one idempotency key for this press, so retries and a
  * second press can only ever create one incident. Each attempt gives up
  * after 4 s; after the first slow or failed attempt `slow` is set and the
@@ -108,6 +123,7 @@ export function useRaiseSos() {
         onAttempt: (attempt) => setState((s) => ({ status: 'sending', attempt, slow: s.status === 'sending' && s.slow })),
         onSlow: () => setState((s) => (s.status === 'sending' ? { ...s, slow: true } : s)),
         stopped: () => stopped.current,
+        subscribeOnline: onBackOnline,
       });
       if (outcome.status === 'sent') {
         const incident = outcome.value;
@@ -130,7 +146,12 @@ export function useRaiseSos() {
 /** My open SOS, checked on launch and on the home screen. */
 export function useCurrentSos() {
   const { api, session } = useSession();
-  return useQuery({ queryKey: sosKeys.current, enabled: !!session, queryFn: () => unwrap(api.GET('/v1/sos/current')), refetchInterval: (q) => (q.state.data ? POLL_LIVE_MS : false) });
+  return useQuery({
+    queryKey: sosKeys.current,
+    enabled: !!session,
+    queryFn: () => unwrap(api.GET('/v1/sos/current')),
+    refetchInterval: (q) => (q.state.data ? POLL_LIVE_MS : false),
+  });
 }
 
 /** The ambulance moved: new position, and distance / ETA to where it is heading, without waiting for a refetch. */
@@ -168,7 +189,9 @@ export function useLiveSos(id: string | null) {
       .on('broadcast', { event: 'position' }, ({ payload }) => {
         const p = payload as { lat?: unknown; lng?: unknown; at?: unknown };
         if (typeof p.lat !== 'number' || typeof p.lng !== 'number' || typeof p.at !== 'string') return;
-        qc.setQueryData<ResidentSos>(sosKeys.one(id), (old) => (old ? withPosition(old, { lat: p.lat as number, lng: p.lng as number, at: p.at as string }) : old));
+        qc.setQueryData<ResidentSos>(sosKeys.one(id), (old) =>
+          old ? withPosition(old, { lat: p.lat as number, lng: p.lng as number, at: p.at as string }) : old,
+        );
       });
     // Private channels need the user's token on the socket before joining.
     void supabase.realtime.setAuth().then(() => {

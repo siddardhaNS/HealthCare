@@ -2,7 +2,8 @@
 // tested (test/raise.test.ts). Plan §3.2: never block the person on the
 // network. Every attempt reuses the caller's idempotency key, gives up after
 // 4 s, and the loop keeps retrying until it lands, is refused for good, or
-// the screen goes away.
+// the screen goes away. When the phone comes back online the wait before the
+// next attempt is cut short, so the SOS goes the moment it can.
 
 /** Brief: offer the phone fallbacks if raising takes longer than this. */
 export const RAISE_TIMEOUT_MS = 4_000;
@@ -22,39 +23,70 @@ export interface RaiseLoop<T> {
   onSlow(): void;
   /** True once nobody is waiting any more (screen closed). */
   stopped(): boolean;
+  /** Calls `wake` when the phone goes from offline to online; returns an unsubscribe. */
+  subscribeOnline?(wake: () => void): () => void;
   timeoutMs?: number;
   delaysMs?: readonly number[];
 }
-
-const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 export async function raiseWithRetry<T>(loop: RaiseLoop<T>): Promise<RaiseOutcome<T>> {
   const timeoutMs = loop.timeoutMs ?? RAISE_TIMEOUT_MS;
   const delays = loop.delaysMs ?? RETRY_DELAYS_MS;
   let slow = false;
+  // The pending backoff, if any: waking resolves it early. Back online while
+  // an attempt is in flight: the next backoff is skipped.
+  let wakeWait: (() => void) | null = null;
+  let wokeDuringAttempt = false;
+  const unsubscribe = loop.subscribeOnline?.(() => {
+    if (wakeWait) wakeWait();
+    else wokeDuringAttempt = true;
+  });
+  const wait = (ms: number) =>
+    new Promise<void>((resolve) => {
+      if (wokeDuringAttempt) {
+        wokeDuringAttempt = false;
+        resolve();
+        return;
+      }
+      const timer = setTimeout(done, ms);
+      function done() {
+        clearTimeout(timer);
+        wakeWait = null;
+        resolve();
+      }
+      wakeWait = done;
+    });
   const markSlow = () => {
     if (slow) return;
     slow = true;
     loop.onSlow();
   };
 
-  for (let n = 1; !loop.stopped(); n++) {
-    loop.onAttempt?.(n);
-    const abort = new AbortController();
-    const timer = setTimeout(() => {
-      markSlow();
-      abort.abort();
-    }, timeoutMs);
-    try {
-      const value = await loop.attempt(abort.signal);
-      return { status: 'sent', value };
-    } catch (error) {
-      if (!loop.retryable(error)) return { status: 'refused', error };
-      markSlow();
-    } finally {
-      clearTimeout(timer);
-    }
-    await wait(delays[Math.min(n - 1, delays.length - 1)]!);
+  try {
+    return await attempts();
+  } finally {
+    unsubscribe?.();
   }
-  return { status: 'stopped' };
+
+  async function attempts(): Promise<RaiseOutcome<T>> {
+    for (let n = 1; !loop.stopped(); n++) {
+      loop.onAttempt?.(n);
+      const abort = new AbortController();
+      const timer = setTimeout(() => {
+        markSlow();
+        abort.abort();
+      }, timeoutMs);
+      try {
+        const value = await loop.attempt(abort.signal);
+        return { status: 'sent', value };
+      } catch (error) {
+        if (!loop.retryable(error)) return { status: 'refused', error };
+        markSlow();
+      } finally {
+        clearTimeout(timer);
+      }
+      await wait(delays[Math.min(n - 1, delays.length - 1)]!);
+    }
+    return { status: 'stopped' };
+  }
 }
