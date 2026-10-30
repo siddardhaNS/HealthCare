@@ -78,6 +78,8 @@ The API runs durable workflows locally with no extra service; run state lives in
 
 Simulated crews (local stack, API running): `pnpm --filter api simulate:crews --count 5 --team 2 --sos` puts 5 test crews on duty around Hyderabad (2 in a coverage team), raises a test SOS and accepts offers; Ctrl+C takes them off duty. Options: `--near lat,lng`, `--decline 0.3`, `--drive` with `--speed 100` for a quick run (the winning crew drives to the patient, default ~40 km/h, streaming its position, then steps through on scene → transporting → handed over).
 
+Command center (console home): operations see every incident on `desk:all`; a community desk account (a `community_desk` role with `scope_type = site`) sees only its community on `desk:{siteId}`. With simulated crews on duty, "Run a test SOS" raises a drill for a community (drill crews only, labelled DRILL). Live updates need `SUPABASE_SECRET_KEY` in `.env`; without it the board polls every 10 s.
+
 Live SOS updates: the API pushes state changes and ambulance positions on each incident's private Realtime channel `sos:{id}` when `SUPABASE_SECRET_KEY` is set in `.env`; without it the apps fall back to polling every 5 s. To test the resident SOS screen on the emulator, set a location with `adb emu geo fix 78.35 17.44` and run the simulator with `--near 17.44,78.35 --drive`. To link a test ambulance (registration and work number on the resident's screen), set `crews.ambulance_id` in Studio.
 
 ## Checks

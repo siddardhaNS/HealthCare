@@ -12,6 +12,10 @@ export interface Realtime {
 }
 
 export const sosTopic = (incidentId: string) => `sos:${incidentId}`;
+/** A community desk's alarms and live board (its own site's incidents). */
+export const deskTopic = (siteId: string) => `desk:${siteId}`;
+/** Every incident, for operations (incidents without a site appear only here). */
+export const deskAllTopic = 'desk:all';
 
 const PUBLISH_TIMEOUT_MS = 2_000;
 

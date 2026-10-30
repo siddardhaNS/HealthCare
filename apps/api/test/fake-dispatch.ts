@@ -32,7 +32,7 @@ export function fakeDispatch(incidents: () => IncidentRow[]) {
       else onDuty.delete(crew.id);
       audit.push({ crewId: crew.id, action: on ? 'crew_on_duty' : 'crew_off_duty' });
     },
-    async available({ incidentId, isDrill, teamId, crewIds }) {
+    async available({ incidentId, isDrill, teamId, crewIds, reoffer }) {
       const busy = new Set(incidents().filter((i) => i.crewId && crewActiveStates.includes(i.state)).map((i) => i.crewId!));
       return crews
         .filter(
@@ -40,7 +40,7 @@ export function fakeDispatch(incidents: () => IncidentRow[]) {
             c.active &&
             onDuty.has(c.id) &&
             !busy.has(c.id) &&
-            !offers.some((o) => o.crewId === c.id && o.incidentId === incidentId) &&
+            (reoffer || !offers.some((o) => o.crewId === c.id && o.incidentId === incidentId)) &&
             (!isDrill || c.drillParticipant) &&
             (!teamId || c.teamId === teamId) &&
             (!crewIds || crewIds.includes(c.id)),
@@ -61,6 +61,14 @@ export function fakeDispatch(incidents: () => IncidentRow[]) {
         .map((o) => ({ id: randomUUID(), incidentId, crewId: o.crewId, ring: o.ring, etaS: o.etaS, response: null, createdAt: new Date((clock += 1000)) }) satisfies OfferRow);
       offers.push(...made);
       return made;
+    },
+    async deskOffer(incidentId, crewId, etaS) {
+      const createdAt = new Date((clock += 1000));
+      const old = offers.find((o) => o.incidentId === incidentId && o.crewId === crewId);
+      if (old) return { ...Object.assign(old, { id: randomUUID(), ring: 0, etaS, response: null, createdAt }) };
+      const o: OfferRow = { id: randomUUID(), incidentId, crewId, ring: 0, etaS, response: null, createdAt };
+      offers.push(o);
+      return { ...o };
     },
     async offer(id) {
       const o = offers.find((x) => x.id === id);
@@ -102,5 +110,5 @@ export function fakeDispatch(incidents: () => IncidentRow[]) {
     return id;
   };
 
-  return { repo, crews, offers, onDuty, audit, vehicles, addCrew, addTeam, householdTeam, householdSite, siteTeam, householdAt };
+  return { repo, crews, teams, offers, onDuty, audit, vehicles, addCrew, addTeam, householdTeam, householdSite, siteTeam, householdAt };
 }

@@ -358,13 +358,17 @@ describe('the crew job', () => {
   it('state changes and the ambulance position go out on the incident channel; standby positions do not', async () => {
     const { t, call, step, incidentId } = await onJob();
     const topic = `sos:${incidentId}`;
+    const on = (tp: string) => t.published.filter((p) => p.topic === tp);
     expect(t.published).toContainEqual({ topic, event: 'state', payload: expect.objectContaining({ state: 'accepted', by: 'system' }) });
     await step('en_route');
-    expect(t.published.at(-1)).toEqual({ topic, event: 'state', payload: expect.objectContaining({ state: 'en_route', from: 'accepted', by: 'crew' }) });
+    expect(on(topic).at(-1)).toEqual({ topic, event: 'state', payload: expect.objectContaining({ state: 'en_route', from: 'accepted', by: 'crew' }) });
+    // The command center gets the same change on the operations channel.
+    expect(on('desk:all').at(-1)).toEqual({ topic: 'desk:all', event: 'state', payload: expect.objectContaining({ incidentId, state: 'en_route', drill: false }) });
 
     const fix = { ...north(0.8), at: '2026-10-27T10:00:09Z' };
     await call('POST', '/v1/crew/location', { points: [fix] });
-    expect(t.published.at(-1)).toEqual({ topic, event: 'position', payload: fix });
+    expect(on(topic).at(-1)).toEqual({ topic, event: 'position', payload: fix });
+    expect(on('desk:all').at(-1)).toEqual({ topic: 'desk:all', event: 'position', payload: { incidentId, drill: false, ...fix } });
 
     for (const to of ['on_scene', 'transporting', 'handed_over']) await step(to);
     const before = t.published.length;

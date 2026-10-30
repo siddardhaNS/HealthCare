@@ -1,5 +1,72 @@
 # Progress
 
+## 2026-10-30 · Phase 3, step 6a: console command center
+
+Step 6 is split: **6a** command center (this entry), **6b** per-site thresholds + coverage-teams pages, **6c** hospital handover + partner confirm.
+
+### Done
+- **API** (`/v1/desk/*`, module `sos`): staff only (aal2):
+  - Who sees what:
+    - super admin, operations and support see everything
+    - the community desk sees only its own community; another community's incident looks like it doesn't exist
+    - support can watch but not act
+  - Endpoints:
+    - incidents, open or closed in the last day
+    - incident detail with timeline and the crews offered
+    - fleet: duty, vehicle, current job, last position
+    - sites (for test SOS)
+  - Actions, all through the state machine as `desk`, so every one lands in `sos_events` and `audit_events`:
+    - **cancel** (reason)
+    - **reassign** (reason, optional crew)
+    - **manual offer** to a chosen free crew
+    - **mark handed over** (reason)
+    - **close** (reason unless after hand-over)
+  - No medical details anywhere in these responses or pushes.
+- **Reassign:** takes the job back (→ dispatching) and frees the accept lock so the next crew can accept at once. It starts a **new escalation run** (ring 1 now, widen and 108 at the site's thresholds); a crew the desk picks is offered at once too (ring 0 = "by the desk"). A crew who declined earlier can be offered again; a re-offer gets a new offer id so it rings again.
+- **State machine:** one new edge, transporting → handed_over by the **desk with a reason**: the brief lists "mark handed over" for the command center, for when the crew can't (e.g. phone died).
+- **Test SOS (⚑5):**
+  - raised on the **staff member's own account** for a community, at the community's centre (boundary, else its homes)
+  - drill crews only, labelled DRILL
+  - never on a resident's account, so a drill can never block their real SOS (one open SOS per person)
+- **Live:** every state change, crew position and desk alarm (`raised`, `no_accept` at the widen threshold, `prompt_108`) is also pushed to `desk:{siteId}` and `desk:all`. Migration `…_desk_realtime.sql`: `desk:all` for super admin / operations / support, `desk:{siteId}` for that site's desk, aal2 required.
+- **Console home = command center:**
+  - live map: relative positions, token colours, SOS pulses, ambulances, dashed route to the job, scale bar; a street map needs the Maps key
+  - incident panel:
+    - ref, DRILL label, state, open timer
+    - resident and home
+    - ambulance with ETA, and **Call crew** (company work number)
+    - action forms, each needing a confirm and, where required, a reason
+    - timeline with reasons
+    - crews offered and their answers
+  - All clear card with **Run a test SOS**
+  - open list, fleet, closed in the last day
+  - Live badge, alarm banners, opt-in alarm sound (browsers need a click first), polling 30 s live / 10 s when paused
+- Strings in en/te/hi (te/hi machine-written).
+- Tests: API 196 + 7 workflow (new: a second escalation run for the same incident after reassign), contracts 34.
+
+### Verified in Chrome (local stack, Realtime on)
+- As super admin:
+  - Run a test SOS → the "New SOS" alarm arrived by push → a drill crew accepted → map line and ETA
+  - reassign with a reason and a chosen crew → back to "Finding a crew", the widen alarm from the new run
+  - offer → crew accepted → Call crew shown → crew stepped to handed over → close → "Closed in the last day"
+- As a community desk (new TOTP account): Live on its own channel. A real SOS from Lakshmi (Green Meadows B-1204) appeared live with the alarm. An empty reason is blocked; cancel with a reason worked. Leads is hidden. No console errors.
+- **Fixed during the run:** a re-offer reused the old offer id, so a client that remembers answered offers (the simulator) never rang again.
+- Local test data (local stack only): sites Green Meadows / Palm Grove Villas; Lakshmi Test moved into Green Meadows B-1204; staff `ops.cc@example.test` (operations, not yet signed in) and `desk.green@example.test` (Green Meadows desk).
+- Dev only: the Next.js dev badge covers the sidebar's Sign out button at this window size (clicks land on the badge); not in production builds.
+
+### Not done yet / follow-ups
+- Playwright for the signed-in command center needs a test staff account with a known TOTP secret in CI; the existing e2e covers signed-out only.
+- Desk push / WhatsApp alerts (notifications module) and FCM ringing are still to come; the console alarm is Realtime + polling.
+- A sweep for incidents left in `raised` when the escalation run failed to start: they show on the board, but the desk can only cancel them until dispatch begins.
+
+### Next
+- 6b: per-site thresholds (super admin, 15–60 s / 60–180 s, audited) and the coverage-teams pages (plan §9).
+- 6c: hospital handover (⚑4 choice, consent-filtered items, signed expiring link) + partner portal confirm.
+
+### Needs from you
+- Please confirm: **reassign restarts the full dispatch sequence** (nearest crews now, widen at 30 s, 108 prompt at 90 s), on top of offering the crew the desk picks. It never weakens escalation, but it is an escalation rule.
+- Unchanged: Google Maps key, Upstash before the first deploy, staff self-sign-up hook decision.
+
 ## 2026-10-28 · Phase 3, step 5: resident SOS screens, live tracking, fallbacks
 
 ### Done

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { checkTransition, crewSteps, isOpen, nextCrewStep, sosStates, type SosActor, type SosState } from '../src/sos';
+import { checkTransition, closeNeedsReason, crewSteps, deskActions, isOpen, nextCrewStep, sosRef, sosStates, type SosActor, type SosState } from '../src/sos';
 
 describe('SOS state machine', () => {
   it('walks the full happy path with the right actor at each step', () => {
@@ -67,5 +67,37 @@ describe('crew status buttons', () => {
 
   it('no button before a crew has the job or after it is settled', () => {
     for (const s of ['raised', 'dispatching', 'escalated_to_108', 'closed', 'cancelled'] as const) expect(nextCrewStep(s)).toBeNull();
+  });
+});
+
+describe('command center actions', () => {
+  it('each offered action is a legal desk move from that state', () => {
+    for (const s of sosStates) {
+      const a = deskActions(s);
+      if (a.cancel) expect(checkTransition(s, 'cancelled', 'desk', 'x').ok).toBe(true);
+      if (a.reassign) expect(checkTransition(s, 'dispatching', 'desk', 'x').ok).toBe(true);
+      if (a.handOver) expect(checkTransition(s, 'handed_over', 'desk', 'x').ok).toBe(true);
+      if (a.close) expect(checkTransition(s, 'closed', 'desk', 'x').ok).toBe(true);
+    }
+  });
+
+  it('reassign only while a crew has the job and before arrival; hand-over only while transporting', () => {
+    expect(sosStates.filter((s) => deskActions(s).reassign)).toEqual(['accepted', 'en_route']);
+    expect(sosStates.filter((s) => deskActions(s).handOver)).toEqual(['transporting']);
+    expect(sosStates.filter((s) => deskActions(s).offer)).toEqual(['dispatching', 'escalated_to_108']);
+    expect(checkTransition('transporting', 'handed_over', 'desk', '').ok).toBe(false);
+  });
+
+  it('closing needs a reason except after hand-over', () => {
+    expect(checkTransition('handed_over', 'closed', 'desk').ok).toBe(true);
+    expect(closeNeedsReason('handed_over')).toBe(false);
+    for (const s of sosStates.filter((x) => x !== 'handed_over' && deskActions(x).close)) {
+      expect(closeNeedsReason(s)).toBe(true);
+      expect(checkTransition(s, 'closed', 'desk').ok).toBe(false);
+    }
+  });
+
+  it('short references are stable and readable', () => {
+    expect(sosRef('6f1c2a8e-1d7b-4b8f-9a55-0c8e2b7d4f11')).toBe('SOS-6F1C2A');
   });
 });

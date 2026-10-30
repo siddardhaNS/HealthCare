@@ -536,3 +536,73 @@ export const CrewJob = z
 export type CrewJob = z.infer<typeof CrewJob>;
 
 export const CrewStepUpdate = z.object({ to: CrewStepSchema }).openapi('CrewStepUpdate');
+
+// ── Command center (console) ────────────────────────────────────────────
+
+/** A crew offered the job. Ring 0 = offered by the desk (manual dispatch or reassign). */
+export const DeskOffer = z
+  .object({
+    crewId: z.string().uuid(),
+    crewName: z.string().nullable(),
+    registration: z.string().nullable(),
+    ring: z.number().int(),
+    offeredAt: z.string().datetime(),
+    response: z.enum(['accepted', 'declined', 'expired', 'released']).nullable(),
+  })
+  .openapi('DeskOffer');
+
+/** The crew on the job as staff see it: crew name and team too, still only the company work number. */
+export const DeskCrew = SosCrewView.extend({ crewId: z.string().uuid(), name: z.string().nullable(), team: z.string().nullable() }).openapi('DeskCrew');
+
+/** An SOS in the command center: who and where, never medical details (the hospital handover carries those). */
+export const DeskIncident = SosIncident.extend({
+  ref: z.string(),
+  siteId: z.string().uuid().nullable(),
+  resident: z.object({
+    userId: z.string().uuid(),
+    name: z.string().nullable(),
+    community: z.string().nullable(),
+    tower: z.string().nullable(),
+    number: z.string().nullable(),
+    city: z.string().nullable(),
+  }),
+  crew: DeskCrew.nullable(),
+  closedAt: z.string().datetime().nullable(),
+  actions: z.object({ cancel: z.boolean(), reassign: z.boolean(), offer: z.boolean(), handOver: z.boolean(), close: z.boolean(), closeNeedsReason: z.boolean() }),
+}).openapi('DeskIncident');
+export type DeskIncident = z.infer<typeof DeskIncident>;
+
+export const DeskIncidentDetail = DeskIncident.extend({ offers: z.array(DeskOffer) }).openapi('DeskIncidentDetail');
+export type DeskIncidentDetail = z.infer<typeof DeskIncidentDetail>;
+
+export const DeskIncidentList = z.object({ incidents: z.array(DeskIncident) }).openapi('DeskIncidentList');
+
+export const FleetCrew = z
+  .object({
+    crewId: z.string().uuid(),
+    name: z.string().nullable(),
+    team: z.string().nullable(),
+    registration: z.string().nullable(),
+    equipment: z.enum(['bls', 'als']).nullable(),
+    onDuty: z.boolean(),
+    drillParticipant: z.boolean(),
+    /** The open incident this crew has, if any. */
+    incidentId: z.string().uuid().nullable(),
+    position: z.object({ lat: z.number(), lng: z.number(), at: z.string().datetime() }).nullable(),
+  })
+  .openapi('FleetCrew');
+export type FleetCrew = z.infer<typeof FleetCrew>;
+
+export const Fleet = z.object({ crews: z.array(FleetCrew) }).openapi('Fleet');
+
+/** Communities this staff member can run a test SOS for (the community desk: its own). */
+export const DeskSites = z.object({ sites: z.array(z.object({ id: z.string().uuid(), name: z.string(), city: z.string() })) }).openapi('DeskSites');
+
+const deskReason = z.string().trim().min(1).max(200);
+export const DeskReason = z.object({ reason: deskReason }).openapi('DeskReason');
+export const DeskClose = z.object({ reason: deskReason.optional() }).openapi('DeskClose');
+export const DeskReassign = z
+  .object({ reason: deskReason, crewId: z.string().uuid().optional().openapi({ description: 'Offer the job to this crew at once (the nearest crews are offered too).' }) })
+  .openapi('DeskReassign');
+export const DeskOfferCreate = z.object({ crewId: z.string().uuid() }).openapi('DeskOfferCreate');
+export const TestSosCreate = z.object({ siteId: z.string().uuid() }).openapi('TestSosCreate');

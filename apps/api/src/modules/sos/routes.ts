@@ -2,10 +2,9 @@ import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi';
 import { ErrorBody, ResidentSos, SosCancel, SosRaise, type ErrorBody as ErrorBodyT } from '@repo/contracts';
 import type { Context } from 'hono';
 import type { AppEnv } from '../../app';
-import type { Deps } from '../../deps';
 import { checkLimits } from '../../lib/rate-limit';
 import { requireAuth } from '../../middleware/auth';
-import { isSosFailure, loadForPerson, move, raise, residentView, type SosFailure } from './service';
+import { isSosFailure, loadForPerson, move, raise, residentView, startEscalation, type SosFailure } from './service';
 
 const security = [{ bearer: [] }];
 const json = <T extends z.ZodType>(schema: T, description: string) => ({ description, content: { 'application/json': { schema } } });
@@ -39,20 +38,6 @@ const r = {
   }),
 };
 
-/**
- * The incident is already saved, so a failure here must not fail the SOS:
- * the resident still gets their incident (and the 108 / desk fallbacks), and
- * the error is logged loudly. Step 6 adds a console sweep for incidents left
- * in `raised` without a run.
- */
-async function startEscalation(deps: Deps, incidentId: string, requestId: string) {
-  try {
-    await deps.sos.setWorkflowRun(incidentId, await deps.escalation.start(incidentId));
-  } catch (err) {
-    console.error(JSON.stringify({ level: 'error', event: 'sos_escalation_start_failed', incidentId, requestId, name: (err as Error).name }));
-  }
-}
-
 export const sosRoutes = new OpenAPIHono<AppEnv>()
   .openapi(r.raise, async (c) => {
     const me = c.get('auth')!.userId;
@@ -64,8 +49,7 @@ export const sosRoutes = new OpenAPIHono<AppEnv>()
       return c.json({ error: { code: 'rate_limited', message: 'Too many SOS requests. Call 108 if you need help now.', requestId: c.get('requestId') } } satisfies ErrorBodyT, 429);
     }
     const { incident, created } = await raise({ sos: deps.sos, households: deps.households }, { id: me, role: 'resident' }, me, c.req.valid('json'));
-    if (created) await startEscalation(deps, incident.id, c.get('requestId'));
-    const view = await residentView(deps, incident);
+    if (created) await startEscalation(deps, incident.id, c.get('requestId'));    const view = await residentView(deps, incident);
     return created ? c.json(view, 201) : c.json(view, 200);
   })
   .openapi(r.current, async (c) => {

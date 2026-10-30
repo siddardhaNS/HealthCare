@@ -2269,6 +2269,439 @@
           }
         }
       },
+      "DeskIncidentList": {
+        "type": "object",
+        "properties": {
+          "incidents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeskIncident"
+            }
+          }
+        },
+        "required": [
+          "incidents"
+        ]
+      },
+      "DeskIncident": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SosIncident"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "ref": {
+                "type": "string"
+              },
+              "siteId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid"
+              },
+              "resident": {
+                "type": "object",
+                "properties": {
+                  "userId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "name": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "community": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "tower": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "number": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "city": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "userId",
+                  "name",
+                  "community",
+                  "tower",
+                  "number",
+                  "city"
+                ]
+              },
+              "crew": {
+                "$ref": "#/components/schemas/DeskCrew"
+              },
+              "closedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "actions": {
+                "type": "object",
+                "properties": {
+                  "cancel": {
+                    "type": "boolean"
+                  },
+                  "reassign": {
+                    "type": "boolean"
+                  },
+                  "offer": {
+                    "type": "boolean"
+                  },
+                  "handOver": {
+                    "type": "boolean"
+                  },
+                  "close": {
+                    "type": "boolean"
+                  },
+                  "closeNeedsReason": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "cancel",
+                  "reassign",
+                  "offer",
+                  "handOver",
+                  "close",
+                  "closeNeedsReason"
+                ]
+              }
+            },
+            "required": [
+              "ref",
+              "siteId",
+              "resident",
+              "crew",
+              "closedAt",
+              "actions"
+            ]
+          }
+        ]
+      },
+      "DeskCrew": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SosCrewView"
+          },
+          {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "crewId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "team": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "crewId",
+              "name",
+              "team"
+            ]
+          }
+        ]
+      },
+      "Fleet": {
+        "type": "object",
+        "properties": {
+          "crews": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FleetCrew"
+            }
+          }
+        },
+        "required": [
+          "crews"
+        ]
+      },
+      "FleetCrew": {
+        "type": "object",
+        "properties": {
+          "crewId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "team": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "registration": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "equipment": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "bls",
+              "als",
+              null
+            ]
+          },
+          "onDuty": {
+            "type": "boolean"
+          },
+          "drillParticipant": {
+            "type": "boolean"
+          },
+          "incidentId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "position": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "lat": {
+                "type": "number"
+              },
+              "lng": {
+                "type": "number"
+              },
+              "at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "lat",
+              "lng",
+              "at"
+            ]
+          }
+        },
+        "required": [
+          "crewId",
+          "name",
+          "team",
+          "registration",
+          "equipment",
+          "onDuty",
+          "drillParticipant",
+          "incidentId",
+          "position"
+        ]
+      },
+      "DeskSites": {
+        "type": "object",
+        "properties": {
+          "sites": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "city": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "city"
+              ]
+            }
+          }
+        },
+        "required": [
+          "sites"
+        ]
+      },
+      "DeskIncidentDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/DeskIncident"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "offers": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/DeskOffer"
+                }
+              }
+            },
+            "required": [
+              "offers"
+            ]
+          }
+        ]
+      },
+      "DeskOffer": {
+        "type": "object",
+        "properties": {
+          "crewId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "crewName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "registration": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ring": {
+            "type": "integer"
+          },
+          "offeredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "response": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "accepted",
+              "declined",
+              "expired",
+              "released",
+              null
+            ]
+          }
+        },
+        "required": [
+          "crewId",
+          "crewName",
+          "registration",
+          "ring",
+          "offeredAt",
+          "response"
+        ]
+      },
+      "TestSosCreate": {
+        "type": "object",
+        "properties": {
+          "siteId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "siteId"
+        ]
+      },
+      "DeskReason": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "DeskReassign": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "crewId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Offer the job to this crew at once (the nearest crews are offered too)."
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "DeskOfferCreate": {
+        "type": "object",
+        "properties": {
+          "crewId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "crewId"
+        ]
+      },
+      "DeskClose": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        }
+      },
       "CrewStatus": {
         "type": "object",
         "properties": {
@@ -6256,6 +6689,917 @@
           },
           "429": {
             "description": "Too many requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/desk/sos": {
+      "get": {
+        "operationId": "deskIncidents",
+        "tags": [
+          "desk"
+        ],
+        "summary": "Command center: open incidents, or those closed in the last day (community desk: its own community only)",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "open",
+                "recent"
+              ],
+              "default": "open"
+            },
+            "required": false,
+            "name": "view",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Incidents",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeskIncidentList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not possible in the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/desk/fleet": {
+      "get": {
+        "operationId": "deskFleet",
+        "tags": [
+          "desk"
+        ],
+        "summary": "Ambulance crews: duty, vehicle, current job and last position",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Fleet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Fleet"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not possible in the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/desk/sites": {
+      "get": {
+        "operationId": "deskSites",
+        "tags": [
+          "desk"
+        ],
+        "summary": "Communities this staff member covers (for test SOS)",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Communities",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeskSites"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not possible in the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/desk/sos/test": {
+      "post": {
+        "operationId": "deskTestSos",
+        "tags": [
+          "desk"
+        ],
+        "summary": "Run a test SOS (drill) for a community: drill crews only, labelled DRILL, no messages to families or hospitals",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestSosCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Your drill already open",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeskIncidentDetail"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Drill raised",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeskIncidentDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not possible in the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/desk/sos/{id}": {
+      "get": {
+        "operationId": "deskIncident",
+        "tags": [
+          "desk"
+        ],
+        "summary": "An incident with its timeline, offers and the crew on the job",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Incident",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeskIncidentDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not possible in the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/desk/sos/{id}/cancel": {
+      "post": {
+        "operationId": "deskCancelSos",
+        "tags": [
+          "desk"
+        ],
+        "summary": "Cancel with a reason (false alarm, resident safe)",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeskReason"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeskIncidentDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not possible in the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/desk/sos/{id}/reassign": {
+      "post": {
+        "operationId": "deskReassignSos",
+        "tags": [
+          "desk"
+        ],
+        "summary": "Take the job back from its crew and dispatch again (optionally offering a chosen crew at once)",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeskReassign"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeskIncidentDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not possible in the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/desk/sos/{id}/offers": {
+      "post": {
+        "operationId": "deskOfferSos",
+        "tags": [
+          "desk"
+        ],
+        "summary": "Manual dispatch: offer the job to a chosen free crew",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeskOfferCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeskIncidentDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not possible in the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/desk/sos/{id}/hand-over": {
+      "post": {
+        "operationId": "deskHandOverSos",
+        "tags": [
+          "desk"
+        ],
+        "summary": "Mark handed over at the hospital when the crew cannot",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeskReason"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeskIncidentDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not possible in the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/desk/sos/{id}/close": {
+      "post": {
+        "operationId": "deskCloseSos",
+        "tags": [
+          "desk"
+        ],
+        "summary": "Close (after hand-over; otherwise with a reason)",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeskClose"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeskIncidentDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not possible in the current state",
             "content": {
               "application/json": {
                 "schema": {

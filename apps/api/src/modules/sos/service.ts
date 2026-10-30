@@ -5,6 +5,7 @@ import { isUniqueViolation } from '@repo/db';
 import type { DispatchRepo } from '../dispatch/repo';
 import type { HouseholdsRepo } from '../households/repo';
 import { canActFor } from '../households/service';
+import type { EscalationRunner } from './escalation-service';
 import type { EventRow, IncidentRow, SosRepo } from './repo';
 import { fail, type SosFailure } from './transition';
 
@@ -67,7 +68,8 @@ export async function raise(
   actor: { id: string; role: SosActor },
   subject: string,
   input: RaiseInput,
-  opts: { isDrill?: boolean } = {},
+  /** `siteId`: a console test SOS, raised for a community rather than from a household. */
+  opts: { isDrill?: boolean; siteId?: string } = {},
 ): Promise<{ incident: IncidentRow; created: boolean }> {
   const replay = await repos.sos.byIdempotency(actor.id, input.idempotencyKey);
   if (replay) return { incident: replay, created: false };
@@ -77,7 +79,7 @@ export async function raise(
   const membership = await repos.households.membership(subject);
   const household = membership ? await repos.households.household(membership.householdId) : null;
   const home = household?.homeId ? await repos.households.home(household.homeId) : null;
-  const siteId = home?.siteId ?? null;
+  const siteId = opts.siteId ?? home?.siteId ?? null;
   const settings = siteId ? await repos.sos.siteSettings(siteId) : null;
 
   try {
@@ -103,6 +105,20 @@ export async function raise(
       if (existing) return { incident: existing, created: false };
     }
     throw err;
+  }
+}
+
+/**
+ * Starts the incident's escalation run (dispatch, widen, 108). The incident is
+ * already saved, so a failure here must not fail the SOS: the resident still
+ * gets their incident (and the 108 / desk fallbacks), the desk sees it on the
+ * command center, and the error is logged loudly.
+ */
+export async function startEscalation(d: { sos: SosRepo; escalation: EscalationRunner }, incidentId: string, requestId?: string) {
+  try {
+    await d.sos.setWorkflowRun(incidentId, await d.escalation.start(incidentId));
+  } catch (err) {
+    console.error(JSON.stringify({ level: 'error', event: 'sos_escalation_start_failed', incidentId, requestId, name: (err as Error).name }));
   }
 }
 

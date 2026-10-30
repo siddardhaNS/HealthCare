@@ -55,7 +55,11 @@ const edges: Record<SosState, readonly Edge[]> = {
     // Treated at home, no transport needed.
     { to: 'closed', by: ['desk'], reason: true },
   ],
-  transporting: [{ to: 'handed_over', by: ['crew'] }],
+  transporting: [
+    { to: 'handed_over', by: ['crew'] },
+    // The command center marks it when the crew cannot (e.g. their phone died).
+    { to: 'handed_over', by: ['desk'], reason: true },
+  ],
   handed_over: [{ to: 'closed', by: ['desk'] }],
   // Dispatch continues after the 108 prompt: a crew may still accept.
   escalated_to_108: [
@@ -93,6 +97,24 @@ export type CrewStep = (typeof crewSteps)[number];
 export function nextCrewStep(state: SosState): CrewStep | null {
   return ({ accepted: 'en_route', en_route: 'on_scene', on_scene: 'transporting', transporting: 'handed_over' } as Partial<Record<SosState, CrewStep>>)[state] ?? null;
 }
+
+/** What the command center may do next from `state` (each still goes through checkTransition). */
+export function deskActions(state: SosState): { cancel: boolean; reassign: boolean; offer: boolean; handOver: boolean; close: boolean } {
+  return {
+    cancel: edges[state].some((e) => e.to === 'cancelled' && e.by.includes('desk')),
+    reassign: edges[state].some((e) => e.to === 'dispatching' && e.by.includes('desk')),
+    // Manual dispatch: offer the job to a crew the desk picks, while nobody has it.
+    offer: state === 'dispatching' || state === 'escalated_to_108',
+    handOver: edges[state].some((e) => e.to === 'handed_over' && e.by.includes('desk')),
+    close: edges[state].some((e) => e.to === 'closed' && e.by.includes('desk')),
+  };
+}
+
+/** Whether closing from `state` needs a reason (only a normal close after hand-over does not). */
+export const closeNeedsReason = (state: SosState) => state !== 'handed_over';
+
+/** A short, readable incident reference for staff (the id stays the key). */
+export const sosRef = (id: string) => `SOS-${id.replace(/-/g, '').slice(0, 6).toUpperCase()}`;
 
 /** Escalation thresholds (seconds). Plan ⚑2: defaults 30 / 90, per site within these bounds. */
 export const sosThresholds = { widenDefault: 30, escalateDefault: 90, widenMin: 15, widenMax: 60, escalateMin: 60, escalateMax: 180 } as const;

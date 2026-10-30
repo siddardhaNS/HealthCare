@@ -91,6 +91,24 @@ describe('SOS escalation workflow', () => {
     expect(sos.events.get(id)!.filter((e) => e.toState === 'accepted')).toHaveLength(1);
   });
 
+  it('the desk reassigns after an accept: a second run for the same incident dispatches again and escalates', async () => {
+    const { id, run } = await raiseAndStart();
+    await crewAccepts(id, CREWS[0]!);
+    expect(await run.returnValue).toBe('settled_before_widen');
+    await move(sos.repo, sos.incidents.find((i) => i.id === id)! as IncidentRow, 'dispatching', { id: null, role: 'desk' }, 'Ambulance broke down');
+
+    const again = getRun<string>(await runner.start(id));
+    await waitForHook(again, { token: escalationToken(id) });
+    const sleep = await waitForSleep(again);
+    expect(kinds(id).slice(-2)).toEqual(['desk_alarm:raised', 'offer_ring:1']);
+    await again.wakeUp({ correlationIds: [sleep] });
+    await waitForSleep(again);
+    expect(kinds(id).at(-1)).toBe('desk_alarm:no_accept');
+    // The new run hears the next accept.
+    await crewAccepts(id, CREWS[1]!);
+    expect(await again.returnValue).toBe('settled_after_widen');
+  });
+
   it('a missed signal is harmless: the timer step sees the accept and stops', async () => {
     const { id, run, firstSleep } = await raiseAndStart();
     // Accept without signalling the run (e.g. the signal was lost).

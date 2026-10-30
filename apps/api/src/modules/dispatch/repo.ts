@@ -34,14 +34,17 @@ export interface DispatchRepo {
   /**
    * Crews that can take a new job: active, on duty, not on another active
    * job, not already offered this incident, and drill participants for a
-   * drill. Limited to `teamId` or to `crewIds`.
+   * drill. Limited to `teamId` or to `crewIds`. `reoffer` (the desk's own
+   * pick) also allows crews offered this incident before.
    */
-  available(filter: { incidentId: string; isDrill: boolean; teamId?: string; crewIds?: string[] }): Promise<{ id: string; teamId: string | null }[]>;
+  available(filter: { incidentId: string; isDrill: boolean; teamId?: string; crewIds?: string[]; reoffer?: boolean }): Promise<{ id: string; teamId: string | null }[]>;
   /** The active team covering a household: through its site, or the household itself. */
   teamForHousehold(householdId: string): Promise<string | null>;
   /** Where a household is (its home, else its own location), for an SOS sent without GPS. */
   householdLocation(householdId: string): Promise<LatLng | null>;
   createOffers(incidentId: string, offers: { crewId: string; ring: number; etaS: number | null }[]): Promise<OfferRow[]>;
+  /** The desk offers the job to one crew (ring 0). Opens it again if this crew was offered before. */
+  deskOffer(incidentId: string, crewId: string, etaS: number | null): Promise<OfferRow>;
   offer(id: string): Promise<OfferRow | null>;
   pendingForCrew(crewId: string): Promise<PendingOffer[]>;
   /** Records a response only if the offer is still open. False if it was not. */
@@ -101,7 +104,7 @@ export function drizzleDispatchRepo(db: Db): DispatchRepo {
         await tx.insert(auditEvents).values({ actorUserId: crew.userId, actorRole: 'crew', action: onDuty ? 'crew_on_duty' : 'crew_off_duty', entityType: 'crew', entityId: crew.id, metadata: {} });
       });
     },
-    async available({ incidentId, isDrill, teamId, crewIds }) {
+    async available({ incidentId, isDrill, teamId, crewIds, reoffer }) {
       if (crewIds && crewIds.length === 0) return [];
       const busy = sql`exists (select 1 from ${sosIncidents} i where i.crew_id = ${crews.id} and i.state in (${sql.join(
         crewActiveStates.map((s) => sql`${s}`),
@@ -117,7 +120,7 @@ export function drizzleDispatchRepo(db: Db): DispatchRepo {
             eq(crews.active, true),
             onDuty,
             sql`not ${busy}`,
-            sql`not ${offered}`,
+            reoffer ? undefined : sql`not ${offered}`,
             isDrill ? eq(crews.drillParticipant, true) : undefined,
             teamId ? eq(crews.teamId, teamId) : undefined,
             crewIds ? inArray(crews.id, crewIds) : undefined,
@@ -153,6 +156,18 @@ export function drizzleDispatchRepo(db: Db): DispatchRepo {
         .values(offers.map((o) => ({ incidentId, crewId: o.crewId, ring: o.ring, etaS: o.etaS })))
         .onConflictDoNothing()
         .returning(OFFER_COLS)) as OfferRow[];
+    },
+    async deskOffer(incidentId, crewId, etaS) {
+      const [r] = await db
+        .insert(dispatchOffers)
+        .values({ incidentId, crewId, ring: 0, etaS })
+        .onConflictDoUpdate({
+          target: [dispatchOffers.incidentId, dispatchOffers.crewId],
+          // A new id: it is a new ring, so clients (and pushes) that remember answered offers ring again.
+          set: { id: sql`gen_random_uuid()`, ring: 0, etaS, response: null, respondedAt: null, createdAt: sql`now()` },
+        })
+        .returning(OFFER_COLS);
+      return r as OfferRow;
     },
     async offer(id) {
       const [r] = await db.select(OFFER_COLS).from(dispatchOffers).where(eq(dispatchOffers.id, id));

@@ -3,8 +3,8 @@
 import { estimateEtaS, type CrewStep } from '@repo/contracts/sos';
 import type { Kv } from '../../lib/kv';
 import type { CrewLocator, LatLng } from '../../lib/crew-locator';
-import type { Realtime } from '../../lib/realtime';
-import { publishCrewPosition } from '../sos/live';
+import { silentRealtime, type Realtime } from '../../lib/realtime';
+import { publishCrewPosition, publishDesk } from '../sos/live';
 import type { IncidentRow, SosRepo } from '../sos/repo';
 import { acceptForCrew, type EscalationRunner, type SosAlerts } from '../sos/escalation-service';
 import { isSosFailure, move, type SosFailure } from '../sos/transition';
@@ -16,6 +16,8 @@ export const OFFERS_PER_RING = 3;
 export const SEARCH_RADIUS_M = { 1: 20_000, 2: 40_000 } as const;
 /** How long the first accept holds the incident against a racing second accept. */
 const ACCEPT_LOCK_S = 120;
+/** Released when the desk takes a job back, so the next crew can accept at once. */
+export const acceptLockKey = (incidentId: string) => `lock:incident:${incidentId}`;
 
 export { estimateEtaS } from '@repo/contracts/sos';
 
@@ -77,11 +79,12 @@ export async function chooseCandidates(d: DispatchDeps, incident: IncidentRow, r
 
 /**
  * The escalation workflow's side effects with real offers. Desk alarms and
- * the 108 prompt are logged until the console command center (step 6); the
- * ringing push to crews comes with the field app (step 4): until then crews
- * see offers by polling GET /v1/crew/offers.
+ * the 108 prompt go to the command center's desk channels (the console
+ * sounds an alarm); push and WhatsApp to the desk come with notifications.
+ * Crews see offers by polling GET /v1/crew/offers until FCM push.
  */
-export function dispatchAlerts(d: DispatchDeps & { sos: SosRepo }): SosAlerts {
+export function dispatchAlerts(d: DispatchDeps & { sos: SosRepo; realtime?: Realtime }): SosAlerts {
+  const realtime = d.realtime ?? silentRealtime();
   const log = (event: string, i: IncidentRow, extra: Record<string, unknown> = {}) =>
     console.log(JSON.stringify({ level: 'info', event, incidentId: i.id, drill: i.isDrill, ...extra }));
   return {
@@ -98,9 +101,11 @@ export function dispatchAlerts(d: DispatchDeps & { sos: SosRepo }): SosAlerts {
     },
     async alertDesk(incident, why) {
       log('sos_desk_alarm', incident, { why });
+      await publishDesk(realtime, incident, 'alarm', { why, at: new Date().toISOString() });
     },
     async prompt108(incident) {
       log('sos_prompt_108', incident);
+      await publishDesk(realtime, incident, 'alarm', { why: 'prompt_108', at: new Date().toISOString() });
     },
   };
 }
@@ -121,7 +126,7 @@ export async function acceptOffer(
   if (!offer || offer.crewId !== crew.id) return { error: 'not_found', message: 'No such job offer.' };
   if (offer.response) return { error: 'conflict', message: 'This job has been taken or closed.' };
 
-  const lock = `lock:incident:${offer.incidentId}`;
+  const lock = acceptLockKey(offer.incidentId);
   if (!(await d.kv.claim(lock, crew.id, ACCEPT_LOCK_S))) {
     await d.dispatch.respond(offerId, 'released');
     return { error: 'conflict', message: 'Another crew took this job.' };
@@ -179,6 +184,6 @@ export async function reportLocation(d: DispatchDeps & { sos: SosRepo; realtime:
   const latest = [...points].sort((a, b) => Date.parse(a.at) - Date.parse(b.at)).at(-1)!;
   await d.locator.set(crew.id, { lat: latest.lat, lng: latest.lng });
   const job = await d.sos.activeForCrew(crew.id);
-  if (job) await publishCrewPosition(d.realtime, job.id, latest);
+  if (job) await publishCrewPosition(d.realtime, job, latest);
   return true;
 }
