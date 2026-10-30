@@ -50,10 +50,17 @@ async function escalateStep(incidentId: string) {
  */
 export const ESCALATION_DEPS = Symbol.for('api.sos.escalationDeps');
 
+/** One set per process: building deps opens a database pool, and a pool per step exhausted Postgres under load. */
+const SHARED_STEP_DEPS = Symbol.for('api.sos.sharedStepDeps');
+
 async function stepDeps(): Promise<EscalationDeps> {
-  const injected = (globalThis as Record<symbol, EscalationDeps | undefined>)[ESCALATION_DEPS];
+  const g = globalThis as Record<symbol, EscalationDeps | undefined>;
+  const injected = g[ESCALATION_DEPS];
   if (injected) return injected;
-  const { depsFromEnv } = await import('../../deps');
-  const deps = depsFromEnv();
-  return { sos: deps.sos, alerts: deps.sosAlerts };
+  if (!g[SHARED_STEP_DEPS]) {
+    const { depsFromEnv } = await import('../../deps');
+    const deps = depsFromEnv();
+    g[SHARED_STEP_DEPS] = { sos: deps.sos, alerts: deps.sosAlerts };
+  }
+  return g[SHARED_STEP_DEPS];
 }

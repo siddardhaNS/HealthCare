@@ -1,5 +1,59 @@
 # Progress
 
+## 2026-10-30 · Phase 3, step 7 (part 1): SOS load test, two dispatch fixes, signed-in console e2e
+
+### Load test (`pnpm --filter api load:sos`)
+- `apps/api/scripts/load-sos.ts` (local stack only), instead of k6: the same idea with no new binary and no paid service.
+  - Raises N simultaneous SOS (default 50) answered by M simulated crews (default 60) through the real API, database and escalation workflow.
+  - Reports the latency of raising, of the first offer and of accepting, the accept races lost and any HTTP errors.
+  - Checks that every SOS is accepted by exactly one crew and no crew is double-booked.
+  - Cleans up through the desk (cancel, or close after the 108 prompt).
+- Tokens are signed locally (the API accepts HS256 only with `SUPABASE_JWT_SECRET`, local CLI only; the production config refuses it, which I checked). Local sign-ins are limited to 30 per 5 min.
+- **Found and fixed:**
+  1. **Postgres connection leak:** each escalation workflow step opened a new database pool that never closed. Under load Postgres ran out ("too many clients"), and the widen / 108 steps failed after 3 retries, so incidents silently stopped escalating. Steps now share one set of dependencies per process.
+  2. **One connection per instance:** all concurrent requests queued on it. The pool is now `DB_POOL_MAX` (default 5), and idle connections close after 20 s. Raising and offer polls got 2–3× faster.
+  3. **Ring 2 offered 0–2 crews while others were free:** only the 12 nearest crews were looked at before dropping busy ones. Now the 50 nearest (`NEARBY_POOL`). New unit test, which fails without the fix.
+- **Results on `next dev`** (a pessimistic upper bound), 50 SOS and 60 crews, no 5xx in any run:
+  - accepted: 44–49 of 50
+  - raise → first offer: p50 ~5–6 s, p95 ~8 s
+  - raise → accepted: p50 ~6–8 s
+  - before the fixes: 41/50 accepted, and 9 never escalated
+
+### ⚑ Needs your decision (escalation rule)
+- The 1–6 SOS that miss in each run all follow the same pattern: every crew offered in rings 1 and 2 took another job first. After ring 2 **nothing more is offered automatically**; the incident goes to "108 prompted" and waits for the desk to offer it by hand (the desk is alarmed at 30 s). Options:
+  - (a) keep this as is
+  - (b) after ring 2, keep offering the next nearest free crews every 30 s until someone accepts
+  - (c) re-offer earlier rings' crews as they become free
+
+  I recommend (b). It changes the escalation rules, so I haven't built it.
+
+### Signed-in console e2e (`pnpm --filter console e2e:signed-in`, local stack)
+- Global setup:
+  - seeds an isolated test area: E2E Gardens in Vijayawada, a near and a far hospital
+  - resets the test accounts (admin, ER, crew, resident) with fresh passwords
+  - enrols TOTP through the Supabase SDK and keeps the secret in `e2e-signed-in/.auth` (git-ignored)
+- The sign-in project signs the admin and ER in through the real UI (password + TOTP) and saves their sessions.
+- **Passing (5):**
+  - admin sign-in
+  - ER sign-in, landing on Incoming patients
+  - test SOS: raised from the console, accepted by a drill crew, "Drills are never sent to a hospital", cancelled with a reason that shows in the timeline
+  - **Realtime blocked → "Live updates paused", and a new SOS still appears by polling** (failure path)
+  - ER cannot open the command center or another hospital's handover
+- **Marked `fixme` (3), to do next:**
+  - real SOS → handover → desk hospital change, and ER open / confirm: the test crew gets no offer for a resident SOS (the drill works). Not diagnosed yet.
+  - axe on `/hospitals`: **4 colour-contrast failures**, a real issue to fix in the page.
+- Not in CI yet: it needs `supabase start` in a CI job (planned as a separate job, so the red Expo step doesn't skip it).
+
+### Other
+- The Android SDK and JDK are now on PATH on this machine, so the emulator / device tests may be possible next.
+- CI is still red only on the existing "Expo config and dependency check" step.
+
+### Next
+- Fix the 3 `fixme` tests (crew offer; `/hospitals` contrast).
+- Add the signed-in suite as its own CI job.
+- Your call on the post-ring-2 rule.
+- Then device tests.
+
 ## 2026-10-30 · Phase 3, step 6c: hospital handover and partner portal
 
 Design written up as plan §10 (within the approved ⚑4; no new kind of health data).

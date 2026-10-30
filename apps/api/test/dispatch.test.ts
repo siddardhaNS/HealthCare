@@ -111,6 +111,17 @@ describe('who is offered an SOS', () => {
     expect((await chooseCandidates(t.d, t.current(), 1)).map((c) => c.crewId)).toEqual([near.id]);
   });
 
+  it('free crews are found behind many busy nearer ones (load test: 50 SOS at once)', async () => {
+    const t = await setup();
+    // Twenty nearer crews that cannot take it (off duty but still in the index, e.g. on other jobs).
+    for (let n = 0; n < 20; n++) {
+      const c = t.dispatch.addCrew({}, { onDuty: false });
+      await t.locator.set(c.id, north(0.5 + n * 0.1));
+    }
+    const free = await Promise.all([5, 6, 7].map((km) => t.crewAt(north(km))));
+    expect((await chooseCandidates(t.d, t.current(), 2)).map((c) => c.crewId)).toEqual(free.map((c) => c.id));
+  });
+
   it('ring 2 goes to the next nearest crews, never re-offering ring 1', async () => {
     const t = await setup();
     const crews = await Promise.all([1, 2, 3, 4, 5, 6, 7].map((km) => t.crewAt(north(km))));

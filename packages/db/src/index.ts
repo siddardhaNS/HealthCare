@@ -25,10 +25,14 @@ export const isUniqueViolation = (err: unknown) => pgErrorCode(err) === '23505';
 /**
  * Server-only database client (API and scripts). Uses the Supabase pooler
  * URL in production; `prepare: false` is required for transaction pooling.
+ * A few connections per instance, because one instance serves many requests at
+ * once (a single connection queued the whole SOS load test). Idle connections
+ * close after 20 s so stopped or scaled-down instances give them back.
  */
 export function createDb(url = process.env.DATABASE_URL) {
   if (!url) throw new Error('DATABASE_URL is not set');
-  const sql = postgres(url, { prepare: false, max: 1 });
+  const max = Number(process.env.DB_POOL_MAX) || 5;
+  const sql = postgres(url, { prepare: false, max, idle_timeout: 20 });
   return drizzle(sql, { schema });
 }
 

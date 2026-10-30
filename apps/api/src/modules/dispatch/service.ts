@@ -14,6 +14,12 @@ import type { CrewRow, DispatchRepo } from './repo';
 export const OFFERS_PER_RING = 3;
 /** How far to look for crews by distance, per ring. */
 export const SEARCH_RADIUS_M = { 1: 20_000, 2: 40_000 } as const;
+/**
+ * Nearest crews looked at before dropping busy ones and those already offered.
+ * Twelve was too few in a busy city: the load test (50 SOS at once) left ring 2
+ * with 0–2 crews while others were free.
+ */
+export const NEARBY_POOL = 50;
 /** How long the first accept holds the incident against a racing second accept. */
 const ACCEPT_LOCK_S = 120;
 /** Released when the desk takes a job back, so the next crew can accept at once. */
@@ -68,7 +74,7 @@ export async function chooseCandidates(d: DispatchDeps, incident: IncidentRow, r
 
   const room = OFFERS_PER_RING - picked.length;
   if (room > 0 && from) {
-    const near = (await d.locator.nearby(from, SEARCH_RADIUS_M[ring], OFFERS_PER_RING * 4)).filter((n) => !picked.some((p) => p.crewId === n.crewId));
+    const near = (await d.locator.nearby(from, SEARCH_RADIUS_M[ring], NEARBY_POOL)).filter((n) => !picked.some((p) => p.crewId === n.crewId));
     const ok = new Set((await d.dispatch.available({ ...base, crewIds: near.map((n) => n.crewId) })).map((c) => c.id));
     for (const n of near.filter((x) => ok.has(x.crewId)).slice(0, room)) {
       picked.push({ crewId: n.crewId, ring, distanceM: n.distanceM, etaS: estimateEtaS(n.distanceM), team: false });

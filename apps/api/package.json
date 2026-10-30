@@ -12,7 +12,8 @@
     "staff:create": "tsx --env-file-if-exists=../../.env scripts/staff-create.ts",
     "build": "next build",
     "start": "next start --port 3001",
-    "simulate:crews": "tsx --env-file-if-exists=../../.env scripts/simulate-crews.ts"
+    "simulate:crews": "tsx --env-file-if-exists=../../.env scripts/simulate-crews.ts",
+    "load:sos": "tsx --env-file-if-exists=../../.env scripts/load-sos.ts"
   },
   "dependencies": {
     "@hono/zod-openapi": "1.6.3",

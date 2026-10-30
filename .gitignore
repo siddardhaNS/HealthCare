@@ -34,3 +34,6 @@ playwright-report/
 .workflow-data/
 .workflow-vitest/
 .swc/
+
+# Signed-in e2e: test accounts, TOTP secrets and saved sessions (local stack only)
+apps/console/e2e-signed-in/.auth/
