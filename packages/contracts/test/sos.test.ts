@@ -41,8 +41,9 @@ describe('SOS state machine', () => {
     expect(checkTransition('en_route', 'cancelled', 'resident')).toMatchObject({ code: 'not_your_move' });
   });
 
-  it('a crew can still accept after the 108 prompt', () => {
-    expect(checkTransition('dispatching', 'escalated_to_108', 'system')).toEqual({ ok: true });
+  it('plan §11: nothing enters the 108 state any more; past incidents in it can still be accepted', () => {
+    expect(checkTransition('dispatching', 'escalated_to_108', 'system')).toMatchObject({ ok: false });
+    expect(checkTransition('raised', 'escalated_to_108', 'system')).toMatchObject({ ok: false });
     expect(checkTransition('escalated_to_108', 'accepted', 'system')).toEqual({ ok: true });
   });
 
