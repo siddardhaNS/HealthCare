@@ -13,7 +13,7 @@ import type { CrewRow, DispatchRepo } from './repo';
 /** Crews offered at once in each ring (plan: "the nearest 3 at the same time"). */
 export const OFFERS_PER_RING = 3;
 /** How far to look for crews by distance, per ring. */
-export const SEARCH_RADIUS_M = { 1: 20_000, 2: 40_000 } as const;
+export const SEARCH_RADIUS_M = { first: 20_000, later: 40_000 } as const;
 /**
  * Nearest crews looked at before dropping busy ones and those already offered.
  * Twelve was too few in a busy city: the load test (50 SOS at once) left ring 2
@@ -34,7 +34,7 @@ export interface DispatchDeps {
 
 export interface Candidate {
   crewId: string;
-  ring: 1 | 2;
+  ring: number;
   distanceM: number | null;
   etaS: number | null;
   /** From the household's coverage team. */
@@ -48,33 +48,34 @@ async function dispatchPoint(d: DispatchDeps, incident: IncidentRow): Promise<La
 }
 
 /**
- * Ring 1: the coverage team's available crews, nearest first, topped up with
- * the nearest other crews so the first offer always goes to up to three
- * (a short-staffed team never costs the resident the widen threshold).
- * Ring 2: the next nearest crews not yet offered.
+ * Plan §11. Ring 1: the place's primary team, nearest first, topped up with
+ * the nearest other crews so the first offer always goes to up to three (a
+ * short-staffed team never costs the resident a timeout). Ring 2, 3, …: the
+ * backup teams in order; a backup with nobody free is replaced by the nearest
+ * free crews. After the last backup: the next nearest free crews each ring.
  */
-export async function chooseCandidates(d: DispatchDeps, incident: IncidentRow, ring: 1 | 2): Promise<Candidate[]> {
+export async function chooseCandidates(d: DispatchDeps, incident: IncidentRow, ring: number): Promise<Candidate[]> {
   const from = await dispatchPoint(d, incident);
   const picked: Candidate[] = [];
   const base = { incidentId: incident.id, isDrill: incident.isDrill };
 
-  if (ring === 1 && incident.householdId) {
-    const teamId = await d.dispatch.teamForHousehold(incident.householdId);
-    if (teamId) {
-      const team = await d.dispatch.available({ ...base, teamId });
-      const dist = from ? await d.locator.distances(from, team.map((c) => c.id)) : new Map<string, number>();
-      // Known distances first (nearest first); team crews without a fresh position still get the offer.
-      const ordered = [...team].sort((a, b) => (dist.get(a.id) ?? Infinity) - (dist.get(b.id) ?? Infinity));
-      for (const c of ordered.slice(0, OFFERS_PER_RING)) {
-        const m = dist.get(c.id) ?? null;
-        picked.push({ crewId: c.id, ring, distanceM: m, etaS: m === null ? null : estimateEtaS(m), team: true });
-      }
+  const teams = incident.householdId ? await d.dispatch.teamsForHousehold(incident.householdId) : [];
+  const teamId = teams[ring - 1];
+  if (teamId) {
+    const team = await d.dispatch.available({ ...base, teamId });
+    const dist = from ? await d.locator.distances(from, team.map((c) => c.id)) : new Map<string, number>();
+    // Known distances first (nearest first); team crews without a fresh position still get the offer.
+    const ordered = [...team].sort((a, b) => (dist.get(a.id) ?? Infinity) - (dist.get(b.id) ?? Infinity));
+    for (const c of ordered.slice(0, OFFERS_PER_RING)) {
+      const m = dist.get(c.id) ?? null;
+      picked.push({ crewId: c.id, ring, distanceM: m, etaS: m === null ? null : estimateEtaS(m), team: true });
     }
   }
 
-  const room = OFFERS_PER_RING - picked.length;
+  // Ring 1 is always topped up to three; a backup ring only when that team has nobody free.
+  const room = ring === 1 || picked.length === 0 ? OFFERS_PER_RING - picked.length : 0;
   if (room > 0 && from) {
-    const near = (await d.locator.nearby(from, SEARCH_RADIUS_M[ring], NEARBY_POOL)).filter((n) => !picked.some((p) => p.crewId === n.crewId));
+    const near = (await d.locator.nearby(from, ring === 1 ? SEARCH_RADIUS_M.first : SEARCH_RADIUS_M.later, NEARBY_POOL)).filter((n) => !picked.some((p) => p.crewId === n.crewId));
     const ok = new Set((await d.dispatch.available({ ...base, crewIds: near.map((n) => n.crewId) })).map((c) => c.id));
     for (const n of near.filter((x) => ok.has(x.crewId)).slice(0, room)) {
       picked.push({ crewId: n.crewId, ring, distanceM: n.distanceM, etaS: estimateEtaS(n.distanceM), team: false });
@@ -84,8 +85,7 @@ export async function chooseCandidates(d: DispatchDeps, incident: IncidentRow, r
 }
 
 /**
- * The escalation workflow's side effects with real offers. Desk alarms and
- * the 108 prompt go to the command center's desk channels (the console
+ * The escalation workflow's side effects with real offers. Desk alarms go to the command center's desk channels (the console
  * sounds an alarm); push and WhatsApp to the desk come with notifications.
  * Crews see offers by polling GET /v1/crew/offers until FCM push.
  */
@@ -105,13 +105,9 @@ export function dispatchAlerts(d: DispatchDeps & { sos: SosRepo; realtime?: Real
       if (offers.length === 0) console.warn(JSON.stringify({ level: 'warn', event: 'sos_no_crews', incidentId: incident.id, ring }));
       else log('sos_offer_ring', incident, { ring, offers: offers.length, teamOffers: team });
     },
-    async alertDesk(incident, why) {
-      log('sos_desk_alarm', incident, { why });
-      await publishDesk(realtime, incident, 'alarm', { why, at: new Date().toISOString() });
-    },
-    async prompt108(incident) {
-      log('sos_prompt_108', incident);
-      await publishDesk(realtime, incident, 'alarm', { why: 'prompt_108', at: new Date().toISOString() });
+    async alertDesk(incident, why, ring) {
+      log('sos_desk_alarm', incident, { why, ring });
+      await publishDesk(realtime, incident, 'alarm', { why, ring, at: new Date().toISOString() });
     },
   };
 }

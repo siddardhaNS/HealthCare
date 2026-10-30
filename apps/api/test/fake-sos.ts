@@ -22,16 +22,13 @@ export function fakeEscalation(opts: { startFails?: boolean } = {}) {
 
 /** Records what escalation asked for (offers, desk alarms, 108 prompts). */
 export function recordingAlerts() {
-  const sent: { kind: 'offer_ring' | 'desk_alarm' | 'prompt_108'; incidentId: string; detail?: string | number }[] = [];
+  const sent: { kind: 'offer_ring' | 'desk_alarm'; incidentId: string; detail?: string | number }[] = [];
   const alerts: SosAlerts = {
     async offerRing(i, ring) {
       sent.push({ kind: 'offer_ring', incidentId: i.id, detail: ring });
     },
     async alertDesk(i, why) {
       sent.push({ kind: 'desk_alarm', incidentId: i.id, detail: why });
-    },
-    async prompt108(i) {
-      sent.push({ kind: 'prompt_108', incidentId: i.id });
     },
   };
   return { alerts, sent };

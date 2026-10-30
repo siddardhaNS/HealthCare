@@ -27,7 +27,7 @@ async function setup(opts: { location?: LatLng | null; isDrill?: boolean; househ
   const row = sos.incidents[0]!;
   row.householdId = opts.householdId ?? null;
   const d = { dispatch: dispatch.repo, locator, kv, sos: sos.repo, escalation: escalation.runner };
-  await beginDispatch({ sos: sos.repo, alerts: { offerRing: async () => {}, alertDesk: async () => {}, prompt108: async () => {} } }, incident.id);
+  await beginDispatch({ sos: sos.repo, alerts: { offerRing: async () => {}, alertDesk: async () => {} } }, incident.id);
   const current = () => sos.incidents[0]!;
   /** A crew on duty at `at` (no position if `at` is null). */
   const crewAt = async (at: LatLng | null, p: Parameters<typeof dispatch.addCrew>[0] = {}) => {
@@ -109,6 +109,36 @@ describe('who is offered an SOS', () => {
     t.dispatch.householdAt.set('hh-1', HOME);
     const near = await t.crewAt(north(1));
     expect((await chooseCandidates(t.d, t.current(), 1)).map((c) => c.crewId)).toEqual([near.id]);
+  });
+
+  it('plan §11: ring 2, 3 … go to the backup teams in order, then to the nearest free crews', async () => {
+    const t = await setup({ householdId: 'hh-1' });
+    const [primary, b1, b2] = [t.dispatch.addTeam('Primary'), t.dispatch.addTeam('Backup 1'), t.dispatch.addTeam('Backup 2')];
+    t.dispatch.householdTeam.set('hh-1', primary);
+    t.dispatch.householdBackups.set('hh-1', [b1, b2]);
+    await t.crewAt(north(1), { teamId: primary });
+    const backup1 = await t.crewAt(north(9), { teamId: b1 });
+    const backup2 = await t.crewAt(north(12), { teamId: b2 });
+    const others = await Promise.all([2, 3, 4].map((km) => t.crewAt(north(km))));
+    const alerts = dispatchAlerts(t.d);
+    for (const ring of [1, 2, 3, 4]) await alerts.offerRing(t.current(), ring);
+    const byRing = (r: number) => t.dispatch.offers.filter((o) => o.ring === r).map((o) => o.crewId);
+    // Ring 1: the primary team, topped up with the nearest others.
+    expect(byRing(1)).toHaveLength(3);
+    // Backups alone, even though farther than free crews nearby.
+    expect(byRing(2)).toEqual([backup1.id]);
+    expect(byRing(3)).toEqual([backup2.id]);
+    // After the last backup: the nearest free crews not yet offered.
+    expect(byRing(4)).toEqual([others[2]!.id]);
+  });
+
+  it('a backup team with nobody free is replaced by the nearest free crews', async () => {
+    const t = await setup({ householdId: 'hh-1' });
+    const [primary, b1] = [t.dispatch.addTeam('Primary'), t.dispatch.addTeam('Backup 1')];
+    t.dispatch.householdTeam.set('hh-1', primary);
+    t.dispatch.householdBackups.set('hh-1', [b1]);
+    const near = await t.crewAt(north(2));
+    expect((await chooseCandidates(t.d, t.current(), 2)).map((c) => c.crewId)).toEqual([near.id]);
   });
 
   it('free crews are found behind many busy nearer ones (load test: 50 SOS at once)', async () => {

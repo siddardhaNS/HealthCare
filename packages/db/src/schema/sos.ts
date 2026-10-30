@@ -146,7 +146,9 @@ export const coverageAssignments = pgTable('coverage_assignments', {
   id: uuid('id').primaryKey().defaultRandom(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   teamId: uuid('team_id').notNull(),
-  siteId: uuid('site_id').unique(),
-  householdId: uuid('household_id').unique(),
+  siteId: uuid('site_id'),
+  householdId: uuid('household_id'),
+  /** 0 = primary team, 1.. = backups in order (plan §11). */
+  rank: smallint('rank').notNull().default(0),
   assignedBy: uuid('assigned_by'),
 });

@@ -47,7 +47,7 @@ export function drizzleResidentsRepo(db: Db): ResidentsRepo {
       .leftJoin(profiles, eq(profiles.userId, householdMembers.userId))
       .leftJoin(authUsers, eq(authUsers.id, householdMembers.userId))
       // Households in a community follow its team; only stand-alone homes are assigned themselves.
-      .leftJoin(coverageAssignments, sql`case when ${sites.id} is not null then ${coverageAssignments.siteId} = ${sites.id} else ${coverageAssignments.householdId} = ${households.id} end`)
+      .leftJoin(coverageAssignments, sql`case when ${sites.id} is not null then ${coverageAssignments.siteId} = ${sites.id} else ${coverageAssignments.householdId} = ${households.id} end and ${coverageAssignments.rank} = 0`)
       .leftJoin(coverageTeams, and(eq(coverageTeams.id, coverageAssignments.teamId), eq(coverageTeams.active, true)));
 
   return {

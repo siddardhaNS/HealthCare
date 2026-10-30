@@ -38,8 +38,8 @@ export interface DispatchRepo {
    * pick) also allows crews offered this incident before.
    */
   available(filter: { incidentId: string; isDrill: boolean; teamId?: string; crewIds?: string[]; reoffer?: boolean }): Promise<{ id: string; teamId: string | null }[]>;
-  /** The active team covering a household: through its site, or the household itself. */
-  teamForHousehold(householdId: string): Promise<string | null>;
+  /** The active teams covering a household, primary first then backups in order: through its site, or the household itself (plan §11). */
+  teamsForHousehold(householdId: string): Promise<string[]>;
   /** Where a household is (its home, else its own location), for an SOS sent without GPS. */
   householdLocation(householdId: string): Promise<LatLng | null>;
   createOffers(incidentId: string, offers: { crewId: string; ring: number; etaS: number | null }[]): Promise<OfferRow[]>;
@@ -127,16 +127,17 @@ export function drizzleDispatchRepo(db: Db): DispatchRepo {
           ),
         );
     },
-    async teamForHousehold(householdId) {
-      const [r] = await db
+    async teamsForHousehold(householdId) {
+      const rows = await db
         .select({ teamId: coverageAssignments.teamId })
         .from(households)
         .leftJoin(homes, eq(homes.id, households.homeId))
         // A household in a community follows the community's team (plan §9), even if it once had its own.
         .innerJoin(coverageAssignments, sql`case when ${homes.siteId} is not null then ${coverageAssignments.siteId} = ${homes.siteId} else ${coverageAssignments.householdId} = ${households.id} end`)
         .innerJoin(coverageTeams, and(eq(coverageTeams.id, coverageAssignments.teamId), eq(coverageTeams.active, true)))
-        .where(eq(households.id, householdId));
-      return r?.teamId ?? null;
+        .where(eq(households.id, householdId))
+        .orderBy(coverageAssignments.rank);
+      return rows.map((r) => r.teamId);
     },
     async householdLocation(householdId) {
       const home = point(homes.location);

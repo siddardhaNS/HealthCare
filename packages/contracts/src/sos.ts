@@ -30,11 +30,9 @@ const edges: Record<SosState, readonly Edge[]> = {
     { to: 'dispatching', by: ['system'] },
     { to: 'cancelled', by: ['resident'] },
     { to: 'cancelled', by: ['desk'], reason: true },
-    { to: 'escalated_to_108', by: ['system'] },
   ],
   dispatching: [
     { to: 'accepted', by: ['system'] },
-    { to: 'escalated_to_108', by: ['system'] },
     { to: 'cancelled', by: ['resident'] },
     { to: 'cancelled', by: ['desk'], reason: true },
   ],
@@ -61,7 +59,7 @@ const edges: Record<SosState, readonly Edge[]> = {
     { to: 'handed_over', by: ['desk'], reason: true },
   ],
   handed_over: [{ to: 'closed', by: ['desk'] }],
-  // Dispatch continues after the 108 prompt: a crew may still accept.
+  // Plan §11: no longer entered (no 108 step); kept so past incidents can still be closed.
   escalated_to_108: [
     { to: 'accepted', by: ['system'] },
     { to: 'cancelled', by: ['resident'] },

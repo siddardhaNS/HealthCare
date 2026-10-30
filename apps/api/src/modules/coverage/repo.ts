@@ -92,6 +92,8 @@ export function drizzleCoverageRepo(db: Db): CoverageRepo {
             households: sql<number>`(count(${coverageAssignments.householdId}) + coalesce(sum((select count(*) from ${households} h join ${homes} hm on hm.id = h.home_id where hm.site_id = coverage_assignments.site_id)), 0))::int`,
           })
           .from(coverageAssignments)
+          // Places this team covers as the primary team; backups are listed per place (plan §11).
+          .where(eq(coverageAssignments.rank, 0))
           .groupBy(coverageAssignments.teamId),
       ]);
       return teams.map((t) => {
@@ -158,7 +160,7 @@ export function drizzleCoverageRepo(db: Db): CoverageRepo {
           teamName: coverageTeams.name,
         })
         .from(sites)
-        .leftJoin(coverageAssignments, eq(coverageAssignments.siteId, sites.id))
+        .leftJoin(coverageAssignments, and(eq(coverageAssignments.siteId, sites.id), eq(coverageAssignments.rank, 0)))
         .leftJoin(coverageTeams, eq(coverageTeams.id, coverageAssignments.teamId))
         .where(and(uncovered ? isNull(coverageAssignments.teamId) : undefined, like ? or(ilike(sites.name, like), ilike(sites.city, like)) : undefined))
         .orderBy(asc(sites.name));
@@ -168,7 +170,7 @@ export function drizzleCoverageRepo(db: Db): CoverageRepo {
       const homeRows = await db
         .select({ id: households.id, name: homeName, city: households.city, teamId: coverageAssignments.teamId, teamName: coverageTeams.name })
         .from(households)
-        .leftJoin(coverageAssignments, eq(coverageAssignments.householdId, households.id))
+        .leftJoin(coverageAssignments, and(eq(coverageAssignments.householdId, households.id), eq(coverageAssignments.rank, 0)))
         .leftJoin(coverageTeams, eq(coverageTeams.id, coverageAssignments.teamId))
         .where(and(isNull(households.homeId), uncovered ? isNull(coverageAssignments.teamId) : undefined, like ? or(sql`${homeName} ilike ${like}`, ilike(households.city, like)) : undefined))
         .orderBy(asc(households.city));
@@ -195,7 +197,9 @@ export function drizzleCoverageRepo(db: Db): CoverageRepo {
       }
       return db.transaction(async (tx) => {
         const where = or(siteIds.length ? inArray(coverageAssignments.siteId, siteIds) : undefined, householdIds.length ? inArray(coverageAssignments.householdId, householdIds) : undefined)!;
-        const before = await tx.delete(coverageAssignments).where(where).returning({ siteId: coverageAssignments.siteId, householdId: coverageAssignments.householdId, teamId: coverageAssignments.teamId });
+        // The primary team changes; the new team is taken off the place's backup list (a team appears once per place).
+        if (teamId) await tx.delete(coverageAssignments).where(and(where, eq(coverageAssignments.teamId, teamId), sql`${coverageAssignments.rank} > 0`));
+        const before = await tx.delete(coverageAssignments).where(and(where, eq(coverageAssignments.rank, 0))).returning({ siteId: coverageAssignments.siteId, householdId: coverageAssignments.householdId, teamId: coverageAssignments.teamId });
         const was = (siteId: string | null, householdId: string | null) => before.find((b) => (siteId && b.siteId === siteId) || (householdId && b.householdId === householdId))?.teamId ?? null;
         const places = [...siteIds.map((id) => ({ siteId: id, householdId: null })), ...householdIds.map((id) => ({ siteId: null, householdId: id }))];
         if (teamId) await tx.insert(coverageAssignments).values(places.map((p) => ({ ...p, teamId, assignedBy: actor })));

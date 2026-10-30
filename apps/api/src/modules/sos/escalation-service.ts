@@ -6,19 +6,18 @@ import type { IncidentRow, SosRepo } from './repo';
 import { move, isSosFailure, type SosFailure } from './transition';
 
 /**
- * Side effects of escalation. Step 3 (dispatch) replaces the logging version
- * with Redis GEO offers, console alarms, push and WhatsApp.
+ * Side effects of escalation (plan §11): offers in rings, and desk alarms.
+ * Ring 1 = the place's primary team (topped up with the nearest crews), ring 2.. =
+ * its backup teams in order, then the nearest free crews. No 108 step.
  */
 export interface SosAlerts {
-  /** Offer the job to the next ring of crews (1 = nearest three, 2 = the next ring). Drills go to drill crews only. */
-  offerRing(incident: IncidentRow, ring: 1 | 2): Promise<void>;
-  /** Alarm the community desk: a new SOS, or nobody has accepted yet (dispatch manually). */
-  alertDesk(incident: IncidentRow, why: 'raised' | 'no_accept'): Promise<void>;
-  /** Prompt the resident and the desk to call 108. */
-  prompt108(incident: IncidentRow): Promise<void>;
+  /** Offer the job to the given ring. Drills go to drill crews only. */
+  offerRing(incident: IncidentRow, ring: number): Promise<void>;
+  /** Alarm the command center and admins: a new SOS, or the previous ring went unanswered and this one is being offered. */
+  alertDesk(incident: IncidentRow, why: 'raised' | 'no_accept', ring?: number): Promise<void>;
 }
 
-/** Logs ids only (never health data) until dispatch and notifications land. */
+/** Logs ids only (never health data). */
 export function logAlerts(): SosAlerts {
   const log = (kind: string, i: IncidentRow, extra: Record<string, unknown> = {}) =>
     console.log(JSON.stringify({ level: 'info', event: 'sos_alert', kind, incidentId: i.id, drill: i.isDrill, ...extra }));
@@ -26,11 +25,8 @@ export function logAlerts(): SosAlerts {
     async offerRing(i, ring) {
       log('offer_ring', i, { ring });
     },
-    async alertDesk(i, why) {
-      log('desk_alarm', i, { why });
-    },
-    async prompt108(i) {
-      log('prompt_108', i);
+    async alertDesk(i, why, ring) {
+      log('desk_alarm', i, { why, ring });
     },
   };
 }
@@ -57,10 +53,10 @@ const record = (d: EscalationDeps, i: IncidentRow, action: string, metadata: Rec
 
 /**
  * raised → dispatching, alarm the desk and offer ring 1. Returns the
- * thresholds to wait on, or null if the incident is already settled (e.g.
+ * time to wait between rings, or null if the incident is already settled (e.g.
  * cancelled during the countdown to the first step). Safe to retry.
  */
-export async function beginDispatch(d: EscalationDeps, id: string): Promise<{ widenAfterS: number; escalateAfterS: number } | null> {
+export async function beginDispatch(d: EscalationDeps, id: string): Promise<{ ringAfterS: number } | null> {
   let incident = await d.sos.get(id);
   if (!incident) return null;
   if (incident.state === 'raised') {
@@ -73,26 +69,20 @@ export async function beginDispatch(d: EscalationDeps, id: string): Promise<{ wi
   await d.alerts.alertDesk(incident, 'raised');
   await d.alerts.offerRing(incident, 1);
   await record(d, incident, 'sos_offer_ring', { ring: 1 });
-  return { widenAfterS: incident.widenAfterS, escalateAfterS: incident.escalateAfterS };
+  return { ringAfterS: incident.widenAfterS };
 }
 
-/** No accept by the first threshold: widen to ring 2 and ask the desk to dispatch manually. False if already settled. */
-export async function widenDispatch(d: EscalationDeps, id: string): Promise<boolean> {
+/**
+ * Nobody accepted the previous ring in time: alarm the desk and admins, and offer
+ * the next ring (the next backup team, then the nearest free crews). Earlier
+ * offers stay open. False if already settled.
+ */
+export async function nextRing(d: EscalationDeps, id: string, ring: number): Promise<boolean> {
   const incident = await d.sos.get(id);
   if (incident?.state !== 'dispatching') return false;
-  await d.alerts.offerRing(incident, 2);
-  await d.alerts.alertDesk(incident, 'no_accept');
-  await record(d, incident, 'sos_offer_ring', { ring: 2 });
-  return true;
-}
-
-/** No accept by the second threshold: mark escalated_to_108 and prompt a 108 call. Dispatch continues. False if already settled. */
-export async function escalateTo108(d: EscalationDeps, id: string): Promise<boolean> {
-  const incident = await d.sos.get(id);
-  if (incident?.state !== 'dispatching') return false;
-  const moved = await move(d.sos, incident, 'escalated_to_108', { id: null, role: 'system' }, `No crew accepted within ${incident.escalateAfterS} s`);
-  if (isSosFailure(moved)) return false;
-  await d.alerts.prompt108(moved);
+  await d.alerts.alertDesk(incident, 'no_accept', ring);
+  await d.alerts.offerRing(incident, ring);
+  await record(d, incident, 'sos_offer_ring', { ring });
   return true;
 }
 
@@ -103,7 +93,7 @@ export async function escalateTo108(d: EscalationDeps, id: string): Promise<bool
 export async function acceptForCrew(d: { sos: SosRepo; escalation: EscalationRunner }, id: string, crewId: string): Promise<IncidentRow | SosFailure> {
   const incident = await d.sos.get(id);
   if (!incident) return { error: 'not_found', message: 'No such SOS.' };
-  if (incident.state !== 'dispatching' && incident.state !== 'escalated_to_108') return { error: 'conflict', message: 'This job has been taken or closed.' };
+  if (incident.state !== 'dispatching') return { error: 'conflict', message: 'This job has been taken or closed.' };
   const accepted = await move(d.sos, incident, 'accepted', { id: null, role: 'system' }, null, { crewId });
   if (isSosFailure(accepted)) return accepted;
   await d.escalation.signal(id, { kind: 'settled', state: 'accepted' });

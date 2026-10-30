@@ -1,13 +1,17 @@
-// One durable run per SOS: offer, wait, widen at the first threshold, prompt
-// 108 at the second, and stop as soon as the incident settles. Sleeps survive
-// crashes and redeploys (Vercel Workflows). Inputs are ids only, never health data.
+// One durable run per SOS (plan §11): offer the primary team, then at every
+// timeout alarm the desk and offer the next ring (backup teams in order, then
+// the nearest free crews), and stop as soon as the incident settles. No 108
+// step. Sleeps survive crashes and redeploys (Vercel Workflows). Inputs are
+// ids only, never health data.
 import { createHook, sleep } from 'workflow';
-import { beginDispatch, escalateTo108, escalationToken, widenDispatch, type EscalationDeps, type EscalationSignal } from './escalation-service';
+import { beginDispatch, escalationToken, nextRing, type EscalationDeps, type EscalationSignal } from './escalation-service';
 
-/** After the 108 prompt, dispatch stays open for a crew to accept for this long; the desk closes it in the console. */
-export const OPEN_AFTER_108_S = 2 * 60 * 60;
+/** Rings offered automatically (about 10 min at 30 s); after that the desk keeps dispatching by hand. */
+export const MAX_RINGS = 20;
+/** After the last ring the run waits this long for a late accept before it ends; the desk closes the incident. */
+export const OPEN_AFTER_RINGS_S = 2 * 60 * 60;
 
-export type EscalationOutcome = 'settled_before_dispatch' | 'settled_before_widen' | 'settled_after_widen' | 'settled_after_108' | 'open_after_108';
+export type EscalationOutcome = 'settled_before_dispatch' | 'settled_in_ring_1' | 'settled_after_more_rings' | 'open_after_rings';
 
 export async function sosEscalation(incidentId: string): Promise<EscalationOutcome> {
   'use workflow';
@@ -19,14 +23,11 @@ export async function sosEscalation(incidentId: string): Promise<EscalationOutco
   const plan = await beginDispatchStep(incidentId);
   if (!plan) return 'settled_before_dispatch';
 
-  if (await Promise.race([settled, timeout(plan.widenAfterS)])) return 'settled_before_widen';
-  if (!(await widenStep(incidentId))) return 'settled_before_widen';
-
-  if (await Promise.race([settled, timeout(plan.escalateAfterS - plan.widenAfterS)])) return 'settled_after_widen';
-  if (!(await escalateStep(incidentId))) return 'settled_after_widen';
-
-  // Dispatch continues after the 108 prompt (a crew may still accept).
-  return (await Promise.race([settled, timeout(OPEN_AFTER_108_S)])) ? 'settled_after_108' : 'open_after_108';
+  for (let ring = 2; ring <= MAX_RINGS; ring++) {
+    if (await Promise.race([settled, timeout(plan.ringAfterS)])) return ring === 2 ? 'settled_in_ring_1' : 'settled_after_more_rings';
+    if (!(await nextRingStep(incidentId, ring))) return ring === 2 ? 'settled_in_ring_1' : 'settled_after_more_rings';
+  }
+  return (await Promise.race([settled, timeout(OPEN_AFTER_RINGS_S)])) ? 'settled_after_more_rings' : 'open_after_rings';
 }
 
 async function beginDispatchStep(incidentId: string) {
@@ -34,14 +35,9 @@ async function beginDispatchStep(incidentId: string) {
   return beginDispatch(await stepDeps(), incidentId);
 }
 
-async function widenStep(incidentId: string) {
+async function nextRingStep(incidentId: string, ring: number) {
   'use step';
-  return widenDispatch(await stepDeps(), incidentId);
-}
-
-async function escalateStep(incidentId: string) {
-  'use step';
-  return escalateTo108(await stepDeps(), incidentId);
+  return nextRing(await stepDeps(), incidentId, ring);
 }
 
 /**

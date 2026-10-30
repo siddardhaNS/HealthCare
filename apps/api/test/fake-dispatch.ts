@@ -14,6 +14,9 @@ export function fakeDispatch(incidents: () => IncidentRow[]) {
   const householdTeam = new Map<string, string>();
   const householdSite = new Map<string, string>();
   const siteTeam = new Map<string, string>();
+  /** Backup teams in order (plan §11). */
+  const householdBackups = new Map<string, string[]>();
+  const siteBackups = new Map<string, string[]>();
   const householdAt = new Map<string, LatLng>();
   const audit: { crewId: string; action: string }[] = [];
   const vehicles = new Map<string, { registration: string; equipment: 'bls' | 'als'; workPhone: string }>();
@@ -47,10 +50,11 @@ export function fakeDispatch(incidents: () => IncidentRow[]) {
         )
         .map((c) => ({ id: c.id, teamId: c.teamId }));
     },
-    async teamForHousehold(householdId) {
+    async teamsForHousehold(householdId) {
       const site = householdSite.get(householdId);
-      const team = (site ? siteTeam.get(site) : undefined) ?? householdTeam.get(householdId);
-      return team && teams.get(team)?.active ? team : null;
+      // A household in a community follows the community's list.
+      const list = site && siteTeam.has(site) ? [siteTeam.get(site)!, ...(siteBackups.get(site) ?? [])] : householdTeam.has(householdId) ? [householdTeam.get(householdId)!, ...(householdBackups.get(householdId) ?? [])] : [];
+      return list.filter((t) => teams.get(t)?.active);
     },
     async householdLocation(householdId) {
       return householdAt.get(householdId) ?? null;
@@ -110,5 +114,5 @@ export function fakeDispatch(incidents: () => IncidentRow[]) {
     return id;
   };
 
-  return { repo, crews, teams, offers, onDuty, audit, vehicles, addCrew, addTeam, householdTeam, householdSite, siteTeam, householdAt };
+  return { repo, crews, teams, offers, onDuty, audit, vehicles, addCrew, addTeam, householdTeam, householdSite, siteTeam, householdAt, householdBackups, siteBackups };
 }

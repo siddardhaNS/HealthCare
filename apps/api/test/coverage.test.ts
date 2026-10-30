@@ -152,14 +152,14 @@ describe('coverage teams', () => {
     const s = await setup();
     const abc = (await (await s.ops.post('/v1/coverage/teams', { name: 'ABC team' })).json()) as { id: string };
     await s.ops.put('/v1/coverage/assignments', { teamId: abc.id, sites: [s.green.id], households: [s.standalone] });
-    expect(await s.t.dispatch.repo.teamForHousehold(s.standalone)).toBe(abc.id);
+    expect(await s.t.dispatch.repo.teamsForHousehold(s.standalone)).toEqual([abc.id]);
     const directory = async () => ((await (await s.desk.get('/v1/residents')).json()) as { residents: { coverageTeam: string | null }[] }).residents[0]!.coverageTeam;
     expect(await directory()).toBe('ABC team');
     expect(await (await s.ops.patch(`/v1/coverage/teams/${abc.id}`, { name: 'ABC · Gachibowli', area: '' })).json()).toMatchObject({ name: 'ABC · Gachibowli', area: null });
     expect(await directory()).toBe('ABC · Gachibowli');
     await s.ops.patch(`/v1/coverage/teams/${abc.id}`, { active: false });
     expect(await directory()).toBeNull();
-    expect(await s.t.dispatch.repo.teamForHousehold(s.standalone)).toBeNull();
+    expect(await s.t.dispatch.repo.teamsForHousehold(s.standalone)).toEqual([]);
     expect((await s.ops.patch(`/v1/coverage/teams/${randomUUID()}`, { active: false })).status).toBe(404);
   });
 
@@ -167,6 +167,6 @@ describe('coverage teams', () => {
     const s = await setup();
     const abc = (await (await s.ops.post('/v1/coverage/teams', { name: 'ABC team' })).json()) as { id: string };
     await s.ops.put('/v1/coverage/assignments', { teamId: abc.id, households: [s.standalone] });
-    expect(await s.t.dispatch.repo.teamForHousehold(s.standalone)).toBe(abc.id);
+    expect(await s.t.dispatch.repo.teamsForHousehold(s.standalone)).toEqual([abc.id]);
   });
 });
