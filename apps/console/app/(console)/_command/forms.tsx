@@ -26,7 +26,7 @@ export function DeskAction(props: {
   hint: string;
   labels: FormLabels;
   reason: 'required' | 'optional' | 'none';
-  crews?: { options: { id: string; label: string }[]; label: string; none?: string; emptyText: string };
+  crews?: { options: { id: string; label: string }[]; label: string; none?: string; emptyText: string; /** Form field name (default crewId). */ name?: string };
   variant?: 'danger' | 'outline';
   testId: string;
 }) {
@@ -52,7 +52,7 @@ export function DeskAction(props: {
           ) : (
             <label className="flex flex-col gap-1 text-small font-semibold">
               {props.crews.label}
-              <select name="crewId" required={!props.crews.none} className={field} defaultValue="">
+              <select name={props.crews.name ?? 'crewId'} required={!props.crews.none} className={field} defaultValue="">
                 {props.crews.none ? <option value="">{props.crews.none}</option> : <option value="" disabled />}
                 {props.crews.options.map((o) => (
                   <option key={o.id} value={o.id}>

@@ -3,6 +3,7 @@ import { distanceM, isOpen, type SosState } from '@repo/contracts/sos';
 import type { createI18n } from '@repo/i18n';
 import { Button, Card, cn } from '@repo/ui-web';
 import { cancelSos, closeSos, handOverSos, offerSos, reassignSos } from './actions';
+import { redirectHospital } from '../_handover/actions';
 import { DeskAction } from './forms';
 import { Since } from './live';
 
@@ -33,6 +34,44 @@ function freeCrews(i: DeskIncidentDetail, fleet: FleetCrew[], t: TFunction) {
       id: c.crewId,
       label: [c.registration ?? t('console.cc.noVehicle'), c.name ?? t('console.cc.unnamedCrew'), c.team, m !== null ? t('console.cc.scale', { km: (m / 1000).toFixed(1) }) : null].filter(Boolean).join(' · '),
     }));
+}
+
+/** Where the patient goes and which items were shared, never their contents (the desk sees no medical detail). */
+function HandoverBox({ i, t }: { i: DeskIncidentDetail; t: TFunction }) {
+  const h = i.handover;
+  const waiting = ['raised', 'dispatching', 'escalated_to_108'].includes(i.state);
+  return (
+    <div className="flex flex-col gap-1 rounded-control border border-border bg-surface-raised p-3" data-testid="handover">
+      <span className="text-caption font-bold uppercase text-text-muted">{t('console.cc.handoverTitle')}</span>
+      {h ? (
+        <>
+          <span className="font-semibold">{h.hospital.name}</span>
+          <span className="text-small text-text-muted">
+            {[t(`console.cc.chosenBy.${h.chosenBy}`), h.preferred ? t('console.cc.handoverPreferred') : null].filter(Boolean).join(' · ')}
+          </span>
+          {h.reason ? <span className="text-small text-text-muted">“{h.reason}”</span> : null}
+          <span className="text-small">{t('console.cc.handoverItems', { items: h.items.map((x) => t(`console.handoverItems.${x}`)).join(', ') })}</span>
+          <span className={cn('text-small font-semibold', h.confirmedAt ? 'text-success-text' : 'text-warning-text')}>
+            {h.confirmedAt ? t('console.cc.handoverConfirmed', { time: clock.format(new Date(h.confirmedAt)) }) : t('console.cc.handoverUnconfirmed')}
+          </span>
+          <span className="text-caption text-text-muted">{t('console.cc.handoverLink', { time: clock.format(new Date(h.expiresAt)) })}</span>
+          <a href={`tel:${h.hospital.erPhone}`} className="text-small font-semibold text-accent-text underline">
+            {t('console.cc.callEr')} {h.hospital.erPhone}
+          </a>
+        </>
+      ) : (
+        <span className={cn('text-small', !i.isDrill && !waiting && isOpen(i.state) ? 'text-warning-text' : 'text-text-muted')}>
+          {i.isDrill
+            ? t('console.cc.handoverDrill')
+            : waiting
+              ? t('console.cc.handoverWaiting')
+              : isOpen(i.state)
+                ? t('console.cc.handoverNone')
+                : t('console.partner.none')}
+        </span>
+      )}
+    </div>
+  );
 }
 
 export function IncidentPanel({ i, fleet, canAct, t }: { i: DeskIncidentDetail; fleet: FleetCrew[]; canAct: boolean; t: TFunction }) {
@@ -76,10 +115,7 @@ export function IncidentPanel({ i, fleet, canAct, t }: { i: DeskIncidentDetail; 
             <span className="text-small text-text-muted">{t('console.cc.noCrew')}</span>
           )}
         </div>
-        <div className="flex flex-col gap-1 rounded-control border border-border bg-surface-raised p-3">
-          <span className="text-caption font-bold uppercase text-text-muted">{t('console.cc.handoverTitle')}</span>
-          <span className="text-small text-text-muted">{t('console.cc.handoverPending')}</span>
-        </div>
+        <HandoverBox i={i} t={t} />
       </div>
 
       {open && canAct ? (
@@ -91,9 +127,65 @@ export function IncidentPanel({ i, fleet, canAct, t }: { i: DeskIncidentDetail; 
               </a>
             </Button>
           ) : null}
-          {a.offer ? <DeskAction testId="act-offer" action={offerSos.bind(null, i.id)} label={t('console.cc.offer')} hint={t('console.cc.offerHint')} labels={labels} reason="none" crews={crewPicker(false)} /> : null}
-          {a.reassign ? <DeskAction testId="act-reassign" action={reassignSos.bind(null, i.id)} label={t('console.cc.reassign')} hint={t('console.cc.reassignHint')} labels={labels} reason="required" crews={crewPicker(true)} /> : null}
-          {a.handOver ? <DeskAction testId="act-hand-over" action={handOverSos.bind(null, i.id)} label={t('console.cc.handOver')} hint={t('console.cc.handOverHint')} labels={labels} reason="required" /> : null}
+          {a.offer ? (
+            <DeskAction
+              testId="act-offer"
+              action={offerSos.bind(null, i.id)}
+              label={t('console.cc.offer')}
+              hint={t('console.cc.offerHint')}
+              labels={labels}
+              reason="none"
+              crews={crewPicker(false)}
+            />
+          ) : null}
+          {a.reassign ? (
+            <DeskAction
+              testId="act-reassign"
+              action={reassignSos.bind(null, i.id)}
+              label={t('console.cc.reassign')}
+              hint={t('console.cc.reassignHint')}
+              labels={labels}
+              reason="required"
+              crews={crewPicker(true)}
+            />
+          ) : null}
+          {a.handOver ? (
+            <DeskAction
+              testId="act-hand-over"
+              action={handOverSos.bind(null, i.id)}
+              label={t('console.cc.handOver')}
+              hint={t('console.cc.handOverHint')}
+              labels={labels}
+              reason="required"
+            />
+          ) : null}
+          {!i.isDrill && i.hospitalsNearby.length > 0 ? (
+            <DeskAction
+              testId="act-hospital"
+              action={redirectHospital.bind(null, i.id)}
+              label={i.handover ? t('console.cc.hospitalChange') : t('console.cc.hospitalChoose')}
+              hint={t('console.cc.hospitalHint')}
+              labels={labels}
+              reason="required"
+              crews={{
+                name: 'hospitalId',
+                label: t('console.cc.hospitalPick'),
+                emptyText: t('console.cc.noHospitals'),
+                options: i.hospitalsNearby
+                  .filter((h) => h.id !== i.handover?.hospital.id)
+                  .map((h) => ({
+                    id: h.id,
+                    label: [
+                      h.name,
+                      h.etaS !== null ? t('console.cc.hospitalEta', { min: Math.max(1, Math.round(h.etaS / 60)) }) : null,
+                      h.hasCapacity ? null : t('console.cc.hospitalFull'),
+                    ]
+                      .filter(Boolean)
+                      .join(' · '),
+                  })),
+              }}
+            />
+          ) : null}
           {a.close ? (
             <DeskAction testId="act-close" action={closeSos.bind(null, i.id)} label={t('console.cc.close')} hint={a.closeNeedsReason ? t('console.cc.closeHintReason') : t('console.cc.closeHint')} labels={labels} reason={a.closeNeedsReason ? 'required' : 'optional'} />
           ) : null}

@@ -14,6 +14,7 @@ import { sosRoutes } from './modules/sos/routes';
 import { deskRoutes } from './modules/sos/desk-routes';
 import { sosSettingsRoutes } from './modules/sos/settings-routes';
 import { coverageRoutes } from './modules/coverage/routes';
+import { handoverRoutes } from './modules/handover/routes';
 import { dispatchRoutes } from './modules/dispatch/routes';
 import { leadsRoutes } from './modules/leads/routes';
 import { whatsappWebhookRoutes } from './modules/messaging/routes';
@@ -63,7 +64,7 @@ export function createApp(options: CreateAppOptions = {}) {
   const webOrigins = options.webOrigins ?? (process.env.WEB_ORIGINS ?? 'http://localhost:3000,http://localhost:3003').split(',').map((o) => o.trim());
   app.use('/v1/leads', cors({ origin: webOrigins, allowMethods: ['POST'], allowHeaders: ['content-type'], maxAge: 600 }));
 
-  for (const path of ['/v1/auth/*', '/v1/me', '/v1/leads', '/v1/leads/*', '/v1/consents', '/v1/consents/*', '/v1/households', '/v1/households/*', '/v1/me/*', '/v1/people/*', '/v1/residents', '/v1/residents/*', '/v1/sos', '/v1/sos/*', '/v1/crew/*', '/v1/dispatch/*', '/v1/desk/*', '/v1/sos-settings', '/v1/sos-settings/*', '/v1/coverage/*', '/webhooks/*']) app.use(path, withDeps);
+  for (const path of ['/v1/auth/*', '/v1/me', '/v1/leads', '/v1/leads/*', '/v1/consents', '/v1/consents/*', '/v1/households', '/v1/households/*', '/v1/me/*', '/v1/people/*', '/v1/residents', '/v1/residents/*', '/v1/sos', '/v1/sos/*', '/v1/crew/*', '/v1/dispatch/*', '/v1/desk/*', '/v1/sos-settings', '/v1/sos-settings/*', '/v1/coverage/*', '/v1/partner/*', '/v1/handover-links/*', '/v1/hospitals', '/v1/hospitals/*', '/webhooks/*']) app.use(path, withDeps);
   app.route('/v1', authRoutes);
   app.route('/v1', authHookRoutes);
   app.route('/v1', leadsRoutes);
@@ -75,6 +76,7 @@ export function createApp(options: CreateAppOptions = {}) {
   app.route('/v1', deskRoutes);
   app.route('/v1', sosSettingsRoutes);
   app.route('/v1', coverageRoutes);
+  app.route('/v1', handoverRoutes);
   app.route('/v1', dispatchRoutes);
   app.route('/', whatsappWebhookRoutes);
 

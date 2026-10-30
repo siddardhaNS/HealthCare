@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import type { DeskIncident, FleetCrew } from '@repo/contracts';
 import { sosRef } from '@repo/contracts/sos';
 import { createI18n } from '@repo/i18n';
@@ -14,6 +15,7 @@ import { EmergencyMap } from './_command/map';
 /** See every community (desk:all); the community desk listens to its own. */
 const allSites = ['super_admin', 'operations', 'support'];
 const canActRoles = ['super_admin', 'operations', 'community_desk'];
+const deskRoles = ['super_admin', 'operations', 'support', 'community_desk'];
 
 // Command center (plan §6): live emergency map, the selected incident with its
 // timeline and actions, test SOS, fleet. What each role sees is decided by
@@ -23,6 +25,8 @@ export default async function CommandCenter({ searchParams }: { searchParams: Pr
   const { t } = createI18n('en');
   const claims = await getStaffClaims();
   const roles: string[] = claims?.roles ?? [];
+  // Hospital partner staff have their own home: incoming patients.
+  if (roles.includes('hospital') && !roles.some((r) => deskRoles.includes(r))) redirect('/handovers');
   const api = await serverApi();
   const [open, recent, fleet, sites] = await Promise.all([
     api.GET('/v1/desk/sos', { params: { query: { view: 'open' } } }),
@@ -67,7 +71,12 @@ export default async function CommandCenter({ searchParams }: { searchParams: Pr
             soundOn: t('console.cc.soundOn'),
             soundOff: t('console.cc.soundOff'),
             dismiss: t('console.cc.dismiss'),
-            alarm: { raised: t('console.cc.alarm.raised', { ref: '{{ref}}' }), no_accept: t('console.cc.alarm.no_accept', { ref: '{{ref}}' }), prompt_108: t('console.cc.alarm.prompt_108', { ref: '{{ref}}' }) },
+            alarm: {
+              raised: t('console.cc.alarm.raised', { ref: '{{ref}}' }),
+              no_accept: t('console.cc.alarm.no_accept', { ref: '{{ref}}' }),
+              prompt_108: t('console.cc.alarm.prompt_108', { ref: '{{ref}}' }),
+              no_hospital: t('console.cc.alarm.no_hospital', { ref: '{{ref}}' }),
+            },
           }}
         />
       </div>

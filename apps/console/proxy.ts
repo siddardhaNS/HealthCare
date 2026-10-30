@@ -5,6 +5,7 @@ import { supabaseEnv } from './lib/supabase/env';
 
 const PUBLIC_PATHS = ['/sign-in'];
 const MFA_PATH = '/mfa';
+const HANDOVER_LINK = '/handover/';
 
 /**
  * Refreshes the Supabase session on every navigation and routes staff:
@@ -30,6 +31,8 @@ export async function proxy(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const claims = data?.claims;
   const path = request.nextUrl.pathname;
+  // The ER's handover link: the token is the credential, whoever is (or is not) signed in.
+  if (path.startsWith(HANDOVER_LINK)) return response;
 
   const redirect = (to: string) => {
     const target = NextResponse.redirect(new URL(to, request.url));

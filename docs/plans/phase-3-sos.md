@@ -174,3 +174,18 @@ Ops **manually** assign who covers whom: a **coverage team** (crew members and t
 **Decided:**
 - ⚑9: when fewer than 3 of the team's crews are on duty (or none), the first offer is filled with the nearest other crews at once; a short-staffed team never costs the resident 30 s.
 - A crew member belongs to one team at a time (simplest; can become many-to-many later if crews work shifts for two teams).
+
+---
+
+## 10. Hospital handover (step 6c, within ⚑4 as approved)
+
+How the approved handover (§3.7, ⚑4) is built. No new kind of health data: the handover reads the existing record, filtered by `emergency_share`.
+
+- **Choice on accept** (not drills: hospitals get nothing for a drill). Candidates: active network hospitals with capacity, ETA from the patient's location (straight line × 1.4 at 25 km/h until Google Routes). The person's **preferred hospital** (`profiles.preferred_hospital_id`, set by them or a family manager) wins if it has capacity and its ETA is at most 10 min worse than the nearest; otherwise the nearest. No hospital with capacity → no handover, the desk is alarmed.
+- **Override** by the assigned crew or the desk, with a reason (timeline + audit). The handover moves to the new hospital with a new link; the old link stops working.
+- **Items** fixed at creation from consent: everything in `handoverItems` with `emergency_share` granted, else blood group only. Contents are read from the live record at view time (latest vitals), limited to those items, plus the crew's first-aid notes (encrypted at rest).
+- **Link**: random 32-byte token, only its SHA-256 stored; valid 6 h from creation; dead once the SOS is cancelled. `GET /v1/handover-links/{token}` needs no sign-in (ER staff on a shared screen), is rate limited, and every view writes `record_shares` (viewer role `hospital_link`). Delivery to the ER's WhatsApp comes with the notifications module (needs a template); until then the hospital sees it in the partner portal.
+- **Partner portal** (console, role `hospital`, aal2, scoped by `user_roles` `partner` → `hospitals.id`): incoming handovers with arrival ETA, the record (each open is a `record_shares` row with the staff id), **Confirm receipt** (once, audited), and an **ER accepting / full** capacity switch.
+- **Command center**: the handover record (hospital, ER phone, items shared by name only, link expiry, confirmed at). No contents: the desk sees no medical detail.
+- **Resident**: the SOS screen shows the hospital and what was shared.
+- **Hospitals page** (super admin, operations): add, edit, capacity, deactivate.

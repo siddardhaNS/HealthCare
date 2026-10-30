@@ -21,9 +21,16 @@ export default async function ConsoleLayout({ children }: { children: ReactNode 
       <aside className="flex flex-col gap-2 border-b border-border bg-surface-raised p-5 md:w-64 md:border-r md:border-b-0">
         <span className="font-display text-title font-bold">{brand.shortName}</span>
         <nav aria-label="Console" className="mt-4 flex flex-col gap-1">
-          <Link href="/" className="rounded-control px-3 py-2 font-semibold text-text-muted hover:bg-surface hover:text-text">
-            {t('console.commandCenter')}
-          </Link>
+          {claims.roles.some((r) => r === 'super_admin' || r === 'operations' || r === 'support' || r === 'community_desk') ? (
+            <Link href="/" className="rounded-control px-3 py-2 font-semibold text-text-muted hover:bg-surface hover:text-text">
+              {t('console.commandCenter')}
+            </Link>
+          ) : null}
+          {claims.roles.includes('hospital') ? (
+            <Link href="/handovers" className="rounded-control px-3 py-2 font-semibold text-text-muted hover:bg-surface hover:text-text">
+              {t('console.partner.title')}
+            </Link>
+          ) : null}
           {claims.roles.some((r) => r === 'super_admin' || r === 'operations' || r === 'support' || r === 'community_desk') ? (
             <Link href="/residents" className="rounded-control px-3 py-2 font-semibold text-text-muted hover:bg-surface hover:text-text">
               {t('console.residents.title')}
@@ -32,6 +39,11 @@ export default async function ConsoleLayout({ children }: { children: ReactNode 
           {claims.roles.some((r) => r === 'super_admin' || r === 'operations') ? (
             <Link href="/coverage" className="rounded-control px-3 py-2 font-semibold text-text-muted hover:bg-surface hover:text-text">
               {t('console.coverage.title')}
+            </Link>
+          ) : null}
+          {claims.roles.some((r) => r === 'super_admin' || r === 'operations') ? (
+            <Link href="/hospitals" className="rounded-control px-3 py-2 font-semibold text-text-muted hover:bg-surface hover:text-text">
+              {t('console.hospitals.title')}
             </Link>
           ) : null}
           {claims.roles.some((r) => r === 'super_admin' || r === 'operations' || r === 'support' || r === 'community_desk') ? (

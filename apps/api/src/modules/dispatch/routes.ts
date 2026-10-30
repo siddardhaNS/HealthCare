@@ -6,7 +6,9 @@ import type { AppEnv } from '../../app';
 import { requireAuth } from '../../middleware/auth';
 import { toIncident } from '../sos/service';
 import { isSosFailure, type SosFailure } from '../sos/transition';
-import type { EventRow, IncidentRow } from '../sos/repo';
+import type { IncidentRow } from '../sos/repo';
+import { openHandoverSafely } from '../handover/service';
+import { toSummary } from '../handover/summary';
 import type { CrewRow } from './repo';
 import { acceptOffer, advanceJob, declineOffer, reportLocation, setDuty } from './service';
 
@@ -81,7 +83,11 @@ const r = {
   decline: createRoute({ method: 'post', path: '/dispatch/offers/{id}/decline', operationId: 'declineOffer', tags: ['dispatch'], summary: 'Decline an offered job', ...authed, request: offerParam, responses: { 204: { description: 'Declined' }, ...failures } }),
 };
 
-const toJob = (i: IncidentRow, events: EventRow[]): CrewJobT => ({ incident: toIncident(i, events), nextStep: nextCrewStep(i.state) });
+const toJob = async (c: Context<AppEnv>, i: IncidentRow): Promise<CrewJobT> => {
+  const deps = c.get('deps');
+  const [events, handover] = await Promise.all([deps.sos.events(i.id), deps.handovers.forIncident(i.id)]);
+  return { incident: toIncident(i, events), nextStep: nextCrewStep(i.state), handover: handover ? toSummary(handover) : null };
+};
 
 const status = async (c: Context<AppEnv>, crew: CrewRow) => ({ crewId: crew.id, onDuty: await c.get('deps').dispatch.isOnDuty(crew.id), team: crew.teamName, drillParticipant: crew.drillParticipant });
 
@@ -131,6 +137,8 @@ export const dispatchRoutes = new OpenAPIHono<AppEnv>()
     const deps = c.get('deps');
     const done = await acceptOffer(deps, crew, c.req.valid('param').id);
     if (isSosFailure(done)) return failure(c, done);
+    // The receiving hospital is chosen as soon as a crew accepts (plan §3.7).
+    await openHandoverSafely(deps, done, c.get('requestId'));
     return c.json(toIncident(done, await deps.sos.events(done.id)), 200);
   })
   // Registered before the nullable job route, so the CrewJob component itself is not nullable.
@@ -140,14 +148,14 @@ export const dispatchRoutes = new OpenAPIHono<AppEnv>()
     const deps = c.get('deps');
     const done = await advanceJob(deps, crew, c.req.valid('param').id, c.req.valid('json').to);
     if (isSosFailure(done)) return failure(c, done);
-    return c.json(toJob(done, await deps.sos.events(done.id)), 200);
+    return c.json(await toJob(c, done), 200);
   })
   .openapi(r.job, async (c) => {
     const crew = await crewOf(c);
     if (isSosFailure(crew)) return failure(c, crew);
     const deps = c.get('deps');
     const job = await deps.sos.activeForCrew(crew.id);
-    return c.json(job ? toJob(job, await deps.sos.events(job.id)) : null, 200);
+    return c.json(job ? await toJob(c, job) : null, 200);
   })
   .openapi(r.decline, async (c) => {
     const crew = await crewOf(c);

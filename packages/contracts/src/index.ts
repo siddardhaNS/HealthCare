@@ -489,8 +489,26 @@ export const SosCrewView = z
   .openapi('SosCrewView');
 export type SosCrewView = z.infer<typeof SosCrewView>;
 
+import { handoverItems as _handoverItems } from './consent';
+export const HandoverItemSchema = z.enum(_handoverItems).openapi('HandoverItem');
+
+/** The handover as the desk, the crew and the person see it: where, and which items, never their contents. */
+export const HandoverSummary = z
+  .object({
+    hospital: z.object({ id: z.string().uuid(), name: z.string(), erPhone: z.string() }),
+    items: z.array(HandoverItemSchema),
+    chosenBy: z.enum(['auto', 'crew', 'desk']),
+    preferred: z.boolean(),
+    reason: z.string().nullable(),
+    createdAt: z.string().datetime(),
+    expiresAt: z.string().datetime(),
+    confirmedAt: z.string().datetime().nullable(),
+  })
+  .openapi('HandoverSummary');
+export type HandoverSummary = z.infer<typeof HandoverSummary>;
+
 /** An SOS as the person (or their family manager) sees it: the incident plus the ambulance while one is assigned. */
-export const ResidentSos = SosIncident.extend({ crew: SosCrewView.nullable() }).openapi('ResidentSos');
+export const ResidentSos = SosIncident.extend({ crew: SosCrewView.nullable(), handover: HandoverSummary.nullable() }).openapi('ResidentSos');
 export type ResidentSos = z.infer<typeof ResidentSos>;
 
 // ── Dispatch (field app) ────────────────────────────────────────────────
@@ -532,9 +550,7 @@ export type DispatchOffer = z.infer<typeof DispatchOffer>;
 export const CrewStepSchema = z.enum(_crewSteps).openapi('CrewStep');
 
 /** The job a crew has taken: the incident (no medical details) and the next status button. */
-export const CrewJob = z
-  .object({ incident: SosIncident, nextStep: z.enum(_crewSteps).nullable() })
-  .openapi('CrewJob');
+export const CrewJob = z.object({ incident: SosIncident, nextStep: z.enum(_crewSteps).nullable(), handover: HandoverSummary.nullable() }).openapi('CrewJob');
 export type CrewJob = z.infer<typeof CrewJob>;
 
 export const CrewStepUpdate = z.object({ to: CrewStepSchema }).openapi('CrewStepUpdate');
@@ -574,7 +590,11 @@ export const DeskIncident = SosIncident.extend({
 }).openapi('DeskIncident');
 export type DeskIncident = z.infer<typeof DeskIncident>;
 
-export const DeskIncidentDetail = DeskIncident.extend({ offers: z.array(DeskOffer) }).openapi('DeskIncidentDetail');
+export const DeskIncidentDetail = DeskIncident.extend({
+  offers: z.array(DeskOffer),
+  handover: HandoverSummary.nullable(),
+  hospitalsNearby: z.array(z.object({ id: z.string().uuid(), name: z.string(), hasCapacity: z.boolean(), etaS: z.number().int().nullable() })),
+}).openapi('DeskIncidentDetail');
 export type DeskIncidentDetail = z.infer<typeof DeskIncidentDetail>;
 
 export const DeskIncidentList = z.object({ incidents: z.array(DeskIncident) }).openapi('DeskIncidentList');
@@ -683,3 +703,114 @@ export const CoverageAssign = z
   .object({ teamId: z.string().uuid().nullable(), sites: z.array(z.string().uuid()).max(500).default([]), households: z.array(z.string().uuid()).max(500).default([]) })
   .refine((v) => v.sites.length + v.households.length > 0, { message: 'Choose at least one place.' })
   .openapi('CoverageAssign');
+
+// ── Hospital handover (plan §3.7, §10) ──────────────────────────────────
+
+const reason = z.string().trim().min(1).max(200);
+/** ER numbers are often landlines: +91 and ten digits. */
+const erPhone = z.string().regex(/^\+91\d{10}$/, 'Use +91 and the ten-digit number');
+
+/** A network hospital as staff manage it. */
+export const Hospital = z
+  .object({
+    id: z.string().uuid(),
+    name: z.string(),
+    address: z.string().nullable(),
+    city: z.string().nullable(),
+    location: z.object({ lat: z.number(), lng: z.number() }),
+    erPhone: z.string(),
+    hasCapacity: z.boolean(),
+    capacityUpdatedAt: z.string().datetime().nullable(),
+    active: z.boolean(),
+  })
+  .openapi('Hospital');
+export type Hospital = z.infer<typeof Hospital>;
+export const Hospitals = z.object({ hospitals: z.array(Hospital) }).openapi('Hospitals');
+export type Hospitals = z.infer<typeof Hospitals>;
+
+export const HospitalInput = z
+  .object({
+    name: z.string().trim().min(1).max(120),
+    address: z.string().trim().max(200).optional(),
+    city: z.string().trim().max(80).optional(),
+    location: z.object({ lat: z.number().min(6).max(37.5), lng: z.number().min(68).max(97.5) }),
+    erPhone,
+  })
+  .openapi('HospitalInput');
+export const HospitalUpdate = HospitalInput.partial().extend({ active: z.boolean().optional(), hasCapacity: z.boolean().optional() }).openapi('HospitalUpdate');
+
+/** The network hospitals a person can choose as preferred (no capacity or phone details). */
+export const HospitalChoices = z
+  .object({ hospitals: z.array(z.object({ id: z.string().uuid(), name: z.string(), city: z.string().nullable() })), preferredId: z.string().uuid().nullable() })
+  .openapi('HospitalChoices');
+export const PreferredHospital = z.object({ hospitalId: z.string().uuid().nullable() }).openapi('PreferredHospital');
+
+/** The crew or the desk sends the patient to another hospital. */
+export const HandoverRedirect = z.object({ hospitalId: z.string().uuid(), reason }).openapi('HandoverRedirect');
+export const FirstAidNotes = z.object({ notes: z.string().trim().min(1).max(2000) }).openapi('FirstAidNotes');
+
+/** What the ER receives. Only the items listed are present; with emergency sharing off, the blood group alone. */
+export const HandoverRecord = z
+  .object({
+    items: z.array(HandoverItemSchema),
+    patient: z.object({ name: z.string().nullable(), age: z.number().int().nullable(), sex: z.string().nullable() }),
+    bloodGroup: z.string().nullable(),
+    allergies: z.array(z.object({ substance: z.string(), severity: z.string(), reaction: z.string().nullable() })).optional(),
+    conditions: z.array(z.object({ name: z.string(), status: z.string() })).optional(),
+    medicines: z
+      .array(z.object({ name: z.string(), strength: z.string().nullable(), dose: z.string().nullable(), frequency: z.string().nullable() }))
+      .optional(),
+    lastVitals: z
+      .array(z.object({ type: z.string(), value: z.number(), value2: z.number().nullable(), unit: z.string(), takenAt: z.string().datetime() }))
+      .optional(),
+    emergencyContacts: z.array(z.object({ name: z.string(), relation: z.string().nullable(), phone: z.string() })).optional(),
+    insurance: z
+      .array(z.object({ insurer: z.string(), policyNumber: z.string().nullable(), memberId: z.string().nullable(), validUntil: z.string().nullable() }))
+      .optional(),
+    firstAidNotes: z.string().nullable(),
+  })
+  .openapi('HandoverRecord');
+export type HandoverRecord = z.infer<typeof HandoverRecord>;
+
+/** An incoming patient in the hospital's partner portal. */
+export const PartnerHandover = z
+  .object({
+    id: z.string().uuid(),
+    ref: z.string(),
+    isDrill: z.boolean(),
+    state: SosStateSchema,
+    createdAt: z.string().datetime(),
+    expiresAt: z.string().datetime(),
+    /** The link has expired or the SOS was cancelled: the record is no longer shown. */
+    expired: z.boolean(),
+    confirmedAt: z.string().datetime().nullable(),
+    ambulance: z.object({ registration: z.string(), equipment: z.enum(['bls', 'als']), workPhone: z.string() }).nullable(),
+    /** Seconds until the ambulance reaches the hospital, from its last position (null before a fix). */
+    arrivalEtaS: z.number().int().nullable(),
+    items: z.array(HandoverItemSchema),
+  })
+  .openapi('PartnerHandover');
+export type PartnerHandover = z.infer<typeof PartnerHandover>;
+export const PartnerHandovers = z
+  .object({
+    hospital: z.object({ id: z.string().uuid(), name: z.string(), hasCapacity: z.boolean(), capacityUpdatedAt: z.string().datetime().nullable() }),
+    handovers: z.array(PartnerHandover),
+  })
+  .openapi('PartnerHandovers');
+export type PartnerHandovers = z.infer<typeof PartnerHandovers>;
+export const PartnerHandoverDetail = PartnerHandover.extend({ record: HandoverRecord.nullable() }).openapi('PartnerHandoverDetail');
+export type PartnerHandoverDetail = z.infer<typeof PartnerHandoverDetail>;
+export const HospitalCapacity = z.object({ hasCapacity: z.boolean() }).openapi('HospitalCapacity');
+
+/** The ER's view through the signed link (no sign-in). */
+export const HandoverLinkView = z
+  .object({
+    ref: z.string(),
+    hospital: z.string(),
+    isDrill: z.boolean(),
+    expiresAt: z.string().datetime(),
+    confirmedAt: z.string().datetime().nullable(),
+    record: HandoverRecord,
+  })
+  .openapi('HandoverLinkView');
+export type HandoverLinkView = z.infer<typeof HandoverLinkView>;

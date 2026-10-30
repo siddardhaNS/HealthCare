@@ -4,6 +4,8 @@ import type { CrewLocator, LatLng } from '../../lib/crew-locator';
 import { isUniqueViolation } from '@repo/db';
 import type { DispatchRepo } from '../dispatch/repo';
 import type { HouseholdsRepo } from '../households/repo';
+import type { HandoverRepo } from '../handover/repo';
+import { toSummary } from '../handover/summary';
 import { canActFor } from '../households/service';
 import type { EscalationRunner } from './escalation-service';
 import type { EventRow, IncidentRow, SosRepo } from './repo';
@@ -48,9 +50,12 @@ export async function crewView(d: { dispatch: DispatchRepo; locator: CrewLocator
   };
 }
 
-export async function residentView(d: { sos: SosRepo; dispatch: DispatchRepo; locator: CrewLocator }, i: IncidentRow): Promise<ResidentSos> {
-  const [events, crew] = await Promise.all([d.sos.events(i.id), crewView(d, i)]);
-  return { ...toIncident(i, events), crew };
+export async function residentView(
+  d: { sos: SosRepo; dispatch: DispatchRepo; locator: CrewLocator; handovers: HandoverRepo },
+  i: IncidentRow,
+): Promise<ResidentSos> {
+  const [events, crew, handover] = await Promise.all([d.sos.events(i.id), crewView(d, i), d.handovers.forIncident(i.id)]);
+  return { ...toIncident(i, events), crew, handover: handover ? toSummary(handover) : null };
 }
 
 interface RaiseInput {

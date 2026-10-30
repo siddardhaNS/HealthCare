@@ -9,6 +9,7 @@ import {
   DeskSites,
   ErrorBody,
   Fleet,
+  HandoverRedirect,
   TestSosCreate,
   type ErrorBody as ErrorBodyT,
 } from '@repo/contracts';
@@ -16,7 +17,22 @@ import type { Context } from 'hono';
 import type { AppEnv } from '../../app';
 import { requireAuth, requireStaff } from '../../middleware/auth';
 import type { DeskIncidentRow } from './desk-repo';
-import { deskCancel, deskClose, deskDetail, deskHandOver, deskOffer, deskReadRoles, deskReassign, deskView, loadForStaff, staffOf, testSos, type DeskDeps, type Staff } from './desk';
+import {
+  deskCancel,
+  deskClose,
+  deskDetail,
+  deskHandOver,
+  deskOffer,
+  deskRedirectHospital,
+  deskReadRoles,
+  deskReassign,
+  deskView,
+  loadForStaff,
+  staffOf,
+  testSos,
+  type DeskDeps,
+  type Staff,
+} from './desk';
 import { isSosFailure, type SosFailure } from './transition';
 import type { IncidentRow } from './repo';
 
@@ -52,6 +68,12 @@ const r = {
   offer: action('offers', 'deskOfferSos', 'Manual dispatch: offer the job to a chosen free crew', DeskOfferCreate),
   handOver: action('hand-over', 'deskHandOverSos', 'Mark handed over at the hospital when the crew cannot', DeskReason),
   close: action('close', 'deskCloseSos', 'Close (after hand-over; otherwise with a reason)', DeskClose),
+  hospital: action(
+    'hospital',
+    'deskRedirectHospital',
+    'Choose or change the receiving hospital, with a reason (a new handover link is issued)',
+    HandoverRedirect,
+  ),
   test: createRoute({
     method: 'post',
     path: '/desk/sos/test',
@@ -107,4 +129,8 @@ export const deskRoutes = new OpenAPIHono<AppEnv>()
   })
   .openapi(r.offer, (c) => act(c, c.req.valid('param').id, (s, row) => deskOffer(deps(c), s, row, c.req.valid('json').crewId)))
   .openapi(r.handOver, (c) => act(c, c.req.valid('param').id, (s, row) => deskHandOver(deps(c), s, row, c.req.valid('json').reason)))
-  .openapi(r.close, (c) => act(c, c.req.valid('param').id, (s, row) => deskClose(deps(c), s, row, c.req.valid('json').reason ?? null)));
+  .openapi(r.close, (c) => act(c, c.req.valid('param').id, (s, row) => deskClose(deps(c), s, row, c.req.valid('json').reason ?? null)))
+  .openapi(r.hospital, (c) => {
+    const { hospitalId, reason } = c.req.valid('json');
+    return act(c, c.req.valid('param').id, (s, row) => deskRedirectHospital(deps(c), s, row, hospitalId, reason));
+  });

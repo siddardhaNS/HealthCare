@@ -9,6 +9,7 @@ import type { Kv } from '../../lib/kv';
 import type { DispatchRepo } from '../dispatch/repo';
 import { acceptLockKey } from '../dispatch/service';
 import type { HouseholdsRepo } from '../households/repo';
+import { hospitalsNear, redirectHandover, toSummary, type HandoverDeps } from '../handover/service';
 import type { DeskIncidentRow, DeskRepo } from './desk-repo';
 import type { EscalationRunner } from './escalation-service';
 import type { IncidentRow, SosRepo } from './repo';
@@ -36,7 +37,7 @@ export function staffOf(auth: { userId: string; roles: AppRole[] }, deskSites: (
 
 const sees = (staff: Staff, siteId: string | null) => staff.sites === 'all' || (!!siteId && staff.sites.includes(siteId));
 
-export interface DeskDeps {
+export interface DeskDeps extends HandoverDeps {
   sos: SosRepo;
   desk: DeskRepo;
   dispatch: DispatchRepo;
@@ -70,10 +71,25 @@ export async function deskView(d: DeskDeps, row: DeskIncidentRow): Promise<DeskI
 }
 
 export async function deskDetail(d: DeskDeps, row: DeskIncidentRow): Promise<DeskIncidentDetail> {
-  const [view, offers] = await Promise.all([deskView(d, row), d.desk.offers(row.id)]);
+  const [view, offers, handover, hospitals] = await Promise.all([
+    deskView(d, row),
+    d.desk.offers(row.id),
+    d.handovers.forIncident(row.id),
+    // For choosing or changing the hospital while a crew has the job.
+    crewActiveStates.includes(row.state) && !row.isDrill ? hospitalsNear(d, row) : [],
+  ]);
   return {
     ...view,
-    offers: offers.map((o) => ({ crewId: o.crewId, crewName: o.crewName, registration: o.registration, ring: o.ring, offeredAt: o.createdAt.toISOString(), response: o.response })),
+    handover: handover ? toSummary(handover) : null,
+    hospitalsNearby: hospitals,
+    offers: offers.map((o) => ({
+      crewId: o.crewId,
+      crewName: o.crewName,
+      registration: o.registration,
+      ring: o.ring,
+      offeredAt: o.createdAt.toISOString(),
+      response: o.response,
+    })),
   };
 }
 
@@ -154,4 +170,11 @@ export async function testSos(d: DeskDeps, staff: Staff, siteId: string): Promis
   const result = await raise(d, asDesk(staff), staff.id, { idempotencyKey: randomUUID(), ...(centre ? { location: centre } : {}) }, { isDrill: true, siteId });
   if (result.created) await startEscalation(d, result.incident.id);
   return result;
+}
+
+/** Choose or change the receiving hospital, with a reason (e.g. none had capacity on accept, or the ER is full). */
+export async function deskRedirectHospital(d: DeskDeps, staff: Staff, row: IncidentRow, hospitalId: string, reason: string): Promise<IncidentRow | SosFailure> {
+  if (!staff.canAct) return forbidden();
+  const done = await redirectHandover(d, row, hospitalId, reason, { id: staff.id, role: 'desk' });
+  return isSosFailure(done) ? done : row;
 }

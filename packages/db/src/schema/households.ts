@@ -84,7 +84,10 @@ export const profiles = pgTable('profiles', {
   userId: uuid('user_id').primaryKey(),
   ...ts,
   fullName: text('full_name').notNull(),
-  language: text('language', { enum: ['en', 'te', 'hi'] }).notNull().default('en'),
+  language: text('language', { enum: ['en', 'te', 'hi'] })
+    .notNull()
+    .default('en'),
+  preferredHospitalId: uuid('preferred_hospital_id'),
 });
 
 export const householdInvites = pgTable('household_invites', {

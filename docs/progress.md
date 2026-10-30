@@ -1,5 +1,75 @@
 # Progress
 
+## 2026-10-30 · Phase 3, step 6c: hospital handover and partner portal
+
+Design written up as plan §10 (within the approved ⚑4; no new kind of health data).
+
+### Done
+
+- **Migration `…_handover.sql`:**
+  - `profiles.preferred_hospital_id`
+  - `hospitals.address` and `city`
+  - `hospital_handovers`: `chosen_by`, `choice_reason`, `preferred`, `updated_at`, and a hospital index
+- **Choice on accept (⚑4):**
+  - the nearest active hospital with capacity
+  - the person's preferred hospital wins if it is at most 10 min further
+  - drills never get a handover
+  - a job taken again after a reassign keeps its hospital
+  - no hospital with capacity: no handover, and a `no_hospital` desk alarm
+  - a failure never fails the crew's accept
+- **Items** come from consent: everything with `emergency_share`, else blood group only. The name always goes; age and sex go only with the clinical items. Contents are read live at view time, plus the crew's first-aid notes (encrypted).
+- **Signed link:**
+  - 32 random bytes; only the SHA-256 is stored
+  - valid 6 h, and dead once the SOS is cancelled or the hospital changes
+  - `GET /v1/handover-links/{token}`: no sign-in, rate limited per client, `no-store`; every view is a `record_shares` row (`hospital_link`)
+  - the console page `/handover/{token}` is public in the proxy and sets `referrer: no-referrer`
+- **Changing the hospital:**
+  - by the assigned crew (`PUT /v1/sos/{id}/hospital`, list at `/v1/sos/{id}/hospitals`) or the desk (`POST /v1/desk/sos/{id}/hospital`)
+  - a reason is required
+  - a new link is issued and the confirmation is cleared
+  - audited with the from and to hospitals
+- **Crew:** `POST /v1/sos/{id}/first-aid-notes`
+- **Partner portal** (role `hospital`, aal2, scoped by `user_roles` partner → hospital):
+  - **Incoming patients**: arrival ETA, refreshes every 15 s
+  - the record, logged in `record_shares` on every open
+  - **Confirm patient received**: once, audited
+  - **ER accepting / full** switch
+  - hospital users land there instead of the command center
+- **Command center:**
+  - the handover box shows the hospital, how it was chosen and why, item names only (no contents), receipt, link expiry and **Call ER**
+  - **Choose / Change hospital** action
+  - `no_hospital` alarm
+- **Hospitals page** (super admin, operations): add a hospital, ER full / accepting, deactivate / activate.
+- **Other views:** the resident's SOS view and the crew's job include the handover summary. Resident preferred hospital: `GET/PUT /v1/people/{userId}/preferred-hospital` (the app screen comes with the Android work).
+- **`staff:create --scope partner:<hospitalId>|site:<siteId>`** to link hospital and desk staff.
+- Strings in en/te/hi (te/hi machine-written).
+- Tests: API 231 (21 new: choice rules, record filtering, consent off, preferred hospital, no capacity, drills, partner scoping and aal2, confirm once, link expiry / cancel / redirect / rate limit, admin roles). The repo's lint, typecheck and tests (37 tasks) and `pnpm check` pass.
+
+### Verified in Chrome (local stack, real Postgres)
+
+- The migration applied to the local database.
+- A simulated SOS (resident with consent and records): the crew accepted and the handover opened automatically to Care Hospital.
+- The command center showed the hospital, the 7 shared items by name, "Not yet confirmed" and Call ER, with no medical contents.
+- The signed link showed the full record; one `hospital_link` row in `record_shares`. A random token returned 404.
+- The desk changed the hospital with a reason: City Hospital, "Changed by the desk". The old link then returned 404, and both audit rows were present.
+- New ER account (TOTP enrolled):
+  - landed on Incoming patients with "Arriving in about 12 min"
+  - opened the record (logged)
+  - Confirm worked: "Received at 18:52"
+  - ER full and accepting were both audited
+- New super admin: added a hospital, then deactivated it. No console errors.
+- Local test data: hospitals Care Hospital Gachibowli / City Hospital Kondapur (Apollo inactive). Staff `er.care@example.test` (now linked to City Hospital) and `admin.cc@example.test`. `resident-sim` has a profile, records and `emergency_share`.
+
+### Not done yet / follow-ups
+
+- **Sending the link to the ER's WhatsApp** needs the notifications module and a utility template. Until then hospitals use the portal. Local development prints the URL in the API log.
+- **Field app** screens (hospital choice, first-aid notes, patient summary) and the resident's preferred-hospital picker come with the Android work. `GET /v1/sos/{id}/patient` for the crew is still to build.
+- Every server render of the portal record page writes a `record_shares` row (opening, then the refresh after Confirm). This is accurate, but a little noisy.
+
+### Next
+
+- Step 7: load test, failure-path e2e, signed-in Playwright for the console (needs a CI staff account with a known TOTP secret), then device tests.
+
 ## 2026-10-30 · Phase 3, step 6b: SOS thresholds and coverage teams
 
 Decision recorded: **reassign restarts the full dispatch sequence** (confirmed by you).

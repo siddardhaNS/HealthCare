@@ -48,6 +48,8 @@ export const hospitals = pgTable('hospitals', {
   name: text('name').notNull(),
   location: geography('location').notNull(),
   erPhone: text('er_phone').notNull(),
+  address: text('address'),
+  city: text('city'),
   hasCapacity: boolean('has_capacity').notNull().default(true),
   capacityUpdatedAt: timestamp('capacity_updated_at', { withTimezone: true }),
   active: boolean('active').notNull().default(true),
@@ -129,6 +131,12 @@ export const hospitalHandovers = pgTable('hospital_handovers', {
   firstAidNotesEnc: text('first_aid_notes_enc'),
   confirmedAt: timestamp('confirmed_at', { withTimezone: true }),
   confirmedBy: uuid('confirmed_by'),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  chosenBy: text('chosen_by', { enum: ['auto', 'crew', 'desk'] })
+    .notNull()
+    .default('auto'),
+  choiceReason: text('choice_reason'),
+  preferred: boolean('preferred').notNull().default(false),
 });
 
 /** Mirror of supabase/migrations/*_coverage.sql (plan §9). */

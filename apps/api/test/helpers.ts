@@ -15,6 +15,7 @@ import { fakeEscalation, fakeSos, recordingAlerts } from './fake-sos';
 import { fakeDispatch } from './fake-dispatch';
 import { fakeDesk } from './fake-desk';
 import { fakeCoverage, fakeSosSettings } from './fake-coverage';
+import { fakeHandovers, recordingNotifier } from './fake-handover';
 import { memoryCrewLocator } from '../src/lib/crew-locator';
 import { recordingRealtime } from '../src/lib/realtime';
 import { publishingSosRepo } from '../src/modules/sos/live';
@@ -107,6 +108,8 @@ export async function testContext(opts: { whatsappFails?: boolean; mailerFails?:
   const desk = fakeDesk(sos, dispatch, hh);
   const coverage = fakeCoverage(dispatch, hh);
   const sosSettings = fakeSosSettings(hh, sos);
+  const handovers = fakeHandovers(() => sos.incidents);
+  const links = recordingNotifier();
   const locator = memoryCrewLocator();
   const live = recordingRealtime();
   const residentViews: { staffId: string; role: string; residentId: string }[] = [];
@@ -162,6 +165,8 @@ export async function testContext(opts: { whatsappFails?: boolean; mailerFails?:
     desk: desk.repo,
     sosSettings: sosSettings.repo,
     coverage: coverage.repo,
+    handovers: handovers.repo,
+    handoverNotifier: links.notifier,
     sosAlerts: alerts.alerts,
     escalation: escalation.runner,
     dispatch: dispatch.repo,
@@ -234,7 +239,35 @@ export async function testContext(opts: { whatsappFails?: boolean; mailerFails?:
     return app.request('/webhooks/whatsapp', { method: 'POST', headers: { 'content-type': 'application/json', 'x-hub-signature-256': sig }, body: raw });
   }
 
-  return { app, deps, kv, ...store, leads: leads.rows, consentRows, hh, health, sos, desk, coverage, sosSettings, escalation, alerts, dispatch, locator, published: live.sent, residentViews, deskScopes, mail, whatsappSent, smsSent, token, sendSmsHook, whatsappWebhook };
+  return {
+    app,
+    deps,
+    kv,
+    ...store,
+    leads: leads.rows,
+    consentRows,
+    hh,
+    health,
+    sos,
+    desk,
+    coverage,
+    sosSettings,
+    handovers,
+    links: links.sent,
+    escalation,
+    alerts,
+    dispatch,
+    locator,
+    published: live.sent,
+    residentViews,
+    deskScopes,
+    mail,
+    whatsappSent,
+    smsSent,
+    token,
+    sendSmsHook,
+    whatsappWebhook,
+  };
 }
 
 export const statusEvent = (id: string, status: string, code?: number) => ({

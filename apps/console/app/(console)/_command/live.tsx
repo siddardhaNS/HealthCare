@@ -14,7 +14,7 @@ export interface LiveLabels {
   soundOff: string;
   dismiss: string;
   /** With {{ref}} still in them; filled in here. */
-  alarm: { raised: string; no_accept: string; prompt_108: string };
+  alarm: { raised: string; no_accept: string; prompt_108: string; no_hospital: string };
 }
 
 /** Refreshes at most this often when pushes arrive (positions come every few seconds). */
@@ -87,14 +87,12 @@ export function LiveBoard({ topics, labels }: { topics: string[]; labels: LiveLa
 
     const supabase = createClient();
     const channels = topics.map((topic) =>
-      supabase
-        .channel(topic, { config: { private: true } })
-        .on('broadcast', { event: '*' }, ({ event, payload }: { event: string; payload: unknown }) => {
-          const p = payload as { incidentId?: string; state?: string; why?: string };
-          if (event === 'alarm' && p.incidentId && (p.why === 'no_accept' || p.why === 'prompt_108')) alarm(p.why, p.incidentId);
-          if (event === 'state' && p.state === 'raised' && p.incidentId) alarm('raised', p.incidentId);
-          refresh();
-        }),
+      supabase.channel(topic, { config: { private: true } }).on('broadcast', { event: '*' }, ({ event, payload }: { event: string; payload: unknown }) => {
+        const p = payload as { incidentId?: string; state?: string; why?: string };
+        if (event === 'alarm' && p.incidentId && (p.why === 'no_accept' || p.why === 'prompt_108' || p.why === 'no_hospital')) alarm(p.why, p.incidentId);
+        if (event === 'state' && p.state === 'raised' && p.incidentId) alarm('raised', p.incidentId);
+        refresh();
+      }),
     );
     let cancelled = false;
     void supabase.realtime.setAuth().then(() => {
