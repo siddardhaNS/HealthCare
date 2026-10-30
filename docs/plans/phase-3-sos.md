@@ -214,7 +214,17 @@ Your answers: remove 108 completely; on no response, alert and offer the backup 
 - No `escalated_to_108` step, no "108 prompted" alarm, and no 108 threshold. The thresholds page keeps one value: "Next crew after (s)".
 - Existing history keeps the old state for past incidents; new incidents never enter it.
 - The resident and console screens drop every "Call 108" button.
-- ⚑ **One safety question:** the resident app's **no-network fallback** today shows "Call community desk" and "Call 108" when the SOS can't reach our servers. I recommend keeping a **"Call our control room"** number button there (our 24×7 desk line), so a resident with no data still reaches a person. Remove 108 there too? (My recommendation: yes, replaced by the control-room number. I need that number when you have it.)
+- **No-network fallback (decided):** the resident app shows **"Call community desk"** with a number set in the admin console (see below), instead of 108.
+
+**Community desk number (decided 2026-10-30)**
+- One number, set by the super admin in the console (Settings → "Community desk number"), audited. It starts as a placeholder (empty: the button is hidden and the console shows a warning until set).
+- Every resident app reads it from a public config endpoint and **keeps the last value on the phone**, so it still works when the app can't reach our servers. A change reaches phones the next time they are online.
+
+**Hospital chosen by the crew (decided 2026-10-30, replaces the automatic choice in §10)**
+- After accepting, the crew sees the **empanelled hospitals sorted by distance from the patient's location** (the resident's phone location, else their home or community), with ETA, ER full / accepting, and the resident's preferred hospital marked.
+- The crew picks one. The handover (consented record, signed link, partner portal) opens **when the crew picks**, not automatically on accept. The crew can change it with a reason, as today.
+- Until the crew has picked, the command center shows "Hospital not chosen yet"; the desk can also pick, with a reason.
+- ⚑ To confirm: no automatic hospital at all (my reading of your message), rather than a pre-selected suggestion the crew changes.
 
 **Tests:** sequence timing (primary → backup 1 → backup 2 → nearest crews), alarms at each step, ordered-list rules (no duplicates, removal and reorder), late accept by an earlier team, and the load test re-run.
 
