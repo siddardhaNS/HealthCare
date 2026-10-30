@@ -4,7 +4,10 @@ dist/
 .turbo/
 .vercel/
 .expo/
-coverage/
+# Test coverage reports (package roots only: source folders may be called coverage).
+/coverage/
+apps/*/coverage/
+packages/*/coverage/
 *.tsbuildinfo
 next-env.d.ts
 
