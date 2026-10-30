@@ -189,3 +189,33 @@ How the approved handover (§3.7, ⚑4) is built. No new kind of health data: th
 - **Command center**: the handover record (hospital, ER phone, items shared by name only, link expiry, confirmed at). No contents: the desk sees no medical detail.
 - **Resident**: the SOS screen shows the hospital and what was shared.
 - **Hospitals page** (super admin, operations): add, edit, capacity, deactivate.
+
+---
+
+## 11. Change of plan: no 108; primary + ordered backup crews (requested 2026-10-30, ⚑ awaiting approval)
+
+Your answers: remove 108 completely; on no response, alert and offer the backup automatically; an **ordered list of backups** per place; timeout per community, default 30 s.
+
+**Coverage (Coverage pages, super admin / operations, audited)**
+- Each community, building or stand-alone home has a **primary team** and an **ordered list of backup teams** (backup 1, backup 2, …). The same team cannot appear twice for one place; a team can be primary for some places and a backup for others.
+- Homes inside a community follow the community's list (as today).
+- The **Assign places** page gets "Set as primary" / "Add as backup"; the place shows "Primary: ABC · Backups: 1. XYZ, 2. PQR", reorderable.
+
+**Dispatch sequence (replaces widen / 108)**
+1. **0 s:** offer the primary team's on-duty crews, topped up with the nearest free crews to 3 (as ⚑9 today). The desk gets the "New SOS" alarm.
+2. **Every timeout (per community, default 30 s, 15–60 s on the thresholds page) with no accept:**
+   - alarm the command center **and admins** ("SOS-xxxx: ABC team did not respond, offered to XYZ"), with sound
+   - offer the next backup team in order
+   - earlier offers stay open: whoever accepts first gets the job
+3. **After the last backup:** keep offering the next nearest free crews every timeout, until someone accepts or the desk acts. The desk alarm repeats each time (rather than stopping as after ring 2 today). This also covers the gap the load test found.
+4. **Reassign:** restarts this sequence. The desk can always offer any crew by hand.
+
+**108 removed**
+- No `escalated_to_108` step, no "108 prompted" alarm, and no 108 threshold. The thresholds page keeps one value: "Next crew after (s)".
+- Existing history keeps the old state for past incidents; new incidents never enter it.
+- The resident and console screens drop every "Call 108" button.
+- ⚑ **One safety question:** the resident app's **no-network fallback** today shows "Call community desk" and "Call 108" when the SOS can't reach our servers. I recommend keeping a **"Call our control room"** number button there (our 24×7 desk line), so a resident with no data still reaches a person. Remove 108 there too? (My recommendation: yes, replaced by the control-room number. I need that number when you have it.)
+
+**Tests:** sequence timing (primary → backup 1 → backup 2 → nearest crews), alarms at each step, ordered-list rules (no duplicates, removal and reorder), late accept by an earlier team, and the load test re-run.
+
+**Order of work once approved:** migration (backup ranks on coverage assignments, thresholds simplified, 108 removed from the state machine for new incidents) → workflow → console (coverage lists, alarms, thresholds) → resident app strings and buttons → tests and load test.
