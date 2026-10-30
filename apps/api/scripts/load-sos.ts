@@ -88,7 +88,7 @@ async function call(tok: string, method: string, path: string, route: string, bo
     status = res.status;
     json = res.status === 204 ? null : await res.json().catch(() => null);
   } catch {
-    status = 0;
+    // Network failure: counted as status 0.
   }
   const ms = performance.now() - started;
   timings.set(route, [...(timings.get(route) ?? []), ms]);
