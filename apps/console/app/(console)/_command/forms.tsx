@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useRef } from 'react';
 import { Button, buttonVariants, cn } from '@repo/ui-web';
+import { submitter } from '../_coverage/action-form';
 import type { ActionState } from './actions';
 
 type Action = (prev: ActionState, form: FormData) => Promise<ActionState>;
@@ -31,8 +32,10 @@ export function DeskAction(props: {
 }) {
   const [state, run, pending] = useActionState(props.action, { error: null, done: 0 });
   const box = useRef<HTMLDetailsElement>(null);
+  const form = useRef<HTMLFormElement>(null);
   useEffect(() => {
     if (state.done > 0 && box.current) box.current.open = false;
+    if (state.done > 0) form.current?.reset();
   }, [state.done]);
   const noCrews = !!props.crews && props.crews.options.length === 0 && !props.crews.none;
 
@@ -41,7 +44,7 @@ export function DeskAction(props: {
       <summary data-testid={props.testId} className={cn(buttonVariants({ variant: props.variant ?? 'outline' }), 'w-full cursor-pointer list-none [&::-webkit-details-marker]:hidden')}>
         {props.label}
       </summary>
-      <form action={run} className="mt-2 flex flex-col gap-3 rounded-control border border-border bg-surface-raised p-3">
+      <form ref={form} onSubmit={submitter(run)} className="mt-2 flex flex-col gap-3 rounded-control border border-border bg-surface-raised p-3">
         <p className="text-small text-text-muted">{props.hint}</p>
         {props.crews ? (
           noCrews ? (
@@ -82,7 +85,7 @@ export function DeskAction(props: {
 export function TestSosForm(props: { action: Action; sites: { id: string; name: string; city: string }[]; label: string; siteLabel: string; saving: string }) {
   const [state, run, pending] = useActionState(props.action, { error: null, done: 0 });
   return (
-    <form action={run} className="flex flex-wrap items-end gap-3">
+    <form onSubmit={submitter(run)} className="flex flex-wrap items-end gap-3">
       {props.sites.length > 1 ? (
         <label className="flex min-w-56 flex-1 flex-col gap-1 text-small font-semibold">
           {props.siteLabel}

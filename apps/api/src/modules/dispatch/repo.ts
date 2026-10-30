@@ -132,7 +132,8 @@ export function drizzleDispatchRepo(db: Db): DispatchRepo {
         .select({ teamId: coverageAssignments.teamId })
         .from(households)
         .leftJoin(homes, eq(homes.id, households.homeId))
-        .innerJoin(coverageAssignments, sql`${coverageAssignments.siteId} = ${homes.siteId} or ${coverageAssignments.householdId} = ${households.id}`)
+        // A household in a community follows the community's team (plan §9), even if it once had its own.
+        .innerJoin(coverageAssignments, sql`case when ${homes.siteId} is not null then ${coverageAssignments.siteId} = ${homes.siteId} else ${coverageAssignments.householdId} = ${households.id} end`)
         .innerJoin(coverageTeams, and(eq(coverageTeams.id, coverageAssignments.teamId), eq(coverageTeams.active, true)))
         .where(eq(households.id, householdId));
       return r?.teamId ?? null;

@@ -48,6 +48,9 @@ export default async function ResidentsPage({ searchParams }: { searchParams: Pr
                   {t('console.residents.home')}
                 </th>
                 <th scope="col" className="px-4 py-3 font-semibold">
+                  {t('console.residents.coveredBy')}
+                </th>
+                <th scope="col" className="px-4 py-3 font-semibold">
                   {t('auth.phoneLabel')}
                 </th>
               </tr>
@@ -65,6 +68,7 @@ export default async function ResidentsPage({ searchParams }: { searchParams: Pr
                     {r.community ? [r.community, [r.tower, r.number].filter(Boolean).join('-')].join(' · ') : t('console.residents.standalone')}
                     {r.city ? <div className="text-caption text-text-muted">{r.city}</div> : null}
                   </td>
+                  <td className="px-4 py-3">{r.coverageTeam ?? <span className="text-text-muted">{t('console.coverage.noTeam')}</span>}</td>
                   <td className="px-4 py-3 font-mono">{r.phone ?? '—'}</td>
                 </tr>
               ))}

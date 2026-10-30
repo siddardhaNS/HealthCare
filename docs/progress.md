@@ -1,5 +1,48 @@
 # Progress
 
+## 2026-10-30 · Phase 3, step 6b: SOS thresholds and coverage teams
+
+Decision recorded: **reassign restarts the full dispatch sequence** (confirmed by you).
+
+### Done
+- **Thresholds (⚑2):**
+  - `GET /v1/sos-settings` for everyone who runs the command center (the community desk: its own community only)
+  - `PUT /v1/sos-settings/{siteId}` for super admin only: widen 15–60 s, 108 at 60–180 s and after widening; audited with the before and after values
+  - incidents copy the values when raised, so a change applies to the next SOS
+- **Coverage teams (§9):** `/v1/coverage/*`, super admin and operations only, every change audited.
+  - Teams: list (crews with duty, ambulance, what each team covers), create, rename, area label, deactivate / reactivate.
+  - Crew members and ambulances: moved in and out of teams; moving one into a team takes it out of its old one.
+  - Places: listed with a "not covered" filter and search; assigned or unassigned in bulk. A place covered by another team moves.
+  - Refused:
+    - homes inside a community (they follow the community's team)
+    - inactive teams
+    - places that no longer exist
+- **Rule hardened:** a household in a community always follows the community's team, in both dispatch and the directory, even if it once had its own assignment.
+- **Console:**
+  - **SOS thresholds** page (read-only for non-super-admins)
+  - **Coverage teams** page and **Assign places** page (checkboxes, select all, one "assign selected to" action)
+  - "Covered by" column in the residents directory
+  - nav links by role
+  - strings in en/te/hi
+- **Console forms keep what was typed when the API refuses it.** React 19 resets a form after every `action`, so the error showed next to the old values. Forms now submit by hand and clear only after success; the command-center action forms got the same fix.
+- **Bug fixed:** Drizzle leaves select-list columns unqualified in single-table queries, so correlated subqueries bound to the inner table. This gave wrong team household counts and a wrong home-centre fallback for test SOS (`siteCentre`). The outer tables are now named in plain SQL.
+- Tests: API 210 (14 new: thresholds scope, bounds, audit, applied to the next SOS; team, crew and ambulance moves; bulk assign, move, unassign; refusals; directory; dispatch follows assignments).
+
+### Verified in Chrome (local stack)
+- Super admin:
+  - invalid thresholds showed the API's message with the typed values kept
+  - 20 s / 75 s saved and marked "Changed"; the audit row was correct
+- Coverage:
+  - created "ABC team · Gachibowli" and added a crew member and an ambulance
+  - assigned Green Meadows; the "not covered" filter dropped it
+  - the directory shows "ABC team" for Lakshmi
+- A real SOS from Green Meadows used 20 s / 75 s, and its first offers included the ABC team crew (`team_offers: 1`), topped up with the nearest crews.
+- Dev note: `simulate:crews` clears crews' team membership when it starts (it rebuilds "Simulated team"), so put crews in teams after starting it.
+
+### Next
+- 6c: hospital handover (⚑4 hospital choice, consent-filtered items, signed expiring link) + partner portal confirm.
+- Open from 6a: signed-in Playwright for the console (needs a CI staff account with a known TOTP secret); the Expo dependency check that keeps CI red (react-native 0.88.1 and Expo patches need a native rebuild and an emulator run).
+
 ## 2026-10-30 · Phase 3, step 6a: console command center
 
 Step 6 is split: **6a** command center (this entry), **6b** per-site thresholds + coverage-teams pages, **6c** hospital handover + partner confirm.

@@ -167,10 +167,10 @@ export function drizzleDeskRepo(db: Db): DeskRepo {
         .select({
           lat: sql<number | null>`coalesce(
             extensions.st_y(extensions.st_centroid(${sites.boundary}::extensions.geometry)),
-            (select avg(extensions.st_y(h.location::extensions.geometry)) from ${homes} h where h.site_id = ${sites.id}))`,
+            (select avg(extensions.st_y(h.location::extensions.geometry)) from ${homes} h where h.site_id = sites.id))`,
           lng: sql<number | null>`coalesce(
             extensions.st_x(extensions.st_centroid(${sites.boundary}::extensions.geometry)),
-            (select avg(extensions.st_x(h.location::extensions.geometry)) from ${homes} h where h.site_id = ${sites.id}))`,
+            (select avg(extensions.st_x(h.location::extensions.geometry)) from ${homes} h where h.site_id = sites.id))`,
         })
         .from(sites)
         .where(eq(sites.id, siteId));

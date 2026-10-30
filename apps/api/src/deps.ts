@@ -15,6 +15,8 @@ import { drizzleLeadsRepo, type LeadsRepo } from './modules/leads/repo';
 import { drizzleResidentsRepo, type ResidentsRepo } from './modules/residents/repo';
 import { drizzleSosRepo, type SosRepo } from './modules/sos/repo';
 import { drizzleDeskRepo, type DeskRepo } from './modules/sos/desk-repo';
+import { drizzleSosSettingsRepo, type SosSettingsRepo } from './modules/sos/settings-repo';
+import { drizzleCoverageRepo, type CoverageRepo } from './modules/coverage/repo';
 import { publishingSosRepo } from './modules/sos/live';
 import type { EscalationRunner, SosAlerts } from './modules/sos/escalation-service';
 import { workflowEscalation } from './modules/sos/escalation-runner';
@@ -78,6 +80,8 @@ export interface Deps {
   health: HealthRepo;
   sos: SosRepo;
   desk: DeskRepo;
+  sosSettings: SosSettingsRepo;
+  coverage: CoverageRepo;
   sosAlerts: SosAlerts;
   escalation: EscalationRunner;
   dispatch: DispatchRepo;
@@ -122,6 +126,8 @@ export function depsFromEnv(source: Record<string, string | undefined> = process
     health: drizzleHealthRepo(db),
     sos,
     desk: drizzleDeskRepo(db),
+    sosSettings: drizzleSosSettingsRepo(db),
+    coverage: drizzleCoverageRepo(db),
     sosAlerts: dispatchAlerts({ dispatch, locator, sos, realtime }),
     escalation: workflowEscalation(),
     dispatch,

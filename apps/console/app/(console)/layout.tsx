@@ -30,6 +30,16 @@ export default async function ConsoleLayout({ children }: { children: ReactNode 
             </Link>
           ) : null}
           {claims.roles.some((r) => r === 'super_admin' || r === 'operations') ? (
+            <Link href="/coverage" className="rounded-control px-3 py-2 font-semibold text-text-muted hover:bg-surface hover:text-text">
+              {t('console.coverage.title')}
+            </Link>
+          ) : null}
+          {claims.roles.some((r) => r === 'super_admin' || r === 'operations' || r === 'support' || r === 'community_desk') ? (
+            <Link href="/sos-settings" className="rounded-control px-3 py-2 font-semibold text-text-muted hover:bg-surface hover:text-text">
+              {t('console.thresholds.title')}
+            </Link>
+          ) : null}
+          {claims.roles.some((r) => r === 'super_admin' || r === 'operations') ? (
             <Link href="/leads" className="rounded-control px-3 py-2 font-semibold text-text-muted hover:bg-surface hover:text-text">
               {t('console.leads.title')}
             </Link>

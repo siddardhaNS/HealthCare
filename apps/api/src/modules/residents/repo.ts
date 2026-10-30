@@ -1,4 +1,4 @@
-import { and, auditEvents, authUsers, eq, householdMembers, households, homes, ilike, inArray, or, profiles, sites, sql, userRoles, type Db } from '@repo/db';
+import { and, auditEvents, authUsers, coverageAssignments, coverageTeams, eq, householdMembers, households, homes, ilike, inArray, or, profiles, sites, sql, userRoles, type Db } from '@repo/db';
 
 export interface ResidentRecord {
   userId: string;
@@ -11,6 +11,7 @@ export interface ResidentRecord {
   phone: string | null;
   role: 'owner' | 'member';
   householdId: string;
+  coverageTeam: string | null;
 }
 
 export interface ResidentsRepo {
@@ -37,13 +38,17 @@ export function drizzleResidentsRepo(db: Db): ResidentsRepo {
         phone: authUsers.phone,
         role: householdMembers.role,
         householdId: householdMembers.householdId,
+        coverageTeam: coverageTeams.name,
       })
       .from(householdMembers)
       .innerJoin(households, eq(households.id, householdMembers.householdId))
       .leftJoin(homes, eq(homes.id, households.homeId))
       .leftJoin(sites, eq(sites.id, homes.siteId))
       .leftJoin(profiles, eq(profiles.userId, householdMembers.userId))
-      .leftJoin(authUsers, eq(authUsers.id, householdMembers.userId));
+      .leftJoin(authUsers, eq(authUsers.id, householdMembers.userId))
+      // Households in a community follow its team; only stand-alone homes are assigned themselves.
+      .leftJoin(coverageAssignments, sql`case when ${sites.id} is not null then ${coverageAssignments.siteId} = ${sites.id} else ${coverageAssignments.householdId} = ${households.id} end`)
+      .leftJoin(coverageTeams, and(eq(coverageTeams.id, coverageAssignments.teamId), eq(coverageTeams.active, true)));
 
   return {
     async deskSites(staffId) {

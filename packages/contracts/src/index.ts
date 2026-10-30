@@ -275,6 +275,8 @@ export const ResidentRow = z
     /** Always masked: staff never see residents' personal numbers. */
     phone: z.string().nullable(),
     role: z.enum(['owner', 'member']),
+    /** The coverage team whose ambulances are offered this household's SOS first (plan §9). */
+    coverageTeam: z.string().nullable(),
   })
   .openapi('ResidentRow');
 export type ResidentRow = z.infer<typeof ResidentRow>;
@@ -606,3 +608,78 @@ export const DeskReassign = z
   .openapi('DeskReassign');
 export const DeskOfferCreate = z.object({ crewId: z.string().uuid() }).openapi('DeskOfferCreate');
 export const TestSosCreate = z.object({ siteId: z.string().uuid() }).openapi('TestSosCreate');
+
+// ── SOS thresholds and coverage teams (console) ─────────────────────────
+import { sosThresholds as _thresholds } from './sos';
+
+/** A community's escalation thresholds (plan ⚑2). `custom` false: the defaults apply. */
+export const SiteSosSettings = z
+  .object({ siteId: z.string().uuid(), name: z.string(), city: z.string(), widenAfterS: z.number().int(), escalateAfterS: z.number().int(), custom: z.boolean(), updatedAt: z.string().datetime().nullable() })
+  .openapi('SiteSosSettings');
+export const SiteSosSettingsList = z
+  .object({ sites: z.array(SiteSosSettings), canEdit: z.boolean(), defaults: z.object({ widenAfterS: z.number().int(), escalateAfterS: z.number().int() }) })
+  .openapi('SiteSosSettingsList');
+export type SiteSosSettingsList = z.infer<typeof SiteSosSettingsList>;
+export const SiteSosSettingsUpdate = z
+  .object({
+    widenAfterS: z.number().int().min(_thresholds.widenMin).max(_thresholds.widenMax),
+    escalateAfterS: z.number().int().min(_thresholds.escalateMin).max(_thresholds.escalateMax),
+  })
+  .refine((v) => v.escalateAfterS > v.widenAfterS, { message: 'The 108 prompt must come after widening.', path: ['escalateAfterS'] })
+  .openapi('SiteSosSettingsUpdate');
+
+export const CoverageTeam = z
+  .object({
+    id: z.string().uuid(),
+    name: z.string(),
+    area: z.string().nullable(),
+    active: z.boolean(),
+    crews: z.array(z.object({ crewId: z.string().uuid(), name: z.string().nullable(), onDuty: z.boolean() })),
+    ambulances: z.array(z.object({ id: z.string().uuid(), registration: z.string() })),
+    /** Communities and buildings, and stand-alone homes, assigned to this team. */
+    sites: z.number().int(),
+    homes: z.number().int(),
+    /** Households covered: those in its communities plus its stand-alone homes. */
+    households: z.number().int(),
+  })
+  .openapi('CoverageTeam');
+export type CoverageTeam = z.infer<typeof CoverageTeam>;
+
+/** Everyone who can be put in a team: active crews and ambulances, with their current team. */
+export const CoverageRoster = z
+  .object({
+    crews: z.array(z.object({ crewId: z.string().uuid(), name: z.string().nullable(), teamId: z.string().uuid().nullable() })),
+    ambulances: z.array(z.object({ id: z.string().uuid(), registration: z.string(), teamId: z.string().uuid().nullable() })),
+  })
+  .openapi('CoverageRoster');
+
+export const CoverageTeams = z.object({ teams: z.array(CoverageTeam), roster: CoverageRoster }).openapi('CoverageTeams');
+export type CoverageTeams = z.infer<typeof CoverageTeams>;
+
+const teamName = z.string().trim().min(1).max(80);
+const teamArea = z.string().trim().max(80);
+export const CoverageTeamCreate = z.object({ name: teamName, area: teamArea.optional() }).openapi('CoverageTeamCreate');
+export const CoverageTeamUpdate = z.object({ name: teamName.optional(), area: teamArea.nullable().optional(), active: z.boolean().optional() }).openapi('CoverageTeamUpdate');
+/** Puts a crew member or an ambulance in a team (moving it from any other), or takes it out (null). */
+export const CoverageMember = z.object({ teamId: z.string().uuid().nullable() }).openapi('CoverageMember');
+
+/** A place a team can cover: a community or building (`site`), or a stand-alone home (`household`). */
+export const CoveragePlace = z
+  .object({
+    kind: z.enum(['site', 'household']),
+    id: z.string().uuid(),
+    name: z.string(),
+    city: z.string().nullable(),
+    households: z.number().int(),
+    teamId: z.string().uuid().nullable(),
+    teamName: z.string().nullable(),
+  })
+  .openapi('CoveragePlace');
+export type CoveragePlace = z.infer<typeof CoveragePlace>;
+export const CoveragePlaces = z.object({ places: z.array(CoveragePlace) }).openapi('CoveragePlaces');
+
+/** Assigns (or, with teamId null, unassigns) places in bulk. A place covered by another team moves. */
+export const CoverageAssign = z
+  .object({ teamId: z.string().uuid().nullable(), sites: z.array(z.string().uuid()).max(500).default([]), households: z.array(z.string().uuid()).max(500).default([]) })
+  .refine((v) => v.sites.length + v.households.length > 0, { message: 'Choose at least one place.' })
+  .openapi('CoverageAssign');

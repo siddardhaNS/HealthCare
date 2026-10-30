@@ -125,9 +125,16 @@ export function fakeHouseholds(consentRows: ConsentRow[]) {
         phone: '919876543210',
         role: m.role,
         householdId: m.householdId,
+        coverageTeam: coverageTeamOf ? coverageTeamOf(site?.id ?? null, h.id) : null,
       };
     });
   }
 
-  return { repo, addSite, invites, members, residents };
+  /** Set by the coverage fake: the active team covering a site or stand-alone household. */
+  let coverageTeamOf: ((siteId: string | null, householdId: string) => string | null) | null = null;
+  const linkCoverage = (fn: typeof coverageTeamOf) => {
+    coverageTeamOf = fn;
+  };
+
+  return { repo, addSite, invites, members, residents, sites, homes, households, profiles, linkCoverage };
 }

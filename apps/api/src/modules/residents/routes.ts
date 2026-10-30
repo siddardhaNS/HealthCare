@@ -24,6 +24,7 @@ const toRow = (r: ResidentRecord): ResidentRow => ({
   city: r.city,
   phone: r.phone ? maskPhone(r.phone.startsWith('+') ? r.phone : `+${r.phone}`) : null,
   role: r.role,
+  coverageTeam: r.coverageTeam,
 });
 
 const list = createRoute({

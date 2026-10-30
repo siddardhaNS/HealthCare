@@ -175,7 +175,8 @@
         "not_asked": "Not asked yet"
       },
       "outdated": "agreed to an older notice",
-      "viewLogged": "Your view of this profile is recorded."
+      "viewLogged": "Your view of this profile is recorded.",
+      "coveredBy": "Covered by"
     },
     "cc": {
       "subtitle": "Live emergencies and the ambulance fleet",
@@ -288,6 +289,69 @@
         "escalated_to_108": "108 prompted"
       },
       "scale": "{{km}} km"
+    },
+    "thresholds": {
+      "title": "SOS thresholds",
+      "intro": "How long each community waits before widening the search to more ambulances, and before prompting a 108 call. Changes apply to the next SOS, never one in progress, and are logged.",
+      "community": "Community",
+      "widen": "Widen search after (s)",
+      "escalate": "Prompt 108 after (s)",
+      "bounds": "Widen: {{wmin}}–{{wmax}} s. 108: {{emin}}–{{emax}} s, after widening.",
+      "defaults": "Default",
+      "custom": "Changed",
+      "save": "Save",
+      "saved": "Saved",
+      "readOnly": "Only a super admin can change thresholds.",
+      "empty": "No communities yet."
+    },
+    "coverage": {
+      "title": "Coverage teams",
+      "intro": "A team of crews and an ambulance covers communities, buildings and stand-alone homes. An SOS from a covered home rings that team first, topped up with the nearest other crews.",
+      "places": "Assign places",
+      "newTeam": "New team",
+      "name": "Team name",
+      "area": "Area label (optional)",
+      "create": "Create team",
+      "empty": "No teams yet. Create one, then add crews and assign places.",
+      "inactive": "Inactive",
+      "onDuty": "{{count}} on duty",
+      "covers": "Communities: {{sites}} · Stand-alone homes: {{homes}} · Households: {{households}}",
+      "crews": "Crew",
+      "noCrews": "No crew in this team yet.",
+      "ambulances": "Ambulance",
+      "noAmbulances": "No ambulance in this team yet.",
+      "remove": "Remove",
+      "removeA11y": "Remove {{name}} from {{team}}",
+      "addCrew": "Add crew member",
+      "addAmbulance": "Add ambulance",
+      "add": "Add",
+      "inTeam": "now in {{team}}",
+      "edit": "Edit",
+      "save": "Save",
+      "deactivate": "Deactivate",
+      "activate": "Reactivate",
+      "deactivateHint": "An inactive team is not offered SOS first; its places fall back to the nearest crews.",
+      "unnamed": "Crew member",
+      "placesTitle": "Assign places to teams",
+      "back": "All teams",
+      "search": "Search communities and homes",
+      "searchButton": "Search",
+      "onlyUncovered": "Only places without a team",
+      "kind": {
+        "site": "Community",
+        "household": "Stand-alone home"
+      },
+      "households": "Households: {{count}}",
+      "noTeam": "Not covered",
+      "select": "Select",
+      "selectAll": "Select all shown",
+      "noPlaces": "No places match.",
+      "assignTo": "Assign selected to",
+      "unassign": "No team (remove cover)",
+      "assign": "Apply",
+      "assigned": "Places changed: {{count}}.",
+      "unnamedHome": "Home",
+      "chooseTeam": "Choose a team"
     }
   },
   "auth": {
