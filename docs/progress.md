@@ -1,9 +1,9 @@
 # Progress
 
-## 2026-10-31 · Phase 4 plan approved (⚑8 calling provider still open)
+## 2026-10-31 · Phase 4 plan approved; calls on self-hosted LiveKit
 
 - `docs/plans/phase-4-consults-calling.md`: 13 decisions (⚑1–⚑13) with recommendations, plus the data model, API, calling rules, screens, tests and order of work.
-- **Approved** with all recommendations, except ⚑8: you asked about our own calling instead of LiveKit. Options A / B / C are set out in the plan; I recommended B (self-hosted open-source LiveKit in Mumbai). Steps 1–3 (doctors, booking, payments) don't depend on it.
+- **Approved**, all recommendations. ⚑8: **self-hosted open-source LiveKit on 2 DigitalOcean servers in Bangalore** (your choice after a cost comparison, from the pricing pages read today). Development uses a local LiveKit server; the servers go up before the pilot.
 
 ## 2026-10-31 · Phase 3, step 10 (started): SOS notifications
 
