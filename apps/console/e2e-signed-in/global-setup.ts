@@ -48,7 +48,13 @@ async function prepare(email: string, staff: boolean): Promise<Account> {
   const enrolled = await client.auth.mfa.enroll({ factorType: 'totp' });
   if (enrolled.error) throw new Error(`TOTP enrolment failed for ${email}: ${enrolled.error.message}`);
   const secret = enrolled.data.totp.secret;
-  const verified = await client.auth.mfa.challengeAndVerify({ factorId: enrolled.data.id, code: totp(secret) });
+  // The local stack's clock (Docker / WSL) can drift a few seconds under load: try the
+  // neighbouring 30 s windows too, as an authenticator app's code would be accepted.
+  let verified = await client.auth.mfa.challengeAndVerify({ factorId: enrolled.data.id, code: totp(secret) });
+  for (const skew of [-30_000, 30_000]) {
+    if (!verified.error) break;
+    verified = await client.auth.mfa.challengeAndVerify({ factorId: enrolled.data.id, code: totp(secret, Date.now() + skew) });
+  }
   if (verified.error) throw new Error(`TOTP verification failed for ${email}: ${verified.error.message}`);
   // The verify response carries the aal2 session.
   return { userId: id, email, password, totpSecret: secret, token: verified.data.access_token };

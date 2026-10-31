@@ -75,7 +75,7 @@ function TeamCard({ team, teams, roster, t }: { team: CoverageTeam; teams: Cover
   const elsewhere = (teamId: string | null) => (teamId ? ` (${t('console.coverage.inTeam', { team: teamName(teamId) ?? '' })})` : '');
 
   return (
-    <Card className={cn('flex flex-col gap-4 rounded-card p-5', !team.active && 'opacity-80')} aria-labelledby={`team-${team.id}`}>
+    <Card className={cn('flex flex-col gap-4 rounded-card p-5', !team.active && 'border-dashed')} aria-labelledby={`team-${team.id}`}>
       <div className="flex flex-wrap items-center gap-2">
         <h2 id={`team-${team.id}`} className="flex-1 font-display text-h3 font-bold">
           {team.name}

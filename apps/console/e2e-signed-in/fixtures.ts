@@ -68,14 +68,28 @@ export async function api<T = unknown>(token: string, method: string, path: stri
 /** The crew takes the job: its own offer if it has one, else the desk offers it first (as the command center would). */
 export async function crewAccepts(a: Accounts, incidentId: string) {
   const offerFor = async () => (await api<{ id: string; incidentId: string }[]>(a.crew.token, 'GET', '/v1/crew/offers')).body.find((o) => o.incidentId === incidentId);
+  // The desk can offer only once dispatch has begun (the escalation workflow moves a raised SOS to
+  // dispatching a moment later); offering before that is refused, which looked like "no offer".
   let offer = await offerFor();
-  if (!offer) {
-    await api(a.admin.token, 'POST', `/v1/desk/sos/${incidentId}/offers`, { crewId: a.crew.crewId });
+  for (let i = 0; !offer && i < 30; i++) {
+    const state = (await api<{ state: string }>(a.admin.token, 'GET', `/v1/desk/sos/${incidentId}`)).body.state;
+    if (state === 'dispatching') {
+      await api(a.admin.token, 'POST', `/v1/desk/sos/${incidentId}/offers`, { crewId: a.crew.crewId });
+      offer = await offerFor();
+      break;
+    }
+    await new Promise((r) => setTimeout(r, 500));
     offer = await offerFor();
   }
   if (!offer) throw new Error('the test crew got no offer');
   const r = await api(a.crew.token, 'POST', `/v1/dispatch/offers/${offer.id}/accept`);
   if (r.status !== 200) throw new Error(`accept failed: ${r.status} ${JSON.stringify(r.body)}`);
+}
+
+/** Plan §11: the crew picks the receiving hospital (no reason the first time), which opens the handover. */
+export async function crewPicks(a: Accounts, incidentId: string, hospitalId: string) {
+  const r = await api(a.crew.token, 'PUT', `/v1/sos/${incidentId}/hospital`, { hospitalId });
+  if (r.status !== 200) throw new Error(`hospital pick failed: ${r.status} ${JSON.stringify(r.body)}`);
 }
 
 /** Ends whatever the test left open, through the desk (so it is in the timeline). */

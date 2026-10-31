@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useRef } from 'react';
 import { Button, buttonVariants, cn } from '@repo/ui-web';
-import { submitter } from '../_coverage/action-form';
+import { submitter, useHydrated } from '../_coverage/action-form';
 import type { ActionState } from './actions';
 
 type Action = (prev: ActionState, form: FormData) => Promise<ActionState>;
@@ -32,6 +32,7 @@ export function DeskAction(props: {
 }) {
   const [state, run, pending] = useActionState(props.action, { error: null, done: 0 });
   const box = useRef<HTMLDetailsElement>(null);
+  const ready = useHydrated();
   const form = useRef<HTMLFormElement>(null);
   useEffect(() => {
     if (state.done > 0 && box.current) box.current.open = false;
@@ -74,7 +75,7 @@ export function DeskAction(props: {
             {state.error}
           </p>
         ) : null}
-        <Button type="submit" variant={props.variant === 'danger' ? 'danger' : 'accent'} disabled={pending || noCrews}>
+        <Button type="submit" variant={props.variant === 'danger' ? 'danger' : 'accent'} disabled={pending || noCrews || !ready}>
           {pending ? props.labels.saving : props.labels.confirm}
         </Button>
       </form>
@@ -84,6 +85,7 @@ export function DeskAction(props: {
 
 export function TestSosForm(props: { action: Action; sites: { id: string; name: string; city: string }[]; label: string; siteLabel: string; saving: string }) {
   const [state, run, pending] = useActionState(props.action, { error: null, done: 0 });
+  const ready = useHydrated();
   return (
     <form onSubmit={submitter(run)} className="flex flex-wrap items-end gap-3">
       {props.sites.length > 1 ? (
@@ -100,7 +102,7 @@ export function TestSosForm(props: { action: Action; sites: { id: string; name: 
       ) : (
         <input type="hidden" name="siteId" value={props.sites[0]?.id ?? ''} />
       )}
-      <Button type="submit" variant="danger" disabled={pending} data-testid="run-test-sos">
+      <Button type="submit" variant="danger" disabled={pending || !ready} data-testid="run-test-sos">
         {pending ? props.saving : props.label}
       </Button>
       {state.error ? (

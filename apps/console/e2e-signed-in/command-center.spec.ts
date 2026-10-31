@@ -2,7 +2,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import { sosRef } from '@repo/contracts/sos';
 import { createI18n } from '@repo/i18n';
-import { accounts, adminState, api, AREA, crewAccepts, endIncident, erState } from './fixtures';
+import { accounts, adminState, api, AREA, crewAccepts, crewPicks, endIncident, erState } from './fixtures';
 
 const { t } = createI18n('en');
 // The board refreshes on live pushes, and polls every 10 s without them.
@@ -42,15 +42,19 @@ test.describe('as super admin', () => {
     }
   });
 
-  // FIXME(step 7): the test crew gets no offer for a resident SOS (the drill test works). Not diagnosed yet.
-  test.fixme('real SOS: the handover opens on accept; the desk changes the hospital with a reason', async ({ page }) => {
+  test('real SOS: no hospital on accept; the crew picks one; the desk changes it with a reason (plan §11)', async ({ page }) => {
+    const a = accounts();
     const id = await raiseSos();
     try {
-      await crewAccepts(accounts(), id);
+      await crewAccepts(a, id);
       await page.goto(`/?incident=${id}`);
       const box = page.getByTestId('handover');
+      await expect(box).toContainText(t('console.cc.handoverNone'), LIVE);
+
+      await crewPicks(a, id, a.hospitals.near);
+      await page.reload();
       await expect(box).toContainText('E2E Near Hospital', LIVE);
-      await expect(box).toContainText(t('console.cc.chosenBy.auto'));
+      await expect(box).toContainText(t('console.cc.chosenBy.crew'));
       await expect(box).toContainText(t('console.cc.handoverUnconfirmed'));
 
       const form = page.locator('details').filter({ has: page.getByTestId('act-hospital') });
@@ -84,24 +88,25 @@ test.describe('as super admin', () => {
   });
 
   // FIXME(step 7): axe finds 4 colour-contrast failures on /hospitals (real issue, to fix in the page).
-  test.fixme('hospitals page meets WCAG 2 AA (axe)', async ({ page }) => {
+  test('hospitals page meets WCAG 2 AA (axe)', async ({ page }) => {
     await page.goto('/hospitals');
     await expect(page.getByText('E2E Near Hospital')).toBeVisible();
     const { violations } = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
-    expect(violations.map((v) => `${v.id}: ${v.nodes.length}`)).toEqual([]);
+    // Name each failing element, so a failure says what to fix.
+    expect(violations.flatMap((v) => v.nodes.map((n) => `${v.id}: ${n.target.join(' ')} (${n.any[0]?.message ?? ''})`))).toEqual([]);
   });
 });
 
 test.describe('as hospital ER staff', () => {
   test.use({ storageState: erState });
 
-  // FIXME(step 7): same as the real-SOS test: the test crew gets no offer.
-  test.fixme('sees only its own incoming patients, opens the record and confirms receipt once', async ({ page }) => {
+  test('sees only its own incoming patients, opens the record and confirms receipt once', async ({ page }) => {
     const a = accounts();
     const id = await raiseSos();
     try {
       await crewAccepts(a, id);
-      // Goes to the near hospital first: the far hospital's ER does not see it.
+      await crewPicks(a, id, a.hospitals.near);
+      // The crew sent it to the near hospital: the far hospital's ER does not see it.
       await page.goto('/handovers');
       await expect(page.getByText(sosRef(id))).toHaveCount(0);
       const moved = await api(a.admin.token, 'POST', `/v1/desk/sos/${id}/hospital`, { hospitalId: a.hospitals.far, reason: 'E2E: send to the far hospital' });

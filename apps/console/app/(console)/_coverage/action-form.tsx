@@ -1,10 +1,21 @@
 'use client';
 
-import { startTransition, useActionState, useEffect, useRef, type FormEvent, type ReactNode } from 'react';
+import { startTransition, useActionState, useEffect, useRef, useSyncExternalStore, type FormEvent, type ReactNode } from 'react';
 import { cn } from '@repo/ui-web';
 import type { ActionState } from '../_command/actions';
 
 type State = ActionState & { changed?: number };
+
+/**
+ * False until React has hydrated the page. These forms submit through an onSubmit
+ * handler, so a click before hydration (slow network, busy laptop) would do a plain
+ * browser GET instead of the action: their buttons stay disabled until then.
+ */
+const noSubscribe = () => () => {};
+export function useHydrated() {
+  // The server snapshot (false) is used while hydrating, the client one (true) after.
+  return useSyncExternalStore(noSubscribe, () => true, () => false);
+}
 
 /** onSubmit handler that runs a useActionState dispatch without React's automatic form reset. */
 export function submitter(run: (form: FormData) => void) {
@@ -32,13 +43,14 @@ export function ActionForm(props: {
 }) {
   const [state, run, pending] = useActionState(props.action, { error: null, done: 0 });
   const form = useRef<HTMLFormElement>(null);
+  const ready = useHydrated();
   useEffect(() => {
     if (state.done > 0 && props.reset) form.current?.reset();
   }, [state.done, props.reset]);
 
   return (
     <form ref={form} onSubmit={submitter(run)} aria-label={props.label} className={props.className}>
-      <fieldset disabled={pending} className={cn('contents', pending && 'opacity-70')}>
+      <fieldset disabled={pending || !ready} className={cn('contents', pending && 'opacity-70')}>
         {props.children}
       </fieldset>
       {state.error ? (

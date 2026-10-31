@@ -71,7 +71,7 @@ export default async function HospitalsPage() {
             <ul className="flex flex-col gap-3" data-testid="hospitals">
               {data.hospitals.map((h) => (
                 <li key={h.id}>
-                  <Card className={cn('flex flex-wrap items-center gap-x-4 gap-y-2 rounded-card p-4', !h.active && 'opacity-70')}>
+                  <Card className={cn('flex flex-wrap items-center gap-x-4 gap-y-2 rounded-card p-4', !h.active && 'border-dashed')}>
                     <div className="flex min-w-56 flex-1 flex-col">
                       <span className="font-semibold">{h.name}</span>
                       <span className="text-small text-text-muted">{[h.address, h.city, h.erPhone].filter(Boolean).join(' · ')}</span>
