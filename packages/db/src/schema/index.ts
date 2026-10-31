@@ -6,3 +6,4 @@ export * from './households';
 export * from './health';
 export * from './sos';
 export * from './settings';
+export * from './consults';

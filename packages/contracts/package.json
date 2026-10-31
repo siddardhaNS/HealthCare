@@ -9,7 +9,8 @@
     "./leads": "./src/leads.ts",
     "./consent": "./src/consent.ts",
     "./vitals": "./src/vitals.ts",
-    "./sos": "./src/sos.ts"
+    "./sos": "./src/sos.ts",
+    "./consults": "./src/consults.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

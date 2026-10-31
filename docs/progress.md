@@ -1,5 +1,23 @@
 # Progress
 
+## 2026-10-31 · Phase 4, step 1: data model, appointment state machine, slots
+
+- **Migration** `20261031070000_consults.sql` (applied locally). Tables:
+  - `specialties`, `doctors` (registration number + council, verified_at, fees in paise, slot length, signature path), `doctor_specialties`, `doctor_hours`, `doctor_exceptions`
+  - `appointments`: one live booking per doctor and start time (partial unique index); symptoms encrypted; shared items per consult (⚑5); `appointment_events`
+  - `consult_notes` (encrypted), `prescriptions` + `prescription_items` (TPG list, ⚑6)
+  - `calls` (metadata only), `push_tokens`, `payments`, `webhook_events`
+  - RLS on all of them: residents and managers read their own appointments and issued prescriptions; signed-in users read active specialties; everything else goes through the API. Drizzle schema in `packages/db/src/schema/consults.ts`.
+- **`@repo/contracts/consults`:**
+  - appointment states and edges (held → booked → waiting room → in call → completed, plus cancels, no-shows and hold expiry)
+  - refund rule (⚑2) and the records window (⚑5)
+  - the slot generator (⚑3): weekly hours, leave and extra hours, taken slots, 30 min lead, always IST (UTC+05:30)
+  - 8 tests.
+
+### Next (step 2)
+- Console: doctor onboarding and verification, and specialties with the symptom keywords (⚑4).
+- Partner portal: the doctor's weekly hours and exceptions.
+
 ## 2026-10-31 · Phase 4 plan approved; calls on self-hosted LiveKit
 
 - `docs/plans/phase-4-consults-calling.md`: 13 decisions (⚑1–⚑13) with recommendations, plus the data model, API, calling rules, screens, tests and order of work.
