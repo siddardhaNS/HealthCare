@@ -1,5 +1,10 @@
 # Progress
 
+## 2026-10-31 · Phase 4 plan written (awaiting your approval)
+
+- `docs/plans/phase-4-consults-calling.md`: 13 decisions (⚑1–⚑13) with recommendations, plus the data model, API, calling rules, screens, tests and order of work.
+- Nothing is built until you approve (working agreement, phases 3 and 4).
+
 ## 2026-10-31 · Phase 3, step 10 (started): SOS notifications
 
 Your decisions are written up as plan §13: family = emergency contacts only, and the resident confirms each contact agreed to alerts.
