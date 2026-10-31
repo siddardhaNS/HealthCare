@@ -23,6 +23,8 @@ import { logHandoverNotifier, type HandoverNotifier } from './modules/handover/s
 import { publishingSosRepo } from './modules/sos/live';
 import type { EscalationRunner, SosAlerts } from './modules/sos/escalation-service';
 import { workflowEscalation } from './modules/sos/escalation-runner';
+import { drizzleSosAlertsRepo, notifyingSosRepo, type SosAlertsRepo, type SosNotifyRunner } from './modules/sos/alerts';
+import { workflowNotify } from './modules/sos/notify';
 import { drizzleMessagingRepo } from './modules/messaging/repo';
 import { logMailer, type Mailer } from './modules/notifications/mailer';
 import type { MessagingDeps } from './modules/messaging/service';
@@ -51,6 +53,10 @@ const Env = z
     WHATSAPP_GRAPH_VERSION: z.string().default('v26.0'),
     MSG91_AUTH_KEY: z.string().optional(),
     MSG91_OTP_TEMPLATE_ID: z.string().default('local-otp'),
+    // DLT template ids for the SOS alerts' SMS fallback (plan §13).
+    MSG91_SOS_FAMILY_TEMPLATE_ID: z.string().default('local-sos-family'),
+    MSG91_SOS_DESK_TEMPLATE_ID: z.string().default('local-sos-desk'),
+    MSG91_SOS_GATE_TEMPLATE_ID: z.string().default('local-sos-gate'),
     SALES_INBOX_EMAIL: z.string().email().default('sales@localhost.test'),
     CONSOLE_URL: z.string().url().default('http://localhost:3002'),
     /** Comma-separated origins allowed to call public endpoints from the browser (landing site). */
@@ -90,6 +96,8 @@ export interface Deps {
   handoverNotifier: HandoverNotifier;
   sosAlerts: SosAlerts;
   escalation: EscalationRunner;
+  sosAlertsRepo: SosAlertsRepo;
+  sosNotify: SosNotifyRunner;
   dispatch: DispatchRepo;
   locator: CrewLocator;
   realtime: Realtime;
@@ -121,12 +129,31 @@ export function depsFromEnv(source: Record<string, string | undefined> = process
   const live = env.MESSAGING_MODE === 'live';
   const db = createDb(env.DATABASE_URL);
   const realtime = env.SUPABASE_SECRET_KEY ? supabaseRealtime({ supabaseUrl: env.SUPABASE_URL, secretKey: env.SUPABASE_SECRET_KEY }) : silentRealtime();
-  const sos = publishingSosRepo(drizzleSosRepo(db), realtime);
+  const messaging: MessagingDeps = {
+    kv,
+    repo: drizzleMessagingRepo(db),
+    whatsapp: live
+      ? cloudApiWhatsApp({ phoneNumberId: env.WHATSAPP_PHONE_NUMBER_ID!, accessToken: env.WHATSAPP_ACCESS_TOKEN!, graphVersion: env.WHATSAPP_GRAPH_VERSION })
+      : logWhatsApp(),
+    sms: live ? msg91Sms({ authKey: env.MSG91_AUTH_KEY! }) : logSms(),
+    fallbackKey: Buffer.from(env.OTP_FALLBACK_KEY, 'base64'),
+    smsTemplateIds: {
+      otp_code: env.MSG91_OTP_TEMPLATE_ID,
+      sos_alert_family: env.MSG91_SOS_FAMILY_TEMPLATE_ID,
+      sos_alert_desk: env.MSG91_SOS_DESK_TEMPLATE_ID,
+      sos_alert_gate: env.MSG91_SOS_GATE_TEMPLATE_ID,
+    },
+  };
+  const consents = drizzleConsentRepo(db);
+  const sosAlertsRepo = drizzleSosAlertsRepo(db);
+  const published = publishingSosRepo(drizzleSosRepo(db), realtime);
+  // Plan §13: the family's final update rides on the state change (handed over, cancelled).
+  const sos = notifyingSosRepo(published, () => ({ sos: published, consents, sosAlertsRepo, messaging }));
   const dispatch = drizzleDispatchRepo(db);
   return {
     kv,
     leads: drizzleLeadsRepo(db),
-    consents: drizzleConsentRepo(db),
+    consents,
     households: drizzleHouseholdsRepo(db),
     residents: drizzleResidentsRepo(db),
     health: drizzleHealthRepo(db),
@@ -139,20 +166,13 @@ export function depsFromEnv(source: Record<string, string | undefined> = process
     handoverNotifier: logHandoverNotifier({ printUrl: env.NODE_ENV === 'development' }),
     sosAlerts: dispatchAlerts({ dispatch, locator, sos, realtime }),
     escalation: workflowEscalation(),
+    sosAlertsRepo,
+    sosNotify: workflowNotify(),
     dispatch,
     locator,
     realtime,
     mailer: logMailer(),
-    messaging: {
-      kv,
-      repo: drizzleMessagingRepo(db),
-      whatsapp: live
-        ? cloudApiWhatsApp({ phoneNumberId: env.WHATSAPP_PHONE_NUMBER_ID!, accessToken: env.WHATSAPP_ACCESS_TOKEN!, graphVersion: env.WHATSAPP_GRAPH_VERSION })
-        : logWhatsApp(),
-      sms: live ? msg91Sms({ authKey: env.MSG91_AUTH_KEY! }) : logSms(),
-      fallbackKey: Buffer.from(env.OTP_FALLBACK_KEY, 'base64'),
-      smsTemplateIds: { otp_code: env.MSG91_OTP_TEMPLATE_ID },
-    },
+    messaging,
     verifyToken: createTokenVerifier({ supabaseUrl: env.SUPABASE_URL, hs256Secret: env.SUPABASE_JWT_SECRET }),
     config: {
       sendSmsHookSecret: env.SEND_SMS_HOOK_SECRET,

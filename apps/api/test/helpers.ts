@@ -22,6 +22,8 @@ import { publishingSosRepo } from '../src/modules/sos/live';
 import type { ConsentRow } from '../src/modules/consent/policy';
 import { newLeadRef, type LeadsRepo } from '../src/modules/leads/repo';
 import type { MessageLogInput, MessagingRepo, OptinInput } from '../src/modules/messaging/repo';
+import type { MessagingDeps } from '../src/modules/messaging/service';
+import { notifyingSosRepo, type SosAlertsRepo, type SosNotifyDeps } from '../src/modules/sos/alerts';
 
 export const SUPABASE_URL = 'http://supabase.test';
 export const HOOK_SECRET = `v1,whsec_${randomBytes(32).toString('base64')}`;
@@ -50,6 +52,15 @@ export function fakeRepo() {
     },
     async recordOtpChallenge(row) {
       challenges.push(row);
+    },
+    async anySent(context, purpose) {
+      return messages.some((m) => m.contextType === context.type && m.contextId === context.id && m.purpose === purpose);
+    },
+    async undelivered(context, purpose) {
+      return messages
+        .filter((m) => m.contextType === context.type && m.contextId === context.id && m.purpose === purpose && m.channel === 'whatsapp')
+        .filter((m) => ['queued', 'sent', 'failed'].includes(m.status) && !messages.some((f) => f.fallbackOf === m.id))
+        .map((m) => ({ id: m.id, toPhone: m.toPhone, template: m.template, language: m.language }));
     },
   };
   return { repo, messages, optins, challenges };
@@ -152,6 +163,42 @@ export async function testContext(opts: { whatsappFails?: boolean; mailerFails?:
   const mail: { to: string; subject: string; text: string }[] = [];
   const whatsappSent: WhatsAppSend[] = [];
   const smsSent: SmsSend[] = [];
+  // Plan §13: who an SOS is told to, from the households, ops and handover fakes.
+  const gatePhones = new Map<string, string>();
+  const notifyStarted: string[] = [];
+  const sosAlertsRepo: SosAlertsRepo = {
+    async audience(i) {
+      const p = hh.profiles.get(i.userId) as { fullName?: string; language?: 'en' | 'te' | 'hi' } | undefined;
+      const stopped = (phone: string) => store.optins.some((o) => o.phone === phone && o.channel === 'whatsapp' && o.status === 'opted_out');
+      const family = (await hh.repo.contacts(i.userId, i.userId)).filter((c) => c.alertsAgreed && !stopped(c.phone)).map((c) => c.phone);
+      return { name: p?.fullName ?? '—', language: p?.language ?? 'en', family, deskPhone: ops.deskPhone, gatePhone: i.siteId ? (gatePhones.get(i.siteId) ?? null) : null, place: 'B-1204, Green Meadows' };
+    },
+    async hospitalName(incidentId) {
+      const h = handovers.rows.find((r) => r.incidentId === incidentId);
+      return h ? (handovers.hospitals.find((x) => x.id === h.hospitalId)?.name ?? null) : null;
+    },
+  };
+  const messagingDeps: MessagingDeps = {
+    kv,
+    repo: store.repo,
+    whatsapp: {
+      async sendTemplate(msg) {
+        if (opts.whatsappFails) throw new ProviderError('whatsapp', '131026');
+        whatsappSent.push(msg);
+        return { messageId: `wamid.${whatsappSent.length}` };
+      },
+    },
+    sms: {
+      async sendTemplate(msg) {
+        smsSent.push(msg);
+        return { requestId: `sms-${smsSent.length}` };
+      },
+    },
+    fallbackKey: randomBytes(32),
+    smsTemplateIds: { otp_code: 'dlt-otp', sos_alert_family: 'dlt-sos-family', sos_alert_desk: 'dlt-sos-desk', sos_alert_gate: 'dlt-sos-gate' },
+  };
+  const published = publishingSosRepo(sos.repo, live.realtime);
+  const notifyDeps = (): SosNotifyDeps => ({ sos: published, consents, sosAlertsRepo, messaging: messagingDeps });
   const { publicKey, privateKey } = await generateKeyPair('ES256');
   const jwk = { ...(await exportJWK(publicKey)), kid: 'test', alg: 'ES256' };
 
@@ -162,7 +209,7 @@ export async function testContext(opts: { whatsappFails?: boolean; mailerFails?:
     households: hh.repo,
     residents,
     health: health.repo,
-    sos: publishingSosRepo(sos.repo, live.realtime),
+    sos: notifyingSosRepo(published, notifyDeps),
     desk: desk.repo,
     sosSettings: sosSettings.repo,
     coverage: coverage.repo,
@@ -184,6 +231,12 @@ export async function testContext(opts: { whatsappFails?: boolean; mailerFails?:
     handoverNotifier: links.notifier,
     sosAlerts: alerts.alerts,
     escalation: escalation.runner,
+    sosAlertsRepo,
+    sosNotify: {
+      async start(id) {
+        notifyStarted.push(id);
+      },
+    },
     dispatch: dispatch.repo,
     locator,
     realtime: live.realtime,
@@ -193,25 +246,7 @@ export async function testContext(opts: { whatsappFails?: boolean; mailerFails?:
         mail.push(msg);
       },
     },
-    messaging: {
-      kv,
-      repo: store.repo,
-      whatsapp: {
-        async sendTemplate(msg) {
-          if (opts.whatsappFails) throw new ProviderError('whatsapp', '131026');
-          whatsappSent.push(msg);
-          return { messageId: `wamid.${whatsappSent.length}` };
-        },
-      },
-      sms: {
-        async sendTemplate(msg) {
-          smsSent.push(msg);
-          return { requestId: `sms-${smsSent.length}` };
-        },
-      },
-      fallbackKey: randomBytes(32),
-      smsTemplateIds: { otp_code: 'dlt-otp' },
-    },
+    messaging: messagingDeps,
     verifyToken: createTokenVerifier({ supabaseUrl: SUPABASE_URL, keys: createLocalJWKSet({ keys: [jwk] }) }),
     config: {
       sendSmsHookSecret: HOOK_SECRET,
@@ -279,6 +314,9 @@ export async function testContext(opts: { whatsappFails?: boolean; mailerFails?:
     deskScopes,
     mail,
     whatsappSent,
+    gatePhones,
+    notifyStarted,
+    notifyDeps,
     smsSent,
     token,
     sendSmsHook,

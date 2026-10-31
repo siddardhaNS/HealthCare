@@ -11,11 +11,16 @@ Your decisions are written up as plan §13: family = emergency contacts only, an
   - 1 new test (API 249). Checked against the real DB.
   - Resident Profile: a toggle per contact (red "Won't get SOS alerts until you confirm they agree" when off), and a tick on the add form. Checked on the emulator.
   - Note for B: residents already have a consent, "Alert my family on every SOS" (`family_sos_alert`). Alerts must also respect it.
-- **Then sub-step B:**
-  - Templates: `sos_alert_family`, `sos_alert_desk`, `sos_alert_gate`, `sos_update_family`.
-  - One notify workflow per real SOS: WhatsApp now, SMS after 60 s if not delivered.
-  - The final update on handed-over or cancelled.
-  - A gate phone field on the SOS timeout page.
+- **Sub-step B, alerts done:**
+  - **Who:** WhatsApp to confirmed contacts (a STOP reply wins), only when the resident has `family_sos_alert` on; the desk number (Settings); the community gate phone if set. Drills never alert.
+  - **Messages:** only name, place and reference, nothing medical. Templates `sos_alert_family` (en/te/hi), `sos_alert_desk`, `sos_alert_gate`.
+  - **Delivery:** one Workflow run per SOS (`sos/notify.ts`) sends the alerts, sleeps 60 s, then sends SMS for each not delivered or read (DLT ids: `MSG91_SOS_*_TEMPLATE_ID`). Alert variables are held encrypted in KV for the fallback, as with OTP.
+  - `message_log` now has `context_type/context_id` (migration `20261031050000`). A retried step sends nothing twice.
+  - **Final update** (WhatsApp) to the contacts on handed-over (with the hospital name) or cancelled, wired through the SOS state-change wrapper.
+  - **Bundling:** the workflow file imports types only and its steps load the alerts module lazily (the workflow bundle can't include the database driver).
+  - **Tests:** 6 unit + 1 workflow (API: 255 unit, 8 workflow).
+  - **Real stack:** desk WhatsApp at 07:08:19, then the SMS fallback at 07:09:19, linked as a fallback.
+- **Left in step 10:** a gate phone field on the SOS timeout page (the column exists; the API doesn't set it yet).
 
 ## 2026-10-31 · Phase 3, step 9: crew patient summary, first-aid notes, what the resident sees was shared
 

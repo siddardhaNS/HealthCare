@@ -13,6 +13,16 @@ export interface MessageLogInput {
   status: MessageStatus;
   errorCode?: string | null;
   fallbackOf?: string | null;
+  contextType?: string | null;
+  contextId?: string | null;
+}
+
+/** A WhatsApp message about something that has not reached the person yet (no SMS sent for it either). */
+export interface UndeliveredMessage {
+  id: string;
+  toPhone: string;
+  template: string;
+  language: string;
 }
 
 export interface OptinInput {
@@ -29,6 +39,10 @@ export interface MessagingRepo {
   updateStatus(providerMessageId: string, status: MessageStatus, errorCode?: string | null): Promise<{ id: string } | null>;
   recordOptin(row: OptinInput): Promise<void>;
   recordOtpChallenge(row: { phoneHash: string; channel: 'whatsapp' | 'sms'; outcome: 'sent' | 'fallback_sms' | 'rate_limited' | 'failed' }): Promise<void>;
+  /** WhatsApp messages for this context and purpose not delivered or read, with no SMS sent for them yet. */
+  undelivered(context: { type: string; id: string }, purpose: string): Promise<UndeliveredMessage[]>;
+  /** Whether any message for this context and purpose was already sent (so a retried step sends nothing twice). */
+  anySent(context: { type: string; id: string }, purpose: string): Promise<boolean>;
 }
 
 export const statusRank: Record<MessageStatus, number> = { queued: 0, sent: 1, delivered: 2, read: 3, failed: 4 };
@@ -56,6 +70,29 @@ export function drizzleMessagingRepo(db: Db): MessagingRepo {
     },
     async recordOtpChallenge(row) {
       await db.insert(otpChallenges).values(row);
+    },
+    async anySent(context, purpose) {
+      const [r] = await db
+        .select({ id: messageLog.id })
+        .from(messageLog)
+        .where(and(eq(messageLog.contextType, context.type), eq(messageLog.contextId, context.id), eq(messageLog.purpose, purpose)))
+        .limit(1);
+      return !!r;
+    },
+    async undelivered(context, purpose) {
+      return db
+        .select({ id: messageLog.id, toPhone: messageLog.toPhone, template: messageLog.template, language: messageLog.language })
+        .from(messageLog)
+        .where(
+          and(
+            eq(messageLog.contextType, context.type),
+            eq(messageLog.contextId, context.id),
+            eq(messageLog.purpose, purpose),
+            eq(messageLog.channel, 'whatsapp'),
+            sql`${messageLog.status} in ('queued', 'sent', 'failed')`,
+            sql`not exists (select 1 from message_log f where f.fallback_of = ${messageLog.id})`,
+          ),
+        );
     },
   };
 }

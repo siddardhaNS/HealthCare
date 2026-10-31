@@ -60,6 +60,9 @@ export const messageLog = pgTable('message_log', {
   status: text('status', { enum: messageStatuses }).notNull().default('queued'),
   errorCode: text('error_code'),
   fallbackOf: uuid('fallback_of').references((): AnyPgColumn => messageLog.id),
+  /** What the message was about (plan §13), e.g. 'sos' and the incident id. */
+  contextType: text('context_type'),
+  contextId: uuid('context_id'),
 });
 
 export const messagingOptins = pgTable('messaging_optins', {

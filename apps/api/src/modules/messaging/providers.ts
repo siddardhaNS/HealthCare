@@ -34,6 +34,11 @@ export interface SmsClient {
   sendTemplate(msg: SmsSend): Promise<{ requestId: string | null }>;
 }
 
+/** A utility template's body variables, in order. */
+export function bodyComponents(variables: readonly string[]): unknown[] {
+  return [{ type: 'body', parameters: variables.map((text) => ({ type: 'text', text })) }];
+}
+
 /** Copy-code authentication template: the code goes in the body and the button. */
 export function otpComponents(code: string): unknown[] {
   return [

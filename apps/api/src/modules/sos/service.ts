@@ -9,6 +9,7 @@ import { toSummary } from '../handover/summary';
 import { canActFor } from '../households/service';
 import type { EscalationRunner } from './escalation-service';
 import type { EventRow, IncidentRow, SosRepo } from './repo';
+import type { SosNotifyRunner } from './alerts';
 import { fail, type SosFailure } from './transition';
 
 export { isSosFailure, move, type SosFailure } from './transition';
@@ -117,11 +118,17 @@ export async function raise(
  * gets their incident (and the 108 / desk fallbacks), the desk sees it on the
  * command center, and the error is logged loudly.
  */
-export async function startEscalation(d: { sos: SosRepo; escalation: EscalationRunner }, incidentId: string, requestId?: string) {
+export async function startEscalation(d: { sos: SosRepo; escalation: EscalationRunner; sosNotify?: SosNotifyRunner }, incidentId: string, requestId?: string) {
   try {
     await d.sos.setWorkflowRun(incidentId, await d.escalation.start(incidentId));
   } catch (err) {
     console.error(JSON.stringify({ level: 'error', event: 'sos_escalation_start_failed', incidentId, requestId, name: (err as Error).name }));
+  }
+  // Plan §13: family, desk and gate alerts run on their own (drills are skipped inside).
+  try {
+    await d.sosNotify?.start(incidentId);
+  } catch (err) {
+    console.error(JSON.stringify({ level: 'error', event: 'sos_notify_start_failed', incidentId, requestId, name: (err as Error).name }));
   }
 }
 
