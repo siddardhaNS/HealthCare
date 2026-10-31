@@ -54,7 +54,17 @@ Plan §11 is now built. Your answers today:
   - "Hospital not chosen yet", then the desk choosing with a reason
 - Checked through the API against the local stack:
   - the crew's change is refused without a reason
-- **Not yet run on a device:** the resident and field app changes. They typecheck and lint, but haven't been run on Android or iOS.
+- **On the Android emulator** (dev builds, local stack):
+  - Resident onboarding:
+    - Telugu and Hindi on: the picker shows English and తెలుగు only.
+    - English only: the picker is hidden.
+  - A resident whose profile says Telugu, with only English enabled, sees English.
+  - Live SOS: no 108 button; **Call desk** opens the dialer with the console number.
+  - Field app, after accept:
+    - Choose the hospital: a distance-sorted list. Picking one shows \"Record sent. Waiting for the ER to confirm\".
+    - Change hospital: the list stays disabled until a reason is typed, then a new handover opens.
+    - The reason is stored on the handover. The audit records the crew, both hospitals and the consented items, but not the free-text reason.
+  - Maestro  still fails to reconnect the dev build to Metro after  (known from 28 Oct). Tested by hand with adb instead.
 
 ### Found on the way
 - After appending to a server-actions file, `next dev` (Turbopack) can serve a stale module ("action is not a function"). Restarting the dev server fixes it.
@@ -69,7 +79,6 @@ Plan §11 is now built. Your answers today:
 - Test teams "Backup Z" and the e2e "Primary/Backup one/two" teams (inactive).
 
 ### Next
-- Run the resident and field apps on the Android emulator: the hospital picker, Call community desk, and the language picker.
 - Fix the 3 `fixme` e2e tests (the resident's household may be the cause), and the `/hospitals` contrast.
 - Add the signed-in e2e suite as its own CI job.
 - CI is still red only on "Expo config and dependency check".
