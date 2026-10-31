@@ -21,7 +21,7 @@ const r = {
     path: '/sos-settings',
     operationId: 'sosSettings',
     tags: ['desk'],
-    summary: 'Escalation thresholds per community (the community desk: its own)',
+    summary: 'SOS timeout per community: seconds before the next crew is offered (the community desk: its own)',
     security,
     middleware: [requireAuth, requireStaff(deskReadRoles)],
     responses: { 200: json(SiteSosSettingsList, 'Thresholds'), ...failures },
@@ -31,7 +31,7 @@ const r = {
     path: '/sos-settings/{siteId}',
     operationId: 'setSosSettings',
     tags: ['desk'],
-    summary: 'Set a community’s thresholds (super admin; applies to the next SOS; audited)',
+    summary: 'Set a community’s SOS timeout (super admin; applies to the next SOS; audited)',
     security,
     middleware: [requireAuth, requireStaff(['super_admin'])],
     request: { params: z.object({ siteId: z.string().uuid() }), body: { content: { 'application/json': { schema: SiteSosSettingsUpdate } }, required: true } },
@@ -44,7 +44,7 @@ export const sosSettingsRoutes = new OpenAPIHono<AppEnv>()
     const auth = c.get('auth')!;
     const staff = await staffOf(auth, () => c.get('deps').residents.deskSites(auth.userId));
     const rows = await c.get('deps').sosSettings.list(staff.sites);
-    return c.json({ sites: rows.map(view), canEdit: canEdit(c), defaults: { widenAfterS: sosThresholds.widenDefault, escalateAfterS: sosThresholds.escalateDefault } }, 200);
+    return c.json({ sites: rows.map(view), canEdit: canEdit(c), defaults: { widenAfterS: sosThresholds.widenDefault } }, 200);
   })
   .openapi(r.set, async (c) => {
     const row = await c.get('deps').sosSettings.set(c.req.valid('param').siteId, c.req.valid('json'), c.get('auth')!.userId);

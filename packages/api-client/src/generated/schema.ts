@@ -922,7 +922,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Escalation thresholds per community (the community desk: its own) */
+        /** SOS timeout per community: seconds before the next crew is offered (the community desk: its own) */
         get: operations["sosSettings"];
         put?: never;
         post?: never;
@@ -940,7 +940,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Set a community’s thresholds (super admin; applies to the next SOS; audited) */
+        /** Set a community’s SOS timeout (super admin; applies to the next SOS; audited) */
         put: operations["setSosSettings"];
         post?: never;
         delete?: never;
@@ -1909,7 +1909,6 @@ export interface components {
             createdAt: string;
             location: components["schemas"]["GeoPoint"];
             widenAfterS: number;
-            escalateAfterS: number;
             timeline: components["schemas"]["SosEvent"][];
         };
         SosRaise: {
@@ -2038,7 +2037,6 @@ export interface components {
             canEdit: boolean;
             defaults: {
                 widenAfterS: number;
-                escalateAfterS: number;
             };
         };
         SiteSosSettings: {
@@ -2047,14 +2045,12 @@ export interface components {
             name: string;
             city: string;
             widenAfterS: number;
-            escalateAfterS: number;
             custom: boolean;
             /** Format: date-time */
             updatedAt: string | null;
         };
         SiteSosSettingsUpdate: {
             widenAfterS: number;
-            escalateAfterS: number;
         };
         CoverageTeams: {
             teams: components["schemas"]["CoverageTeam"][];

@@ -19,7 +19,7 @@ export async function saveThresholds(siteId: string, prev: ActionState, form: Fo
   const api = await serverApi();
   const r = await api.PUT('/v1/sos-settings/{siteId}', {
     params: { path: { siteId } },
-    body: { widenAfterS: Number(form.get('widenAfterS')), escalateAfterS: Number(form.get('escalateAfterS')) },
+    body: { widenAfterS: Number(form.get('widenAfterS')) },
   });
   return finish(prev, r, '/sos-settings');
 }

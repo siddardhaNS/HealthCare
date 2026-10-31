@@ -25,8 +25,8 @@ describe('raising an SOS', () => {
     const mom = await client(t, MOM);
     const res = await mom.post('/v1/sos', press());
     expect(res.status).toBe(201);
-    const sos = (await res.json()) as { state: string; location: { lat: number }; widenAfterS: number; escalateAfterS: number; isDrill: boolean; timeline: { to: string; by: string }[] };
-    expect(sos).toMatchObject({ state: 'raised', isDrill: false, widenAfterS: 30, escalateAfterS: 90, location: { lat: 17.4401 } });
+    const sos = (await res.json()) as { state: string; location: { lat: number }; widenAfterS: number; isDrill: boolean; timeline: { to: string; by: string }[] };
+    expect(sos).toMatchObject({ state: 'raised', isDrill: false, widenAfterS: 30, location: { lat: 17.4401 } });
     expect(sos.timeline).toEqual([expect.objectContaining({ to: 'raised', by: 'resident' })]);
     expect(t.sos.audit).toEqual([expect.objectContaining({ action: 'sos_raised' })]);
   });
@@ -83,9 +83,9 @@ describe('raising an SOS', () => {
     const t = await testContext();
     const site = t.hh.addSite({ name: 'Green Meadows', kind: 'apartment', city: 'Hyderabad', joinCode: 'GREEN24', homes: [{ tower: 'B', number: '1204' }] });
     await t.hh.repo.createHousehold({ homeId: (await t.hh.repo.findHome(site.id, 'B', '1204'))!.id, city: 'Hyderabad' }, MOM);
-    t.sos.settings.set(site.id, { widenAfterS: 20, escalateAfterS: 75 });
-    const sos = (await (await (await client(t, MOM)).post('/v1/sos', press())).json()) as { widenAfterS: number; escalateAfterS: number };
-    expect(sos).toMatchObject({ widenAfterS: 20, escalateAfterS: 75 });
+    t.sos.settings.set(site.id, { widenAfterS: 20 });
+    const sos = (await (await (await client(t, MOM)).post('/v1/sos', press())).json()) as { widenAfterS: number };
+    expect(sos).toMatchObject({ widenAfterS: 20 });
   });
 
   it('rejects a location outside India and a missing key', async () => {

@@ -187,9 +187,10 @@
       "soundOff": "Alarm sound on · turn off",
       "alarm": {
         "raised": "New SOS {{ref}}",
-        "no_accept": "No crew has accepted {{ref}} yet. Offer it to a crew.",
-        "prompt_108": "{{ref}}: no crew in time. Make sure 108 is called.",
-        "no_hospital": "{{ref}}: no hospital has capacity. Choose one."
+        "no_accept": "{{ref}}: still no crew. Offered to the nearest free crews; you can offer it to any crew.",
+        "no_hospital": "{{ref}}: no hospital has capacity. Choose one.",
+        "no_accept_team": "{{ref}}: {{missed}} did not respond. Offered to {{next}}.",
+        "no_accept_nearest": "{{ref}}: {{missed}} did not respond. Offered to the nearest free crews."
       },
       "dismiss": "Dismiss",
       "map": "Live emergency map",
@@ -312,12 +313,11 @@
       "noHospitals": "No network hospitals are set up."
     },
     "thresholds": {
-      "title": "SOS thresholds",
-      "intro": "How long each community waits before widening the search to more ambulances, and before prompting a 108 call. Changes apply to the next SOS, never one in progress, and are logged.",
+      "title": "SOS timeout",
+      "intro": "How long each community waits for a crew to accept before the SOS is offered to the next team: backup teams in order, then the nearest free crews. Each time, the command center and admins are alarmed. Changes apply to the next SOS, never one in progress, and are logged.",
       "community": "Community",
-      "widen": "Widen search after (s)",
-      "escalate": "Prompt 108 after (s)",
-      "bounds": "Widen: {{wmin}}–{{wmax}} s. 108: {{emin}}–{{emax}} s, after widening.",
+      "widen": "Next crew after (s)",
+      "bounds": "Between {{wmin}} and {{wmax}} s.",
       "defaults": "Default",
       "custom": "Changed",
       "save": "Save",

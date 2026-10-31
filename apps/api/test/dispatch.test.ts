@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { memoryKv } from '../src/lib/kv';
 import { memoryCrewLocator, type LatLng } from '../src/lib/crew-locator';
-import { acceptOffer, chooseCandidates, declineOffer, dispatchAlerts, estimateEtaS } from '../src/modules/dispatch/service';
+import { acceptOffer, chooseCandidates, declineOffer, dispatchAlerts, estimateEtaS, ringTeams } from '../src/modules/dispatch/service';
 import { beginDispatch } from '../src/modules/sos/escalation-service';
 import { move, raise } from '../src/modules/sos/service';
 import { fakeDispatch } from './fake-dispatch';
@@ -130,6 +130,17 @@ describe('who is offered an SOS', () => {
     expect(byRing(3)).toEqual([backup2.id]);
     // After the last backup: the nearest free crews not yet offered.
     expect(byRing(4)).toEqual([others[2]!.id]);
+  });
+
+  it('plan §11: the no-response alarm names the team that missed and the one offered next', async () => {
+    const t = await setup({ householdId: 'hh-1' });
+    const [primary, b1] = [t.dispatch.addTeam('ABC'), t.dispatch.addTeam('XYZ')];
+    t.dispatch.householdTeam.set('hh-1', primary);
+    t.dispatch.householdBackups.set('hh-1', [b1]);
+    expect(await ringTeams(t.d, t.current(), 2)).toEqual({ missed: 'ABC', offeredTo: 'XYZ' });
+    // After the last backup: offered to the nearest free crews (no team).
+    expect(await ringTeams(t.d, t.current(), 3)).toEqual({ missed: 'XYZ', offeredTo: null });
+    expect(await ringTeams(t.d, t.current(), 4)).toEqual({ missed: null, offeredTo: null });
   });
 
   it('a backup team with nobody free is replaced by the nearest free crews', async () => {

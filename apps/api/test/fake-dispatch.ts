@@ -56,6 +56,9 @@ export function fakeDispatch(incidents: () => IncidentRow[]) {
       const list = site && siteTeam.has(site) ? [siteTeam.get(site)!, ...(siteBackups.get(site) ?? [])] : householdTeam.has(householdId) ? [householdTeam.get(householdId)!, ...(householdBackups.get(householdId) ?? [])] : [];
       return list.filter((t) => teams.get(t)?.active);
     },
+    async teamNames(ids) {
+      return new Map(ids.filter((id) => teams.has(id)).map((id) => [id, teams.get(id)!.name]));
+    },
     async householdLocation(householdId) {
       return householdAt.get(householdId) ?? null;
     },

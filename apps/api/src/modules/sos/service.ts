@@ -21,7 +21,6 @@ export function toIncident(i: IncidentRow, events: EventRow[]): SosIncident {
     createdAt: i.createdAt.toISOString(),
     location: i.lat !== null && i.lng !== null ? { lat: i.lat, lng: i.lng, ...(i.accuracyM !== null ? { accuracyM: i.accuracyM } : {}) } : null,
     widenAfterS: i.widenAfterS,
-    escalateAfterS: i.escalateAfterS,
     timeline: events.map((e) => ({ at: e.createdAt.toISOString(), from: e.fromState, to: e.toState, by: e.actorRole, reason: e.reason })),
   };
 }
@@ -100,7 +99,6 @@ export async function raise(
       accuracyM: input.location?.accuracyM ?? null,
       isDrill: !!opts.isDrill,
       widenAfterS: settings?.widenAfterS ?? sosThresholds.widenDefault,
-      escalateAfterS: settings?.escalateAfterS ?? sosThresholds.escalateDefault,
     });
     return { incident, created: true };
   } catch (err) {

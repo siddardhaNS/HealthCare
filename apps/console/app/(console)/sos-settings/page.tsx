@@ -7,7 +7,7 @@ import { saveThresholds } from '../_coverage/actions';
 
 const input = 'min-h-tap w-24 rounded-control border border-border-strong bg-surface px-3 text-text tabular-nums';
 
-// Escalation thresholds per community (plan ⚑2). Everyone who runs the
+// SOS timeout per community (plan ⚑2, §11): seconds before the next crew is offered. Everyone who runs the
 // command center can see them; only a super admin changes them (the API checks).
 export default async function SosSettingsPage() {
   const { t } = createI18n('en');
@@ -20,7 +20,7 @@ export default async function SosSettingsPage() {
         <h1 className="font-display text-h1 font-bold">{t('console.thresholds.title')}</h1>
         <p className="text-text-muted">{t('console.thresholds.intro')}</p>
         <p className="text-small text-text-muted">
-          {t('console.thresholds.bounds', { wmin: sosThresholds.widenMin, wmax: sosThresholds.widenMax, emin: sosThresholds.escalateMin, emax: sosThresholds.escalateMax })}
+          {t('console.thresholds.bounds', { wmin: sosThresholds.widenMin, wmax: sosThresholds.widenMax })}
         </p>
       </div>
       {!data ? (
@@ -50,10 +50,6 @@ export default async function SosSettingsPage() {
                         {t('console.thresholds.widen')}
                         <input type="number" name="widenAfterS" required min={sosThresholds.widenMin} max={sosThresholds.widenMax} defaultValue={s.widenAfterS} className={input} />
                       </label>
-                      <label className="flex flex-col gap-1 text-small font-semibold">
-                        {t('console.thresholds.escalate')}
-                        <input type="number" name="escalateAfterS" required min={sosThresholds.escalateMin} max={sosThresholds.escalateMax} defaultValue={s.escalateAfterS} className={input} />
-                      </label>
                       <Button type="submit" variant="outline">
                         {t('console.thresholds.save')}
                       </Button>
@@ -63,10 +59,6 @@ export default async function SosSettingsPage() {
                       <div>
                         <dt className="text-text-muted">{t('console.thresholds.widen')}</dt>
                         <dd className="font-mono text-title">{s.widenAfterS}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-text-muted">{t('console.thresholds.escalate')}</dt>
-                        <dd className="font-mono text-title">{s.escalateAfterS}</dd>
                       </div>
                     </dl>
                   )}

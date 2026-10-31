@@ -192,7 +192,7 @@ How the approved handover (§3.7, ⚑4) is built. No new kind of health data: th
 
 ---
 
-## 11. Change of plan: no 108; primary + ordered backup crews (requested 2026-10-30, ⚑ awaiting approval)
+## 11. Change of plan: no 108; primary + ordered backup crews (requested 2026-10-30, approved)
 
 Your answers: remove 108 completely; on no response, alert and offer the backup automatically; an **ordered list of backups** per place; timeout per community, default 30 s.
 
@@ -224,7 +224,7 @@ Your answers: remove 108 completely; on no response, alert and offer the backup 
 - After accepting, the crew sees the **empanelled hospitals sorted by distance from the patient's location** (the resident's phone location, else their home or community), with ETA, ER full / accepting, and the resident's preferred hospital marked.
 - The crew picks one. The handover (consented record, signed link, partner portal) opens **when the crew picks**, not automatically on accept. The crew can change it with a reason, as today.
 - Until the crew has picked, the command center shows "Hospital not chosen yet"; the desk can also pick, with a reason.
-- ⚑ To confirm: no automatic hospital at all (my reading of your message), rather than a pre-selected suggestion the crew changes.
+- Confirmed 2026-10-31: no automatic hospital at all; the crew picks (no pre-selected suggestion).
 
 **Tests:** sequence timing (primary → backup 1 → backup 2 → nearest crews), alarms at each step, ordered-list rules (no duplicates, removal and reorder), late accept by an earlier team, and the load test re-run.
 

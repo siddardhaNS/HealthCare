@@ -2323,9 +2323,6 @@
           "widenAfterS": {
             "type": "integer"
           },
-          "escalateAfterS": {
-            "type": "integer"
-          },
           "timeline": {
             "type": "array",
             "items": {
@@ -2340,7 +2337,6 @@
           "createdAt",
           "location",
           "widenAfterS",
-          "escalateAfterS",
           "timeline"
         ]
       },
@@ -2871,14 +2867,10 @@
             "properties": {
               "widenAfterS": {
                 "type": "integer"
-              },
-              "escalateAfterS": {
-                "type": "integer"
               }
             },
             "required": [
-              "widenAfterS",
-              "escalateAfterS"
+              "widenAfterS"
             ]
           }
         },
@@ -2904,9 +2896,6 @@
           "widenAfterS": {
             "type": "integer"
           },
-          "escalateAfterS": {
-            "type": "integer"
-          },
           "custom": {
             "type": "boolean"
           },
@@ -2923,7 +2912,6 @@
           "name",
           "city",
           "widenAfterS",
-          "escalateAfterS",
           "custom",
           "updatedAt"
         ]
@@ -2935,16 +2923,10 @@
             "type": "integer",
             "minimum": 15,
             "maximum": 60
-          },
-          "escalateAfterS": {
-            "type": "integer",
-            "minimum": 60,
-            "maximum": 180
           }
         },
         "required": [
-          "widenAfterS",
-          "escalateAfterS"
+          "widenAfterS"
         ]
       },
       "CoverageTeams": {
@@ -9020,7 +9002,7 @@
         "tags": [
           "desk"
         ],
-        "summary": "Escalation thresholds per community (the community desk: its own)",
+        "summary": "SOS timeout per community: seconds before the next crew is offered (the community desk: its own)",
         "security": [
           {
             "bearer": []
@@ -9086,7 +9068,7 @@
         "tags": [
           "desk"
         ],
-        "summary": "Set a community’s thresholds (super admin; applies to the next SOS; audited)",
+        "summary": "Set a community’s SOS timeout (super admin; applies to the next SOS; audited)",
         "security": [
           {
             "bearer": []

@@ -14,7 +14,8 @@ export interface LiveLabels {
   soundOff: string;
   dismiss: string;
   /** With {{ref}} still in them; filled in here. */
-  alarm: { raised: string; no_accept: string; prompt_108: string; no_hospital: string };
+  /** no_accept_*: plan §11, the team that did not respond ({{missed}}) and the next one offered ({{next}}). */
+  alarm: { raised: string; no_accept: string; no_accept_team: string; no_accept_nearest: string; no_hospital: string };
 }
 
 /** Refreshes at most this often when pushes arrive (positions come every few seconds). */
@@ -42,7 +43,7 @@ function beep(ctx: AudioContext) {
  * The command center's live layer: subscribes to the desk channels
  * (`desk:all` for operations, `desk:{siteId}` for a community desk), re-renders
  * the board on every change, raises an alarm banner (and sound, if turned on)
- * for a new SOS, a crew shortage or a 108 prompt, and polls as a fallback.
+ * for a new SOS or a ring nobody answered (naming the teams), and polls as a fallback.
  */
 export function LiveBoard({ topics, labels }: { topics: string[]; labels: LiveLabels }) {
   const router = useRouter();
@@ -78,8 +79,9 @@ export function LiveBoard({ topics, labels }: { topics: string[]; labels: LiveLa
         router.refresh();
       }, wait);
     };
-    const alarm = (why: keyof LiveLabels['alarm'], incidentId: string) => {
-      setAlarms((a) => [{ key: `${why}:${incidentId}:${Date.now()}`, text: labels.alarm[why].replace('{{ref}}', sosRef(incidentId)), incidentId }, ...a].slice(0, 3));
+    const alarm = (why: keyof LiveLabels['alarm'], incidentId: string, vars: Record<string, string> = {}) => {
+      const text = Object.entries({ ref: sosRef(incidentId), ...vars }).reduce((s, [k, v]) => s.replace(`{{${k}}}`, v), labels.alarm[why]);
+      setAlarms((a) => [{ key: `${why}:${incidentId}:${Date.now()}`, text, incidentId }, ...a].slice(0, 3));
       if (soundRef.current && audio.current) {
         void audio.current.resume().then(() => beep(audio.current!));
       }
@@ -88,8 +90,13 @@ export function LiveBoard({ topics, labels }: { topics: string[]; labels: LiveLa
     const supabase = createClient();
     const channels = topics.map((topic) =>
       supabase.channel(topic, { config: { private: true } }).on('broadcast', { event: '*' }, ({ event, payload }: { event: string; payload: unknown }) => {
-        const p = payload as { incidentId?: string; state?: string; why?: string };
-        if (event === 'alarm' && p.incidentId && (p.why === 'no_accept' || p.why === 'prompt_108' || p.why === 'no_hospital')) alarm(p.why, p.incidentId);
+        const p = payload as { incidentId?: string; state?: string; why?: string; missed?: string | null; offeredTo?: string | null };
+        if (event === 'alarm' && p.incidentId && p.why === 'no_accept') {
+          if (!p.missed) alarm('no_accept', p.incidentId);
+          else if (p.offeredTo) alarm('no_accept_team', p.incidentId, { missed: p.missed, next: p.offeredTo });
+          else alarm('no_accept_nearest', p.incidentId, { missed: p.missed });
+        }
+        if (event === 'alarm' && p.incidentId && p.why === 'no_hospital') alarm('no_hospital', p.incidentId);
         if (event === 'state' && p.state === 'raised' && p.incidentId) alarm('raised', p.incidentId);
         refresh();
       }),

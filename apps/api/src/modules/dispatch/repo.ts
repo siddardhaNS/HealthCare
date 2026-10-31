@@ -40,6 +40,8 @@ export interface DispatchRepo {
   available(filter: { incidentId: string; isDrill: boolean; teamId?: string; crewIds?: string[]; reoffer?: boolean }): Promise<{ id: string; teamId: string | null }[]>;
   /** The active teams covering a household, primary first then backups in order: through its site, or the household itself (plan §11). */
   teamsForHousehold(householdId: string): Promise<string[]>;
+  /** Team names by id, for alarms that say which team did not respond. */
+  teamNames(ids: string[]): Promise<Map<string, string>>;
   /** Where a household is (its home, else its own location), for an SOS sent without GPS. */
   householdLocation(householdId: string): Promise<LatLng | null>;
   createOffers(incidentId: string, offers: { crewId: string; ring: number; etaS: number | null }[]): Promise<OfferRow[]>;
@@ -138,6 +140,11 @@ export function drizzleDispatchRepo(db: Db): DispatchRepo {
         .where(eq(households.id, householdId))
         .orderBy(coverageAssignments.rank);
       return rows.map((r) => r.teamId);
+    },
+    async teamNames(ids) {
+      if (!ids.length) return new Map();
+      const rows = await db.select({ id: coverageTeams.id, name: coverageTeams.name }).from(coverageTeams).where(inArray(coverageTeams.id, ids));
+      return new Map(rows.map((r) => [r.id, r.name]));
     },
     async householdLocation(householdId) {
       const home = point(homes.location);

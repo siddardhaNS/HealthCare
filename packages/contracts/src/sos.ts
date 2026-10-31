@@ -115,7 +115,8 @@ export const closeNeedsReason = (state: SosState) => state !== 'handed_over';
 export const sosRef = (id: string) => `SOS-${id.replace(/-/g, '').slice(0, 6).toUpperCase()}`;
 
 /** Escalation thresholds (seconds). Plan ⚑2: defaults 30 / 90, per site within these bounds. */
-export const sosThresholds = { widenDefault: 30, escalateDefault: 90, widenMin: 15, widenMax: 60, escalateMin: 60, escalateMax: 180 } as const;
+/** Seconds between rings, per community (plan §11: no 108 step). */
+export const sosThresholds = { widenDefault: 30, widenMin: 15, widenMax: 60 } as const;
 
 /** Great-circle distance in metres. */
 export function distanceM(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {

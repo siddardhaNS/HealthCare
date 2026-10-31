@@ -74,7 +74,8 @@ export default async function CommandCenter({ searchParams }: { searchParams: Pr
             alarm: {
               raised: t('console.cc.alarm.raised', { ref: '{{ref}}' }),
               no_accept: t('console.cc.alarm.no_accept', { ref: '{{ref}}' }),
-              prompt_108: t('console.cc.alarm.prompt_108', { ref: '{{ref}}' }),
+              no_accept_team: t('console.cc.alarm.no_accept_team', { ref: '{{ref}}', missed: '{{missed}}', next: '{{next}}' }),
+              no_accept_nearest: t('console.cc.alarm.no_accept_nearest', { ref: '{{ref}}', missed: '{{missed}}' }),
               no_hospital: t('console.cc.alarm.no_hospital', { ref: '{{ref}}' }),
             },
           }}

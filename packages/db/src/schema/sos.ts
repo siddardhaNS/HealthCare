@@ -82,7 +82,8 @@ export const sosIncidents = pgTable(
     ambulanceId: uuid('ambulance_id'),
     hospitalId: uuid('hospital_id'),
     widenAfterS: integer('widen_after_s').notNull(),
-    escalateAfterS: integer('escalate_after_s').notNull(),
+    /** Unused since plan §11 (no 108 step); kept for past incidents. */
+    escalateAfterS: integer('escalate_after_s'),
     workflowRunId: text('workflow_run_id'),
     closedAt: timestamp('closed_at', { withTimezone: true }),
   },

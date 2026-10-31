@@ -63,7 +63,6 @@ export function drizzleDeskRepo(db: Db): DeskRepo {
     lng: sql<number | null>`extensions.st_x(${sosIncidents.location}::extensions.geometry)`,
     accuracyM: sosIncidents.accuracyM,
     widenAfterS: sosIncidents.widenAfterS,
-    escalateAfterS: sosIncidents.escalateAfterS,
     crewId: sosIncidents.crewId,
     createdAt: sosIncidents.createdAt,
     closedAt: sosIncidents.closedAt,

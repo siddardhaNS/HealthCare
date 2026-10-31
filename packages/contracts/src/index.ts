@@ -469,8 +469,8 @@ export const SosIncident = z
     isDrill: z.boolean(),
     createdAt: z.string().datetime(),
     location: GeoPoint.nullable(),
+    /** Seconds between rings: the next backup team, then the nearest free crews (plan §11). */
     widenAfterS: z.number().int(),
-    escalateAfterS: z.number().int(),
     timeline: z.array(SosEvent),
   })
   .openapi('SosIncident');
@@ -632,20 +632,16 @@ export const TestSosCreate = z.object({ siteId: z.string().uuid() }).openapi('Te
 // ── SOS thresholds and coverage teams (console) ─────────────────────────
 import { sosThresholds as _thresholds } from './sos';
 
-/** A community's escalation thresholds (plan ⚑2). `custom` false: the defaults apply. */
+/** A community's SOS timeout (plan ⚑2, §11): seconds before the next crew is offered. `custom` false: the default applies. */
 export const SiteSosSettings = z
-  .object({ siteId: z.string().uuid(), name: z.string(), city: z.string(), widenAfterS: z.number().int(), escalateAfterS: z.number().int(), custom: z.boolean(), updatedAt: z.string().datetime().nullable() })
+  .object({ siteId: z.string().uuid(), name: z.string(), city: z.string(), widenAfterS: z.number().int(), custom: z.boolean(), updatedAt: z.string().datetime().nullable() })
   .openapi('SiteSosSettings');
 export const SiteSosSettingsList = z
-  .object({ sites: z.array(SiteSosSettings), canEdit: z.boolean(), defaults: z.object({ widenAfterS: z.number().int(), escalateAfterS: z.number().int() }) })
+  .object({ sites: z.array(SiteSosSettings), canEdit: z.boolean(), defaults: z.object({ widenAfterS: z.number().int() }) })
   .openapi('SiteSosSettingsList');
 export type SiteSosSettingsList = z.infer<typeof SiteSosSettingsList>;
 export const SiteSosSettingsUpdate = z
-  .object({
-    widenAfterS: z.number().int().min(_thresholds.widenMin).max(_thresholds.widenMax),
-    escalateAfterS: z.number().int().min(_thresholds.escalateMin).max(_thresholds.escalateMax),
-  })
-  .refine((v) => v.escalateAfterS > v.widenAfterS, { message: 'The 108 prompt must come after widening.', path: ['escalateAfterS'] })
+  .object({ widenAfterS: z.number().int().min(_thresholds.widenMin).max(_thresholds.widenMax) })
   .openapi('SiteSosSettingsUpdate');
 
 export const CoverageTeam = z

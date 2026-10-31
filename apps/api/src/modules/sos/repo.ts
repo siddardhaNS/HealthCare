@@ -13,7 +13,6 @@ export interface IncidentRow {
   lng: number | null;
   accuracyM: number | null;
   widenAfterS: number;
-  escalateAfterS: number;
   crewId: string | null;
   createdAt: Date;
 }
@@ -38,11 +37,10 @@ export interface NewIncident {
   accuracyM: number | null;
   isDrill: boolean;
   widenAfterS: number;
-  escalateAfterS: number;
 }
 
 export interface SosRepo {
-  siteSettings(siteId: string): Promise<{ widenAfterS: number; escalateAfterS: number } | null>;
+  siteSettings(siteId: string): Promise<{ widenAfterS: number } | null>;
   byIdempotency(raisedBy: string, key: string): Promise<IncidentRow | null>;
   openForUser(userId: string): Promise<IncidentRow | null>;
   /** The job a crew has taken and not yet handed over, if any. */
@@ -79,7 +77,6 @@ export function drizzleSosRepo(db: Db): SosRepo {
     lng: sql<number | null>`extensions.st_x(${sosIncidents.location}::extensions.geometry)`,
     accuracyM: sosIncidents.accuracyM,
     widenAfterS: sosIncidents.widenAfterS,
-    escalateAfterS: sosIncidents.escalateAfterS,
     crewId: sosIncidents.crewId,
     createdAt: sosIncidents.createdAt,
   };
@@ -94,7 +91,7 @@ export function drizzleSosRepo(db: Db): SosRepo {
 
   return {
     async siteSettings(siteId) {
-      const [r] = await db.select({ widenAfterS: siteSosSettings.widenAfterS, escalateAfterS: siteSosSettings.escalateAfterS }).from(siteSosSettings).where(eq(siteSosSettings.siteId, siteId));
+      const [r] = await db.select({ widenAfterS: siteSosSettings.widenAfterS }).from(siteSosSettings).where(eq(siteSosSettings.siteId, siteId));
       return r ?? null;
     },
     async byIdempotency(raisedBy, key) {
@@ -124,7 +121,6 @@ export function drizzleSosRepo(db: Db): SosRepo {
             accuracyM: i.accuracyM,
             isDrill: i.isDrill,
             widenAfterS: i.widenAfterS,
-            escalateAfterS: i.escalateAfterS,
           })
           .returning(cols);
         await tx.insert(sosEvents).values({ incidentId: row!.id, fromState: null, toState: 'raised', actorId: i.raisedBy, actorRole: i.raisedByRole, metadata: { drill: i.isDrill } });

@@ -28,12 +28,12 @@ describe('SOS thresholds per community', () => {
   it('lists every community with the defaults until changed; only a super admin may edit', async () => {
     const s = await setup();
     const list = (await (await s.ops.get('/v1/sos-settings')).json()) as SiteSosSettingsList;
-    expect(list).toMatchObject({ canEdit: false, defaults: { widenAfterS: 30, escalateAfterS: 90 } });
-    expect(list.sites.map((x) => [x.name, x.widenAfterS, x.escalateAfterS, x.custom])).toEqual([
-      ['Green Meadows', 30, 90, false],
-      ['Palm Villas', 30, 90, false],
+    expect(list).toMatchObject({ canEdit: false, defaults: { widenAfterS: 30 } });
+    expect(list.sites.map((x) => [x.name, x.widenAfterS, x.custom])).toEqual([
+      ['Green Meadows', 30, false],
+      ['Palm Villas', 30, false],
     ]);
-    expect((await s.ops.put(`/v1/sos-settings/${s.green.id}`, { widenAfterS: 20, escalateAfterS: 75 })).status).toBe(403);
+    expect((await s.ops.put(`/v1/sos-settings/${s.green.id}`, { widenAfterS: 20 })).status).toBe(403);
     expect(((await (await s.admin.get('/v1/sos-settings')).json()) as SiteSosSettingsList).canEdit).toBe(true);
   });
 
@@ -41,25 +41,27 @@ describe('SOS thresholds per community', () => {
     const s = await setup();
     const list = (await (await s.desk.get('/v1/sos-settings')).json()) as SiteSosSettingsList;
     expect(list.sites.map((x) => x.name)).toEqual(['Green Meadows']);
-    expect((await s.desk.put(`/v1/sos-settings/${s.green.id}`, { widenAfterS: 20, escalateAfterS: 75 })).status).toBe(403);
+    expect((await s.desk.put(`/v1/sos-settings/${s.green.id}`, { widenAfterS: 20 })).status).toBe(403);
   });
 
   it('a change is audited and applies to the next SOS from that community', async () => {
     const s = await setup();
-    const res = await s.admin.put(`/v1/sos-settings/${s.green.id}`, { widenAfterS: 20, escalateAfterS: 75 });
+    const res = await s.admin.put(`/v1/sos-settings/${s.green.id}`, { widenAfterS: 20 });
     expect(res.status).toBe(200);
-    expect(await res.json()).toMatchObject({ widenAfterS: 20, escalateAfterS: 75, custom: true });
-    expect(s.t.sosSettings.audit).toEqual([{ siteId: s.green.id, from: { widen: 30, escalate: 90 }, to: { widen: 20, escalate: 75 } }]);
+    expect(await res.json()).toMatchObject({ widenAfterS: 20, custom: true });
+    expect(s.t.sosSettings.audit).toEqual([{ siteId: s.green.id, from: { widen: 30 }, to: { widen: 20 } }]);
     const sos = await (await s.as(A, [])).post('/v1/sos', { idempotencyKey: randomUUID() });
-    expect(await sos.json()).toMatchObject({ widenAfterS: 20, escalateAfterS: 75 });
+    const raised = (await sos.json()) as Record<string, unknown>;
+    expect(raised).toMatchObject({ widenAfterS: 20 });
+    // Plan §11: no 108 step, so no 108 threshold.
+    expect(raised).not.toHaveProperty('escalateAfterS');
   });
 
   it.each([
-    [{ widenAfterS: 10, escalateAfterS: 90 }, 'widen below 15 s'],
-    [{ widenAfterS: 61, escalateAfterS: 120 }, 'widen above 60 s'],
-    [{ widenAfterS: 30, escalateAfterS: 200 }, '108 above 180 s'],
-    [{ widenAfterS: 60, escalateAfterS: 60 }, '108 not after widening'],
-  ])('refuses %o (%s)', async (body) => {
+    [{ widenAfterS: 10 }, 'below 15 s'],
+    [{ widenAfterS: 61 }, 'above 60 s'],
+    [{ widenAfterS: undefined }, 'missing'],
+  ] as [{ widenAfterS?: number }, string][])('refuses %o (%s)', async (body) => {
     const s = await setup();
     expect((await s.admin.put(`/v1/sos-settings/${s.green.id}`, body)).status).toBe(400);
     expect(s.t.sosSettings.audit).toEqual([]);
@@ -67,7 +69,7 @@ describe('SOS thresholds per community', () => {
 
   it('an unknown community is 404', async () => {
     const s = await setup();
-    expect((await s.admin.put(`/v1/sos-settings/${randomUUID()}`, { widenAfterS: 20, escalateAfterS: 75 })).status).toBe(404);
+    expect((await s.admin.put(`/v1/sos-settings/${randomUUID()}`, { widenAfterS: 20 })).status).toBe(404);
   });
 });
 

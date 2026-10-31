@@ -38,7 +38,7 @@ export function recordingAlerts() {
 export function fakeSos() {
   const incidents: (IncidentRow & { idempotencyKey: string })[] = [];
   const events = new Map<string, EventRow[]>();
-  const settings = new Map<string, { widenAfterS: number; escalateAfterS: number }>();
+  const settings = new Map<string, { widenAfterS: number }>();
   const audit: { incidentId: string; action: string; role: string }[] = [];
   const runs = new Map<string, string>();
   let clock = Date.parse('2026-10-27T10:00:00Z');
@@ -79,7 +79,6 @@ export function fakeSos() {
         lng: n.lng,
         accuracyM: n.accuracyM,
         widenAfterS: n.widenAfterS,
-        escalateAfterS: n.escalateAfterS,
         crewId: null,
         createdAt: now(),
       };

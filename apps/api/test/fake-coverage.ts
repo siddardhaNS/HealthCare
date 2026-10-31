@@ -159,7 +159,7 @@ export function fakeSosSettings(hh: ReturnType<typeof fakeHouseholds>, sos: Retu
       .filter((s) => ids === 'all' || ids.includes(s.id))
       .map((s) => {
         const v = sos.settings.get(s.id);
-        return { siteId: s.id, name: s.name, city: s.city, widenAfterS: v?.widenAfterS ?? sosThresholds.widenDefault, escalateAfterS: v?.escalateAfterS ?? sosThresholds.escalateDefault, custom: !!v, updatedAt: v ? new Date('2026-10-30T10:00:00Z') : null };
+        return { siteId: s.id, name: s.name, city: s.city, widenAfterS: v?.widenAfterS ?? sosThresholds.widenDefault, custom: !!v, updatedAt: v ? new Date('2026-10-30T10:00:00Z') : null };
       });
   const repo: SosSettingsRepo = {
     list,
@@ -167,7 +167,7 @@ export function fakeSosSettings(hh: ReturnType<typeof fakeHouseholds>, sos: Retu
       const [before] = await list([siteId]);
       if (!before) return null;
       sos.settings.set(siteId, v);
-      audit.push({ siteId, from: { widen: before.widenAfterS, escalate: before.escalateAfterS }, to: { widen: v.widenAfterS, escalate: v.escalateAfterS } });
+      audit.push({ siteId, from: { widen: before.widenAfterS }, to: { widen: v.widenAfterS } });
       return (await list([siteId]))[0]!;
     },
   };

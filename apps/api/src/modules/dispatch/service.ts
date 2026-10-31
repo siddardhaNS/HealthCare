@@ -107,9 +107,20 @@ export function dispatchAlerts(d: DispatchDeps & { sos: SosRepo; realtime?: Real
     },
     async alertDesk(incident, why, ring) {
       log('sos_desk_alarm', incident, { why, ring });
-      await publishDesk(realtime, incident, 'alarm', { why, ring, at: new Date().toISOString() });
+      await publishDesk(realtime, incident, 'alarm', { why, ring, ...(why === 'no_accept' && ring ? await ringTeams(d, incident, ring) : {}), at: new Date().toISOString() });
     },
   };
+}
+
+/**
+ * For the "no response" alarm (plan §11): the team whose ring went unanswered
+ * and the team offered now. Null means the nearest free crews, not a team.
+ */
+export async function ringTeams(d: DispatchDeps, incident: IncidentRow, ring: number): Promise<{ missed: string | null; offeredTo: string | null }> {
+  const teams = incident.householdId ? await d.dispatch.teamsForHousehold(incident.householdId) : [];
+  const [missed, offered] = [teams[ring - 2], teams[ring - 1]];
+  const names = await d.dispatch.teamNames([missed, offered].filter((x): x is string => !!x));
+  return { missed: (missed && names.get(missed)) || null, offeredTo: (offered && names.get(offered)) || null };
 }
 
 export type DispatchFailure = SosFailure;
