@@ -1,5 +1,22 @@
 # Progress
 
+## 2026-10-31 · Phase 3, step 9: crew patient summary, first-aid notes, what the resident sees was shared
+
+Your decision (plan §12): the crew sees the same items as the ER, under the resident's emergency-sharing consent, during the job only, and every view is logged.
+
+- **API** `GET /v1/sos/{id}/patient` (crew on the job only, active states, never drills, `no-store`):
+  - Returns blood group, allergies, conditions and current medicines, filtered by consent; with consent off, the blood group only.
+  - Contacts, insurance and vitals stay with the hospital.
+  - Each view goes into `record_shares` (role `crew`). 3 new tests (API: 241 unit).
+- **Field app:**
+  - A patient card on the job panel, loaded once per job (each load is a logged view). Allergies are in red, and there's a note when consent limits it to the blood group.
+  - First-aid notes appear once a hospital is chosen (the notes travel with the handover, encrypted at rest).
+  - On the emulator: consent off showed the blood group only; consent on showed "Penicillin (severe)" in red. The notes were saved, and the database holds ciphertext only. All views are logged.
+- **Resident app:** the SOS screen's hospital card now says where the record was sent, which items (never their contents), and whether the ER has confirmed. It typechecks; it isn't yet seen on a device, because the e2e resident is an email account the resident app can't sign in.
+
+### Next
+- Phase 3 notifications (plan §3.3): family and desk alerts (push, WhatsApp, and SMS if WhatsApp isn't delivered in 60 s), gate security, and the family's final update. Log mode until the providers are set up.
+
 ## 2026-10-31 · Phase 3, step 8 (part 4): e2e un-skipped, signed-in CI job, Expo dependencies
 
 ### The three skipped console tests now run and pass

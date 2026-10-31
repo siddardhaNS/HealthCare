@@ -5,14 +5,15 @@ import type { Schemas } from '@repo/api-client';
 import { Button, Card, Text, useTheme } from '@repo/ui-native';
 import { ApiError, useAdvanceJob } from '../lib/data';
 import { canPickHospital, HospitalPicker } from './hospital-picker';
+import { FirstAidNotes, PatientSummary } from './patient-summary';
 
 /** Google Maps directions (the app on Android, Maps or the browser on iOS); no API key needed. */
 export const directionsUrl = (p: { lat: number; lng: number }) => `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}&travelmode=driving`;
 
 /**
  * The taken job: where to go, the location-sharing indicator, and one big
- * status button for the next step, and the receiving hospital the crew picks
- * (plan §11). No medical details here.
+ * status button for the next step, the receiving hospital the crew picks
+ * (plan §11), and the consented patient summary and first-aid notes (plan §12).
  */
 export function JobPanel({ job, tracking }: { job: Schemas['CrewJob']; tracking: boolean | null }) {
   const { t } = useTranslation();
@@ -55,7 +56,9 @@ export function JobPanel({ job, tracking }: { job: Schemas['CrewJob']; tracking:
 
       {incident.location ? <Button label={t('field.navigate')} tone="neutral" onPress={() => void Linking.openURL(directionsUrl(incident.location!))} /> : null}
 
+      {canPickHospital(job) ? <PatientSummary job={job} /> : null}
       {canPickHospital(job) ? <HospitalPicker job={job} /> : null}
+      {canPickHospital(job) && job.handover ? <FirstAidNotes job={job} /> : null}
 
       {failed ? <Text tone="danger">{t('field.networkError')}</Text> : null}
       {nextStep ? (

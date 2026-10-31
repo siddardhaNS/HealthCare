@@ -117,7 +117,31 @@
       "change": "Change hospital",
       "keep": "Keep the current hospital"
     },
-    "locating": "Getting your location…"
+    "locating": "Getting your location…",
+    "patient": {
+      "title": "Patient",
+      "loading": "Loading the patient summary…",
+      "age": "{{age}} yrs",
+      "bloodGroup": "Blood group",
+      "allergies": "Allergies",
+      "conditions": "Conditions",
+      "medicines": "Current medicines",
+      "none": "None recorded",
+      "unknown": "Not recorded",
+      "consentOff": "The patient has not consented to share more than the blood group.",
+      "logged": "Shown only during this job. Each view is logged.",
+      "severity": {
+        "mild": "mild",
+        "moderate": "moderate",
+        "severe": "severe"
+      }
+    },
+    "notes": {
+      "label": "First-aid notes for the hospital",
+      "placeholder": "What you gave and when, e.g. aspirin 300 mg at 10:42",
+      "save": "Save notes",
+      "saved": "Notes sent with the handover."
+    }
   },
   "web": {
     "heroTitle": "Doctors, medicines, lab tests and a 24×7 SOS for every home",
@@ -806,6 +830,19 @@
     "now": "now",
     "erTitle": "Hospital handover",
     "erPending": "Shown here once a hospital is chosen. Only what your consent settings allow is shared.",
-    "noDeskNumber": "The community desk number is not available yet. Keep this screen open: we keep trying."
+    "noDeskNumber": "The community desk number is not available yet. Keep this screen open: we keep trying.",
+    "erSentTo": "Sent to {{hospital}}",
+    "erShared": "Shared: {{items}}",
+    "erConfirmed": "The hospital has received your details.",
+    "erWaiting": "Waiting for the hospital to confirm.",
+    "items": {
+      "blood_group": "blood group",
+      "allergies": "allergies",
+      "conditions": "conditions",
+      "medicines": "medicines",
+      "last_vitals": "last vitals",
+      "emergency_contacts": "emergency contacts",
+      "insurance": "insurance"
+    }
   }
 }

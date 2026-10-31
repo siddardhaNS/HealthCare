@@ -115,3 +115,25 @@ export function usePickHospital() {
     onSettled: () => qc.invalidateQueries({ queryKey: keys.job }),
   });
 }
+
+// ── Patient summary and first-aid notes (plan §12) ───────────────────────
+
+/** Fetched once per job (each fetch is a logged view of health data), never polled. */
+export function usePatientSummary(incidentId: string, enabled: boolean) {
+  const { api } = useSession();
+  return useQuery({
+    queryKey: ['crew', 'job', incidentId, 'patient'] as const,
+    enabled,
+    staleTime: Infinity,
+    gcTime: 0,
+    queryFn: () => unwrap(api.GET('/v1/sos/{id}/patient', { params: { path: { id: incidentId } } })),
+  });
+}
+
+/** Saves the crew's first-aid notes into the hospital handover (replaces earlier notes). */
+export function useSaveFirstAidNotes() {
+  const { api } = useSession();
+  return useMutation({
+    mutationFn: ({ id, notes }: { id: string; notes: string }) => unwrap(api.POST('/v1/sos/{id}/first-aid-notes', { params: { path: { id } }, body: { notes } })),
+  });
+}

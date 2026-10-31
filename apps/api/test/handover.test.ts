@@ -450,3 +450,50 @@ describe('managing network hospitals', () => {
     expect(choices.hospitals.map((h) => h.name)).not.toContain('Apollo');
   });
 });
+
+describe('the crew’s patient summary (plan §12)', () => {
+  it('with emergency sharing on: blood group, allergies, conditions, medicines; no contacts, insurance or vitals; logged', async () => {
+    const s = await setup();
+    await s.share('granted');
+    const id = await s.sos();
+    const c = await s.crew();
+    await c.accept(id);
+    const res = await c.field.get(`/v1/sos/${id}/patient`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('cache-control')).toBe('no-store');
+    const r = (await res.json()) as Record<string, unknown>;
+    expect(r).toMatchObject({ items: ['blood_group', 'allergies', 'conditions', 'medicines'], bloodGroup: 'B+', allergies: [{ substance: 'Penicillin' }] });
+    expect(r).not.toHaveProperty('emergencyContacts');
+    expect(r).not.toHaveProperty('insurance');
+    expect(r).not.toHaveProperty('lastVitals');
+    expect(s.t.handovers.shares.at(-1)).toMatchObject({ subjectId: A, viewerRole: 'crew', incidentId: id, items: ['blood_group', 'allergies', 'conditions', 'medicines'] });
+  });
+
+  it('with emergency sharing off: the blood group only', async () => {
+    const s = await setup();
+    const id = await s.sos();
+    const c = await s.crew();
+    await c.accept(id);
+    const r = (await (await c.field.get(`/v1/sos/${id}/patient`)).json()) as Record<string, unknown>;
+    expect(r).toMatchObject({ items: ['blood_group'], bloodGroup: 'B+', patient: { name: 'Lakshmi Rao', age: null, sex: null } });
+    expect(r).not.toHaveProperty('allergies');
+  });
+
+  it('only the crew on the job, only during it, never for drills', async () => {
+    const s = await setup();
+    await s.share('granted');
+    const id = await s.sos();
+    const c = await s.crew();
+    await c.accept(id);
+    expect((await (await s.crew()).field.get(`/v1/sos/${id}/patient`)).status).toBe(404);
+    for (const to of ['en_route', 'on_scene', 'transporting', 'handed_over']) await c.field.post(`/v1/sos/${id}/status`, { to });
+    expect((await c.field.get(`/v1/sos/${id}/patient`)).status).toBe(409);
+
+    const drill = (await (await s.desk.post('/v1/desk/sos/test', { siteId: s.green.id })).json()) as { id: string };
+    await beginDispatch({ sos: s.t.deps.sos, alerts: dispatchAlerts({ dispatch: s.t.deps.dispatch, locator: s.t.locator, sos: s.t.deps.sos }) }, drill.id);
+    const d = await s.crew({ drillParticipant: true });
+    await d.accept(drill.id);
+    expect((await d.field.get(`/v1/sos/${drill.id}/patient`)).status).toBe(409);
+    expect(s.t.handovers.shares.filter((x) => x.viewerRole === 'crew')).toHaveLength(0);
+  });
+});

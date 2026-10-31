@@ -190,11 +190,24 @@ function LiveSos({ id }: { id: string }) {
             {open ? (
               <Card style={{ gap: space[1], flexDirection: 'row', alignItems: 'flex-start' }}>
                 <Icon name="doc" color={colors.textMuted} size={18} />
-                <View style={{ flex: 1, gap: space[1] }}>
+                <View style={{ flex: 1, gap: space[1] }} accessibilityLiveRegion="polite">
                   <Text weight="bold">{t('sos.erTitle')}</Text>
-                  <Text variant="small" tone="muted">
-                    {t('sos.erPending')}
-                  </Text>
+                  {s.handover ? (
+                    <>
+                      {/* What went to the hospital: where and which items, never their contents. */}
+                      <Text variant="small">{t('sos.erSentTo', { hospital: s.handover.hospital.name })}</Text>
+                      <Text variant="small" tone="muted">
+                        {t('sos.erShared', { items: s.handover.items.map((i) => t(`sos.items.${i}`)).join(', ') })}
+                      </Text>
+                      <Text variant="small" tone={s.handover.confirmedAt ? 'accent' : 'muted'}>
+                        {s.handover.confirmedAt ? t('sos.erConfirmed') : t('sos.erWaiting')}
+                      </Text>
+                    </>
+                  ) : (
+                    <Text variant="small" tone="muted">
+                      {t('sos.erPending')}
+                    </Text>
+                  )}
                 </View>
               </Card>
             ) : null}

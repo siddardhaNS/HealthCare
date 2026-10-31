@@ -3,6 +3,7 @@ import {
   ErrorBody,
   FirstAidNotes,
   HandoverLinkView,
+  HandoverRecord,
   HandoverRedirect,
   NearbyHospital,
   HandoverSummary,
@@ -28,7 +29,7 @@ import { isSosFailure, type SosFailure } from '../sos/transition';
 import type { IncidentRow } from '../sos/repo';
 import { LINK_TOKEN } from './policy';
 import type { HospitalRow } from './repo';
-import { hospitalsNear, linkView, partnerConfirm, partnerDetail, partnerList, redirectHandover, saveFirstAidNotes, toSummary } from './service';
+import { crewPatientSummary, hospitalsNear, linkView, partnerConfirm, partnerDetail, partnerList, redirectHandover, saveFirstAidNotes, toSummary } from './service';
 
 const security = [{ bearer: [] }];
 const json = <T extends z.ZodType>(schema: T, description: string) => ({ description, content: { 'application/json': { schema } } });
@@ -162,6 +163,16 @@ const r = {
     ...authed,
     request: { ...idParam, ...body(HandoverRedirect) },
     responses: { 200: json(HandoverSummary, 'Updated'), ...failures },
+  }),
+  crewPatient: createRoute({
+    method: 'get',
+    path: '/sos/{id}/patient',
+    operationId: 'crewPatientSummary',
+    tags: ['handover'],
+    summary: 'Crew: the patient summary during the job (plan §12): what the person’s emergency-sharing consent allows, of blood group, allergies, conditions and medicines; never for drills; every view logged',
+    ...authed,
+    request: idParam,
+    responses: { 200: json(HandoverRecord, 'Patient summary'), ...failures },
   }),
   notes: createRoute({
     method: 'post',
@@ -307,6 +318,14 @@ export const handoverRoutes = new OpenAPIHono<AppEnv>()
     const { hospitalId, reason } = c.req.valid('json');
     const done = await redirectHandover(c.get('deps'), job.incident, hospitalId, reason ?? null, { id: job.userId, role: 'crew' });
     return isSosFailure(done) ? failure(c, done) : c.json(toSummary(done), 200);
+  })
+  .openapi(r.crewPatient, async (c) => {
+    const job = await crewJob(c, c.req.valid('param').id);
+    if (isSosFailure(job)) return failure(c, job);
+    const record = await crewPatientSummary(c.get('deps'), job.incident, job.userId);
+    // Health data: never cached anywhere.
+    c.header('cache-control', 'no-store');
+    return isSosFailure(record) ? failure(c, record) : c.json(record, 200);
   })
   .openapi(r.notes, async (c) => {
     const job = await crewJob(c, c.req.valid('param').id);

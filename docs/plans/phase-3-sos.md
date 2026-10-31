@@ -229,3 +229,10 @@ Your answers: remove 108 completely; on no response, alert and offer the backup 
 **Tests:** sequence timing (primary → backup 1 → backup 2 → nearest crews), alarms at each step, ordered-list rules (no duplicates, removal and reorder), late accept by an earlier team, and the load test re-run.
 
 **Order of work once approved:** migration (backup ranks on coverage assignments, thresholds simplified, 108 removed from the state machine for new incidents) → workflow → console (coverage lists, alarms, thresholds) → resident app strings and buttons → tests and load test.
+
+## 12. Crew patient summary (decided 2026-10-31)
+
+- The crew sees **the same items as the ER handover**, following the resident's `emergency_share` consent: with it on, blood group, allergies, conditions and current medicines; with it off, blood group only. (Contacts, insurance and vitals stay with the hospital.)
+- Visible in the field app **only while this crew has the job** (accepted → transporting), never for drills.
+- Every view is logged in `record_shares` (viewer = the crew member, role `crew`, with the incident).
+- First-aid notes typed by the crew go into the handover (encrypted at rest), as already built.

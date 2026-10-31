@@ -131,6 +131,24 @@ export async function hospitalsNear(d: Pick<HandoverDeps, 'handovers' | 'dispatc
   return hospitalsByDistance(from, all).map((h) => ({ id: h.id, name: h.name, hasCapacity: h.hasCapacity, etaS: h.etaS, preferred: h.id === preferredId }));
 }
 
+/** Plan §12: what the crew may see; the rest of the record goes to the hospital only. */
+export const CREW_ITEMS = ['blood_group', 'allergies', 'conditions', 'medicines'] as const;
+
+/**
+ * Plan §12: the patient summary for the crew on the job. The same items as the ER
+ * would get (the person's emergency-sharing consent), limited to CREW_ITEMS; only
+ * while this crew has the job, never for drills. Every view is logged.
+ */
+export async function crewPatientSummary(d: HandoverDeps, incident: IncidentRow, viewerId: string, now = new Date()) {
+  if (incident.isDrill) return fail('conflict', 'Drills have no patient record.');
+  if (!redirectable(incident)) return fail('conflict', 'The patient summary is shown only during the job.');
+  const items = (await itemsFor(d, incident.userId)).filter((i) => (CREW_ITEMS as readonly string[]).includes(i));
+  const handover = await d.handovers.forIncident(incident.id);
+  const record = buildRecord(await d.handovers.patientData(incident.userId), items, d.config.fieldKey, handover?.firstAidNotesEnc ?? null, now);
+  await d.handovers.recordShare({ subjectId: incident.userId, viewerId, viewerRole: 'crew', items, incidentId: incident.id, expiresAt: new Date(now.getTime() + HANDOVER_TTL_MS) });
+  return record;
+}
+
 /** The crew's first-aid notes, added to the handover (encrypted at rest). */
 export async function saveFirstAidNotes(d: HandoverDeps, incident: IncidentRow, notes: string): Promise<true | SosFailure> {
   if (!redirectable(incident) && incident.state !== 'handed_over') return fail('conflict', 'Notes can be added only during the job.');
