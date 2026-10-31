@@ -8,6 +8,7 @@ export interface SiteSettingsRow {
   name: string;
   city: string;
   widenAfterS: number;
+  gatePhone: string | null;
   custom: boolean;
   updatedAt: Date | null;
 }
@@ -15,14 +16,14 @@ export interface SiteSettingsRow {
 export interface SosSettingsRepo {
   list(siteIds: string[] | 'all'): Promise<SiteSettingsRow[]>;
   /** Null if there is no such site. Audited with the values before and after. */
-  set(siteId: string, v: { widenAfterS: number }, actor: string): Promise<SiteSettingsRow | null>;
+  set(siteId: string, v: { widenAfterS: number; gatePhone?: string | null }, actor: string): Promise<SiteSettingsRow | null>;
 }
 
 export function drizzleSosSettingsRepo(db: Db): SosSettingsRepo {
   const list: SosSettingsRepo['list'] = async (siteIds) => {
     if (siteIds !== 'all' && siteIds.length === 0) return [];
     const rows = await db
-      .select({ siteId: sites.id, name: sites.name, city: sites.city, widen: siteSosSettings.widenAfterS, updatedAt: siteSosSettings.updatedAt })
+      .select({ siteId: sites.id, name: sites.name, city: sites.city, widen: siteSosSettings.widenAfterS, gatePhone: siteSosSettings.gatePhone, updatedAt: siteSosSettings.updatedAt })
       .from(sites)
       .leftJoin(siteSosSettings, eq(siteSosSettings.siteId, sites.id))
       .where(siteIds === 'all' ? undefined : inArray(sites.id, siteIds))
@@ -32,6 +33,7 @@ export function drizzleSosSettingsRepo(db: Db): SosSettingsRepo {
       name: r.name,
       city: r.city,
       widenAfterS: r.widen ?? sosThresholds.widenDefault,
+      gatePhone: r.gatePhone ?? null,
       custom: r.widen !== null,
       updatedAt: r.updatedAt,
     }));
@@ -52,7 +54,7 @@ export function drizzleSosSettingsRepo(db: Db): SosSettingsRepo {
           action: 'sos_thresholds_changed',
           entityType: 'site',
           entityId: siteId,
-          metadata: { from: { widen: before.widenAfterS }, to: { widen: v.widenAfterS } },
+          metadata: { from: { widen: before.widenAfterS, gate_phone_set: !!before.gatePhone }, to: { widen: v.widenAfterS, gate_phone_set: v.gatePhone === undefined ? !!before.gatePhone : !!v.gatePhone } },
         });
       });
       return (await list([siteId]))[0] ?? null;

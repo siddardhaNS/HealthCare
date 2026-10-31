@@ -2137,12 +2137,14 @@ export interface components {
             name: string;
             city: string;
             widenAfterS: number;
+            gatePhone: string | null;
             custom: boolean;
             /** Format: date-time */
             updatedAt: string | null;
         };
         SiteSosSettingsUpdate: {
             widenAfterS: number;
+            gatePhone?: string | null;
         };
         CoverageTeams: {
             teams: components["schemas"]["CoverageTeam"][];

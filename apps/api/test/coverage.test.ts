@@ -67,6 +67,15 @@ describe('SOS thresholds per community', () => {
     expect(s.t.sosSettings.audit).toEqual([]);
   });
 
+  it('plan §13: the gate security mobile is set, kept when not sent, and cleared with null', async () => {
+    const s = await setup();
+    const url = '/v1/sos-settings/' + s.green.id;
+    expect(await (await s.admin.put(url, { widenAfterS: 20, gatePhone: '+919876500000' })).json()).toMatchObject({ widenAfterS: 20, gatePhone: '+919876500000' });
+    expect(await (await s.admin.put(url, { widenAfterS: 25 })).json()).toMatchObject({ widenAfterS: 25, gatePhone: '+919876500000' });
+    expect((await s.admin.put(url, { widenAfterS: 25, gatePhone: '04012345678' })).status).toBe(400);
+    expect(await (await s.admin.put(url, { widenAfterS: 25, gatePhone: null })).json()).toMatchObject({ gatePhone: null });
+  });
+
   it('an unknown community is 404', async () => {
     const s = await setup();
     expect((await s.admin.put(`/v1/sos-settings/${randomUUID()}`, { widenAfterS: 20 })).status).toBe(404);

@@ -363,7 +363,9 @@
       "save": "Save",
       "saved": "Saved",
       "readOnly": "Only a super admin can change thresholds.",
-      "empty": "No communities yet."
+      "empty": "No communities yet.",
+      "gatePhone": "Gate security mobile (alerted on every SOS)",
+      "gateNone": "Not set"
     },
     "coverage": {
       "title": "Coverage teams",

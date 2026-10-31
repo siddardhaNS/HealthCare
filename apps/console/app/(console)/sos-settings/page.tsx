@@ -50,6 +50,10 @@ export default async function SosSettingsPage() {
                         {t('console.thresholds.widen')}
                         <input type="number" name="widenAfterS" required min={sosThresholds.widenMin} max={sosThresholds.widenMax} defaultValue={s.widenAfterS} className={input} />
                       </label>
+                      <label className="flex flex-col gap-1 text-small font-semibold">
+                        {t('console.thresholds.gatePhone')}
+                        <input type="tel" name="gatePhone" inputMode="tel" placeholder="+91XXXXXXXXXX" pattern="\+91[6-9]\d{9}" defaultValue={s.gatePhone ?? ''} className={cn(input, 'w-48')} />
+                      </label>
                       <Button type="submit" variant="outline">
                         {t('console.thresholds.save')}
                       </Button>
@@ -59,6 +63,10 @@ export default async function SosSettingsPage() {
                       <div>
                         <dt className="text-text-muted">{t('console.thresholds.widen')}</dt>
                         <dd className="font-mono text-title">{s.widenAfterS}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-text-muted">{t('console.thresholds.gatePhone')}</dt>
+                        <dd className="font-mono text-title">{s.gatePhone ?? t('console.thresholds.gateNone')}</dd>
                       </div>
                     </dl>
                   )}

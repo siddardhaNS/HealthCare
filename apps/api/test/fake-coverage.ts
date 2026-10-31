@@ -159,14 +159,14 @@ export function fakeSosSettings(hh: ReturnType<typeof fakeHouseholds>, sos: Retu
       .filter((s) => ids === 'all' || ids.includes(s.id))
       .map((s) => {
         const v = sos.settings.get(s.id);
-        return { siteId: s.id, name: s.name, city: s.city, widenAfterS: v?.widenAfterS ?? sosThresholds.widenDefault, custom: !!v, updatedAt: v ? new Date('2026-10-30T10:00:00Z') : null };
+        return { siteId: s.id, name: s.name, city: s.city, widenAfterS: v?.widenAfterS ?? sosThresholds.widenDefault, gatePhone: v?.gatePhone ?? null, custom: !!v, updatedAt: v ? new Date('2026-10-30T10:00:00Z') : null };
       });
   const repo: SosSettingsRepo = {
     list,
     async set(siteId, v) {
       const [before] = await list([siteId]);
       if (!before) return null;
-      sos.settings.set(siteId, v);
+      sos.settings.set(siteId, { ...v, gatePhone: v.gatePhone === undefined ? (sos.settings.get(siteId)?.gatePhone ?? null) : v.gatePhone });
       audit.push({ siteId, from: { widen: before.widenAfterS }, to: { widen: v.widenAfterS } });
       return (await list([siteId]))[0]!;
     },

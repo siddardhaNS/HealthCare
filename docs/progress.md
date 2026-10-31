@@ -20,7 +20,13 @@ Your decisions are written up as plan §13: family = emergency contacts only, an
   - **Bundling:** the workflow file imports types only and its steps load the alerts module lazily (the workflow bundle can't include the database driver).
   - **Tests:** 6 unit + 1 workflow (API: 255 unit, 8 workflow).
   - **Real stack:** desk WhatsApp at 07:08:19, then the SMS fallback at 07:09:19, linked as a fallback.
-- **Left in step 10:** a gate phone field on the SOS timeout page (the column exists; the API doesn't set it yet).
+- **Gate phone (step 10 complete):** a "Gate security mobile" field per community on the SOS timeout page (`gatePhone` in the sos-settings API: kept when not sent, cleared with null; mobile numbers only, as the column requires). The audit records whether one is set, not the number. Checked in Chrome.
+
+### Next
+- Phase 3 is functionally complete. Remaining before Phase 4:
+  - FCM / APNs push (needs provider set-up)
+  - a device pass with WhatsApp / MSG91 in live mode once Meta and DLT approvals exist
+  - plan sign-off for Phase 4 (consults and calling; the plan needs your approval before building)
 
 ## 2026-10-31 · Phase 3, step 9: crew patient summary, first-aid notes, what the resident sees was shared
 

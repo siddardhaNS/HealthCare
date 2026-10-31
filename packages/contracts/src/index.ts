@@ -644,14 +644,18 @@ import { sosThresholds as _thresholds } from './sos';
 
 /** A community's SOS timeout (plan ⚑2, §11): seconds before the next crew is offered. `custom` false: the default applies. */
 export const SiteSosSettings = z
-  .object({ siteId: z.string().uuid(), name: z.string(), city: z.string(), widenAfterS: z.number().int(), custom: z.boolean(), updatedAt: z.string().datetime().nullable() })
+  .object({ siteId: z.string().uuid(), name: z.string(), city: z.string(), widenAfterS: z.number().int(), gatePhone: z.string().nullable(), custom: z.boolean(), updatedAt: z.string().datetime().nullable() })
   .openapi('SiteSosSettings');
 export const SiteSosSettingsList = z
   .object({ sites: z.array(SiteSosSettings), canEdit: z.boolean(), defaults: z.object({ widenAfterS: z.number().int() }) })
   .openapi('SiteSosSettingsList');
 export type SiteSosSettingsList = z.infer<typeof SiteSosSettingsList>;
 export const SiteSosSettingsUpdate = z
-  .object({ widenAfterS: z.number().int().min(_thresholds.widenMin).max(_thresholds.widenMax) })
+  .object({
+    widenAfterS: z.number().int().min(_thresholds.widenMin).max(_thresholds.widenMax),
+    /** Plan §13: the gate security's mobile, alerted on every real SOS in this community; null clears it. */
+    gatePhone: z.string().trim().regex(/^\+91[6-9]\d{9}$/, 'Use +91 and the ten-digit mobile number').nullable().optional(),
+  })
   .openapi('SiteSosSettingsUpdate');
 
 export const CoverageTeam = z

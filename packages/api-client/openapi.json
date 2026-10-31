@@ -2917,6 +2917,12 @@
           "widenAfterS": {
             "type": "integer"
           },
+          "gatePhone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "custom": {
             "type": "boolean"
           },
@@ -2933,6 +2939,7 @@
           "name",
           "city",
           "widenAfterS",
+          "gatePhone",
           "custom",
           "updatedAt"
         ]
@@ -2944,6 +2951,13 @@
             "type": "integer",
             "minimum": 15,
             "maximum": 60
+          },
+          "gatePhone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^\\+91[6-9]\\d{9}$"
           }
         },
         "required": [
