@@ -97,7 +97,18 @@ jobs:
           for i in $(seq 1 90); do curl -sf http://localhost:3001/v1/health && exit 0; sleep 2; done
           cat api.log; exit 1
 
+      # Through turbo, so workspace build outputs come first (the console imports
+      # @repo/tokens/tailwind.css from packages/tokens/dist).
+      - name: Build and start the console
+        run: |
+          pnpm turbo run build --filter=console
+          pnpm --filter console start > console.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf -o /dev/null http://localhost:3002/sign-in && exit 0; sleep 2; done
+          cat console.log; exit 1
+
       - name: Signed-in console e2e
+        env:
+          E2E_BASE_URL: http://localhost:3002
         run: |
           pnpm --filter console exec playwright install --with-deps chromium
           pnpm --filter console e2e:signed-in
@@ -110,4 +121,5 @@ jobs:
           path: |
             apps/console/test-results
             api.log
+            console.log
           retention-days: 7
