@@ -1,5 +1,34 @@
 # Progress
 
+## 2026-10-31 · Phase 4, step 3 (started): payment gateway
+
+- **Razorpay docs read today:** Orders API, Standard Checkout signature, webhooks, Refunds, the React Native SDK.
+- **Done:** `apps/api/src/modules/payments/gateway.ts`:
+  - orders in integer paise (Basic auth)
+  - refunds (`speed: normal`, with a receipt as the idempotency key)
+  - checkout signature: HMAC-SHA256 of `order_id|payment_id` with the key secret, our own order id
+  - webhook signature: HMAC-SHA256 of the **raw** body with the webhook secret, header `X-Razorpay-Signature`
+  - constant-time comparison
+  - a `localGateway` with the same rules for development and tests
+  - 3 tests; the checkout signature is pinned to a value computed independently with openssl
+  - `RAZORPAY_WEBHOOK_SECRET` added to `.env.example`
+- **Flag for step 6 (resident app):** Razorpay's pages contradict each other on Expo. The Android guide says prebuild works; the FAQ says Expo can't and suggests a web-view checkout. Check with a dev build before relying on `react-native-razorpay`.
+
+### Next: the rest of step 3 (API)
+- **3a:**
+  - `GET /doctors?specialtyId&type` (bookable doctors, fee, next slot) and `GET /doctors/{id}/slots`
+  - `POST /consults/suggest` (keyword map)
+  - `POST /appointments`: checks the slot against the generator, holds it (`held`, 10 min; the unique index stops double booking), creates the payment row and the order, returns checkout {keyId, orderId, amount}. A zero fee books at once.
+  - `POST /appointments/{id}/payment` (checkout signature → booked)
+  - `POST /webhooks/razorpay`: raw body, signature, `x-razorpay-event-id` into `webhook_events`; `payment.captured` / `order.paid` → booked; `refund.processed` / `failed`.
+  - `GET /appointments` and `GET /appointments/{id}`
+  - `POST /appointments/{id}/cancel`, refunding per `refundFor`
+  - deps: `razorpayGateway` when keys are set, `localGateway` otherwise (refused in production)
+- **3b:**
+  - one Workflow per appointment: hold expiry at 10 min, then a reminder 1 h before (WhatsApp, only to residents with a WhatsApp opt-in)
+  - templates `consult_booked` and `consult_reminder` (no health details)
+- **Then:** plan §8 (staff accounts in the console), and steps 4–5 (calls on a local LiveKit server; e-prescription).
+
 ## 2026-10-31 · Phase 4, step 1: data model, appointment state machine, slots
 
 - **Migration** `20261031070000_consults.sql` (applied locally). Tables:
