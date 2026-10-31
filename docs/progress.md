@@ -7,7 +7,7 @@ Your decision (plan §12): the crew sees the same items as the ER, under the res
 - **API** `GET /v1/sos/{id}/patient` (crew on the job only, active states, never drills, `no-store`):
   - Returns blood group, allergies, conditions and current medicines, filtered by consent; with consent off, the blood group only.
   - Contacts, insurance and vitals stay with the hospital.
-  - Each view goes into `record_shares` (role `crew`). 3 new tests (API: 241 unit).
+  - Each view goes into `record_shares` (role `crew`). 3 new tests (API: 248 unit, 7 workflow).
 - **Field app:**
   - A patient card on the job panel, loaded once per job (each load is a logged view). Allergies are in red, and there's a note when consent limits it to the blood group.
   - First-aid notes appear once a hospital is chosen (the notes travel with the handover, encrypted at rest).
