@@ -38,7 +38,7 @@
 - **Local e2e is unreliable on this machine** under load (dev servers, Docker, Chrome): each full run fails a different test (timeouts while opening the browser, a 3.6-minute simple test). CI's clean runner is the reference.
 
 ### Gap to flag
-- Staff sign-ins (doctors included) can only be created with a command-line script. Operations will need user management in the console before the pilot.
+- Staff sign-ins (doctors included) can only be created with a command-line script. **Added to the plan as §8** (staff accounts in the console, super admin only, invite email), to build after step 3 and before the pilot.
 
 ### Next (step 3)
 - Booking API: resident search by specialty and type, slots, hold the slot and create the Razorpay order (test mode), webhook, hold-expiry Workflow, WhatsApp confirmation and reminders.

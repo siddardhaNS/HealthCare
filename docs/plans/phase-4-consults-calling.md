@@ -166,3 +166,15 @@ From the brief's outline; every table has `id`, `created_at`, `updated_at`, and 
 7. In-app crew call (SOS) and desk call on the same module; WhatsApp nudge and work-number fallback.
 8. iOS: CallKit / PushKit (EAS build), a real-iPhone pass.
 9. Load and failure tests, e2e, docs, progress.
+
+---
+
+## 8. Staff accounts in the console (added 2026-10-31, before the pilot)
+
+Today every staff sign-in (operations, desk, hospital ER, doctors) is created with a command-line script (`pnpm --filter api staff:create`), which operations can't run.
+
+- **Who:** super admin only. Operations may *request* (later), not create.
+- **What:** Settings → Staff. Add a person (name, email, roles, and the scope where the role needs one: community for the desk, hospital for ER staff), change roles, suspend / reactivate, reset two-factor. Every change is audited.
+- **First sign-in:** an invite email with a one-time link to set a password, then TOTP set-up (email through Resend, the agreed provider). Until Resend is set up, a one-time password shown once to the super admin, as the script does today.
+- **Doctors:** "Add a doctor" creates the sign-in as well, so operations do it in one place.
+- **Order:** after step 3 (booking), before the pilot. The script stays for local development.
