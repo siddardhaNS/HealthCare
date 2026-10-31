@@ -56,15 +56,15 @@ Plan §11 is now built. Your answers today:
   - the crew's change is refused without a reason
 - **On the Android emulator** (dev builds, local stack):
   - Resident onboarding:
-    - Telugu and Hindi on: the picker shows English and తెలుగు only.
+    - Telugu on, Hindi off: the picker shows English and తెలుగు only.
     - English only: the picker is hidden.
   - A resident whose profile says Telugu, with only English enabled, sees English.
   - Live SOS: no 108 button; **Call desk** opens the dialer with the console number.
   - Field app, after accept:
-    - Choose the hospital: a distance-sorted list. Picking one shows \"Record sent. Waiting for the ER to confirm\".
+    - Choose the hospital: a distance-sorted list. Picking one shows "Record sent. Waiting for the ER to confirm".
     - Change hospital: the list stays disabled until a reason is typed, then a new handover opens.
     - The reason is stored on the handover. The audit records the crew, both hospitals and the consented items, but not the free-text reason.
-  - Maestro  still fails to reconnect the dev build to Metro after  (known from 28 Oct). Tested by hand with adb instead.
+  - Maestro `sign-in.yaml` still fails to reconnect the dev build to Metro after `clearState` (known from 28 Oct). Tested by hand with adb instead.
 
 ### Found on the way
 - After appending to a server-actions file, `next dev` (Turbopack) can serve a stale module ("action is not a function"). Restarting the dev server fixes it.
