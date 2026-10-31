@@ -26,8 +26,11 @@
 - **Field app fix found while testing:** going on duty waits for a location fix (seconds). Meanwhile the switch looked off and stayed tappable, so a second tap undid the first (seen in `crew_shifts`).
   - The switch is now locked during the wait and says "Getting your location…".
 
+- **CI is fully green** for the first time (run 41171824517): `verify` and `e2e-signed-in` both pass.
+  - The first run of the new job failed: the console needs `packages/tokens/dist`, which only a turbo build produces. The job now builds through turbo and starts the console itself.
+  - Once the Expo step passed, the dependency audit ran and failed on node-forge <1.4.1 (5 high, via `@expo/cli`). Fixed with an override to 1.4.2, which is in `@expo/cli`'s range. The old node-forge audit ignore is removed.
+
 ### Next
-- Watch the first run of the `e2e-signed-in` CI job.
 - Clean-up idea: e2e runs leave three deactivated test teams each time (teams cannot be deleted). Consider a delete for unused teams, or reusing named test teams.
 
 ## 2026-10-31 · Phase 3, step 8 (plan §11, part 3): no 108 anywhere, desk number, languages, crew picks the hospital
