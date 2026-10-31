@@ -236,3 +236,17 @@ Your answers: remove 108 completely; on no response, alert and offer the backup 
 - Visible in the field app **only while this crew has the job** (accepted → transporting), never for drills.
 - Every view is logged in `record_shares` (viewer = the crew member, role `crew`, with the incident).
 - First-aid notes typed by the crew go into the handover (encrypted at rest), as already built.
+
+## 13. SOS notifications (decided 2026-10-31)
+
+Your answers: **family = the resident's emergency contacts only**; WhatsApp needs an opt-in, so **the resident confirms the contact agreed** when adding them.
+
+- **Opt-in:** adding or editing an emergency contact has a tick, "They agree to get emergency alerts from us on WhatsApp or SMS". Ticked → a `messaging_optins` row for that phone (source `confirmed_by_resident`, who and when). Unticked contacts are saved but get no alerts, and the app says so. A STOP reply opts the number out, as today.
+- **On raise** (real SOS only, never drills), one durable workflow run per incident:
+  1. WhatsApp alert to every opted-in emergency contact: "{{name}} has raised an emergency alert. Help is being sent." (no medical details).
+  2. WhatsApp alert to the community desk number (console Settings), and to the community's gate phone when set (security can open the gate).
+  3. After 60 s: any of those not delivered or read on WhatsApp gets the same alert by SMS (DLT template).
+- **Final update** to the same contacts when the crew hands over at the hospital ("…has been taken to {{hospital}}") or the SOS is cancelled ("…is safe; the alert was cancelled").
+- **Gate phone:** set per community on the SOS timeout page (the column exists).
+- **Push** to the desk and family apps comes with FCM / APNs (later); the console already sounds the alarm.
+- Templates go in the versioned catalogue; WhatsApp and SMS run in log mode until Meta and MSG91 are set up. Template names avoid the product name.

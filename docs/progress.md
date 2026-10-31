@@ -1,5 +1,21 @@
 # Progress
 
+## 2026-10-31 · Phase 3, step 10 (started): SOS notifications
+
+Your decisions are written up as plan §13: family = emergency contacts only, and the resident confirms each contact agreed to alerts.
+
+- **Done:** migration `20261031040000_contact_alerts.sql` (applied locally). It adds `emergency_contacts.alerts_agreed_at` / `alerts_confirmed_by`, and `messaging_optins.source` accepts `confirmed_by_resident`.
+- **Next, sub-step A** (contact opt-in):
+  - Drizzle schema, plus `alertsAgreed` in `EmergencyContactInput` / `EmergencyContact`.
+  - Repo: write the opt-in rows outside RLS.
+  - New `PUT /v1/people/{userId}/emergency-contacts/{id}/alerts`.
+  - Update the households fake, add tests, and add the tick in the resident Profile.
+- **Then sub-step B:**
+  - Templates: `sos_alert_family`, `sos_alert_desk`, `sos_alert_gate`, `sos_update_family`.
+  - One notify workflow per real SOS: WhatsApp now, SMS after 60 s if not delivered.
+  - The final update on handed-over or cancelled.
+  - A gate phone field on the SOS timeout page.
+
 ## 2026-10-31 · Phase 3, step 9: crew patient summary, first-aid notes, what the resident sees was shared
 
 Your decision (plan §12): the crew sees the same items as the ER, under the resident's emergency-sharing consent, during the job only, and every view is logged.
