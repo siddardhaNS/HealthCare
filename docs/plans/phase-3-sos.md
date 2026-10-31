@@ -246,6 +246,7 @@ Your answers: **family = the resident's emergency contacts only**; WhatsApp need
   1. WhatsApp alert to every opted-in emergency contact: "{{name}} has raised an emergency alert. Help is being sent." (no medical details).
   2. WhatsApp alert to the community desk number (console Settings), and to the community's gate phone when set (security can open the gate).
   3. After 60 s: any of those not delivered or read on WhatsApp gets the same alert by SMS (DLT template).
+- **Resident consent:** alerts go only when the resident has `family_sos_alert` granted (existing toggle "Alert my family on every SOS").
 - **Final update** to the same contacts when the crew hands over at the hospital ("…has been taken to {{hospital}}") or the SOS is cancelled ("…is safe; the alert was cancelled").
 - **Gate phone:** set per community on the SOS timeout page (the column exists).
 - **Push** to the desk and family apps comes with FCM / APNs (later); the console already sounds the alarm.

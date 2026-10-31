@@ -10,7 +10,7 @@ Your decisions are written up as plan §13: family = emergency contacts only, an
   - Each confirmation or withdrawal writes WhatsApp and SMS rows to `messaging_optins` (source `confirmed_by_resident`, service connection; the contact row is updated under RLS).
   - 1 new test (API 249). Checked against the real DB.
   - Resident Profile: a toggle per contact (red "Won't get SOS alerts until you confirm they agree" when off), and a tick on the add form. Checked on the emulator.
-  - Note for B: residents already have a consent, "Alert my family on every SOS" (`sos_family_alert`). Alerts must also respect it.
+  - Note for B: residents already have a consent, "Alert my family on every SOS" (`family_sos_alert`). Alerts must also respect it.
 - **Then sub-step B:**
   - Templates: `sos_alert_family`, `sos_alert_desk`, `sos_alert_gate`, `sos_update_family`.
   - One notify workflow per real SOS: WhatsApp now, SMS after 60 s if not delivered.
