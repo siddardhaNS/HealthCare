@@ -1,5 +1,79 @@
 # Progress
 
+## 2026-10-31 · Phase 3, step 8 (plan §11, part 3): no 108 anywhere, desk number, languages, crew picks the hospital
+
+Plan §11 is now built. Your answers today:
+- **No automatic hospital:** the crew picks.
+- **New:** a console setting for the app languages. English is always on; Telugu and Hindi appear only once enabled.
+
+### Done (one commit each)
+1. **SOS timeout** (`26cc0f3`)
+   - Each community has one value, "Next crew after (s)", 15–60 s.
+   - The 108 threshold is gone from the API, console and new incidents. The column stays for past incidents (migration `20261031010000`).
+   - Console page renamed "SOS timeout".
+2. **Named alarms** (`26cc0f3`)
+   - "ABC team did not respond. Offered to XYZ."
+   - "XYZ did not respond. Offered to the nearest free crews."
+   - "Still no crew…" when there are no teams.
+   - The 108 alarm is removed.
+3. **Community desk number** (`aa54220`)
+   - A one-row `ops_settings` table; every change is audited.
+   - Public `GET /v1/config` (cacheable for 60 s) and super-admin-only `PUT /v1/settings/desk-phone`.
+   - Console **Settings** page, plus a warning on the command center until the number is set.
+4. **Languages** (`c82725e`, your request)
+   - `ops_settings.languages`, always including `en`, audited; returned by `/v1/config`.
+   - `PUT /v1/settings/languages` (super admin).
+   - Console checkboxes; English is shown checked and locked.
+5. **Resident app** (`ca185c1`)
+   - Every "Call 108" button and the 108 banner are removed.
+   - "Call community desk" uses the console number, kept on the phone (`lib/app-config.ts`). With no number set, a short note shows instead.
+   - The onboarding language picker lists only enabled languages, and is hidden when only English is on. A language that gets switched off falls back to English.
+   - Old incidents in the 108 state read as "finding an ambulance".
+   - The Maestro offline flow waits for the fallback text.
+6. **The crew picks the hospital** (`d4f51f4`)
+   - Accept opens no handover.
+   - `GET /v1/sos/{id}/hospitals` lists every active hospital, nearest to the patient first, with ER full and the person's preferred hospital marked.
+   - The crew's first pick opens the handover (record, signed link, partner portal) with no reason; changing it needs a reason.
+   - The desk can pick, always with a reason.
+   - The console shows "Hospital not chosen yet…"; the no-hospital alarm is removed.
+   - Field app: a hospital picker on the job panel.
+7. **Load test re-run**, 50 SOS and 60 crews:
+   - **50/50 accepted** (before §11: 44–49), with no 5xx.
+   - raise → first offer: p50 5.3 s.
+   - raise → accepted: p50 7.1 s, p95 66 s (picked up by later rings, 30 s apart).
+
+### Checked
+- API: 245 unit + 7 workflow tests pass.
+- Signed-in console e2e: 6 pass (3 still `fixme`).
+- Typecheck, lint, `pnpm check` and i18n parity pass.
+- Clicked through in Chrome:
+  - SOS timeout save
+  - all three alarm texts, live
+  - the desk-number warning, save, and the warning gone after saving
+  - the language checkboxes
+  - "Hospital not chosen yet", then the desk choosing with a reason
+- Checked through the API against the local stack:
+  - the crew's change is refused without a reason
+- **Not yet run on a device:** the resident and field app changes. They typecheck and lint, but haven't been run on Android or iOS.
+
+### Found on the way
+- After appending to a server-actions file, `next dev` (Turbopack) can serve a stale module ("action is not a function"). Restarting the dev server fixes it.
+- The workflow dev bundle may also need a restart to pick up step changes.
+- The e2e test resident had no household, which likely explains the `fixme` "the test crew gets no offer for a resident SOS". A stand-alone household now exists for it in the local DB. Not checked in the e2e yet.
+- Running the load test needs `SUPABASE_JWT_SECRET`, `SUPABASE_SECRET_KEY` and `SUPABASE_URL` from `supabase status`, and the API restarted with the same JWT secret.
+
+### Local state left behind
+- Desk number `+914023456789` (a test value).
+- Languages en + te.
+- E2E Gardens timeout 15 s.
+- Test teams "Backup Z" and the e2e "Primary/Backup one/two" teams (inactive).
+
+### Next
+- Run the resident and field apps on the Android emulator: the hospital picker, Call community desk, and the language picker.
+- Fix the 3 `fixme` e2e tests (the resident's household may be the cause), and the `/hospitals` contrast.
+- Add the signed-in e2e suite as its own CI job.
+- CI is still red only on "Expo config and dependency check".
+
 ## 2026-10-31 · Phase 3, step 8 (plan §11, part 2): backup teams in the console
 
 Already in `ebe7ac0` (30 Oct, not logged then): the workflow offers the primary team, then at every timeout alarms the desk and offers the next backup team, then the nearest free crews (up to 20 rings). The 108 step is gone from the state machine.
@@ -33,13 +107,8 @@ Already in `ebe7ac0` (30 Oct, not logged then): the workflow offers the primary 
 - Typecheck, lint and `pnpm check` pass.
 - Clicked through in Chrome: add backup (including the refusal when a place has no primary), add, move up, remove, backup → primary.
 
-### Next (rest of §11)
-- Thresholds page: one value, "Next crew after (s)". Drop the 108 field.
-- Alarm text that names the team: "ABC did not respond, offered to XYZ".
-- Community desk number setting, plus the public config endpoint.
-- Resident app: remove "Call 108", add "Call community desk".
-- Crew chooses the hospital. Still open: ⚑ no automatic hospital at all?
-- Re-run the load test.
+### Next
+- Done in part 3 (above).
 
 ## 2026-10-30 · Phase 3, step 7 (part 1): SOS load test, two dispatch fixes, signed-in console e2e
 

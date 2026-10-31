@@ -128,7 +128,7 @@ async function main() {
     const open = await db.select({ id: sosIncidents.id }).from(sosIncidents).where(sql`${inArray(sosIncidents.userId, residentUsers)} and ${sosIncidents.state} not in ('closed', 'cancelled')`);
     await Promise.all(
       open.map(async (o) => {
-        // After the 108 prompt the desk closes rather than cancels.
+        // What cannot be cancelled any more (e.g. an incident from before plan §11 in the 108 state) the desk closes.
         const r = await call(desk, 'POST', `/v1/desk/sos/${o.id}/cancel`, 'cleanup', { reason: 'Load test clean-up' });
         if (r.status !== 200) await call(desk, 'POST', `/v1/desk/sos/${o.id}/close`, 'cleanup', { reason: 'Load test clean-up' });
       }),
