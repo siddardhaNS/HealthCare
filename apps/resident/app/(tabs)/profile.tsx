@@ -10,6 +10,7 @@ import {
   useAddContact,
   useConsentHistory,
   useConsents,
+  useContactAlerts,
   useContacts,
   useHealthSummary,
   useHousehold,
@@ -87,11 +88,13 @@ function Fact({ label, value, danger }: { label: string; value: string; danger?:
 
 function Contacts({ who }: { who: string }) {
   const { t } = useTranslation();
-  const { space } = useTheme();
+  const { colors, space } = useTheme();
   const contacts = useContacts(who);
   const add = useAddContact(who);
   const remove = useRemoveContact(who);
-  const [f, setF] = useState({ name: '', relation: '', phone: '' });
+  const alerts = useContactAlerts(who);
+  const [f, setF] = useState({ name: '', relation: '', phone: '', alertsAgreed: false });
+  const track = { trackColor: { false: colors.borderStrong, true: colors.accent }, thumbColor: colors.text };
   const digits = f.phone.replace(/\D/g, '');
   const error = add.error instanceof ApiError ? add.error.message : add.isError ? t('common.error') : null;
   return (
@@ -99,23 +102,49 @@ function Contacts({ who }: { who: string }) {
       <SectionLabel>{t('profileTab.emergencyContacts')}</SectionLabel>
       <Card style={{ gap: space[3] }}>
         {(contacts.data?.contacts ?? []).map((c) => (
-          <View key={c.id} style={{ flexDirection: 'row', alignItems: 'center', gap: space[2] }}>
-            <Text weight="bold" style={{ flex: 1 }}>
-              {[c.name, c.relation].filter(Boolean).join(' · ')}
-            </Text>
-            <Button label={t('profileTab.call')} tone="neutral" onPress={() => void Linking.openURL(`tel:${c.phone}`)} />
-            <IconButton icon="trash" label={`${t('profileTab.remove')} ${c.name}`} onPress={() => remove.mutate(c.id)} />
+          <View key={c.id} style={{ gap: space[1] }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[2] }}>
+              <Text weight="bold" style={{ flex: 1 }}>
+                {[c.name, c.relation].filter(Boolean).join(' · ')}
+              </Text>
+              <Button label={t('profileTab.call')} tone="neutral" onPress={() => void Linking.openURL(`tel:${c.phone}`)} />
+              <IconButton icon="trash" label={`${t('profileTab.remove')} ${c.name}`} onPress={() => remove.mutate(c.id)} />
+            </View>
+            {/* Plan §13: SOS alerts go only to contacts who agreed; the resident confirms it. */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[2] }}>
+              <Text variant="caption" tone={c.alertsAgreed ? 'muted' : 'danger'} style={{ flex: 1 }}>
+                {c.alertsAgreed ? t('profileTab.alertsOn') : t('profileTab.alertsOff')}
+              </Text>
+              <Switch
+                accessibilityLabel={`${t('profileTab.alertsAgree')}: ${c.name}`}
+                value={c.alertsAgreed}
+                disabled={alerts.isPending}
+                onValueChange={(v) => alerts.mutate({ id: c.id, agreed: v })}
+                {...track}
+              />
+            </View>
           </View>
         ))}
         <TextField label={t('profileTab.contactName')} value={f.name} onChangeText={(v) => setF((p) => ({ ...p, name: v }))} maxLength={80} />
         <TextField label={t('profileTab.contactRelation')} value={f.relation} onChangeText={(v) => setF((p) => ({ ...p, relation: v }))} maxLength={40} />
         <TextField label={t('profileTab.contactPhone')} prefix="+91" value={f.phone} onChangeText={(v) => setF((p) => ({ ...p, phone: v.replace(/\D/g, '').slice(0, 10) }))} keyboardType="phone-pad" maxLength={10} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[2] }}>
+          <Text variant="small" style={{ flex: 1 }}>
+            {t('profileTab.alertsAgree')}
+          </Text>
+          <Switch accessibilityLabel={t('profileTab.alertsAgree')} value={f.alertsAgreed} onValueChange={(v) => setF((p) => ({ ...p, alertsAgreed: v }))} {...track} />
+        </View>
         {error ? <Text tone="danger">{error}</Text> : null}
         <Button
           label={t('profileTab.addContact')}
           tone="neutral"
           disabled={!f.name.trim() || !/^[6-9]\d{9}$/.test(digits) || add.isPending}
-          onPress={() => add.mutate({ name: f.name.trim(), relation: f.relation.trim() || undefined, phone: `+91${digits}`, priority: 1 }, { onSuccess: () => setF({ name: '', relation: '', phone: '' }) })}
+          onPress={() =>
+            add.mutate(
+              { name: f.name.trim(), relation: f.relation.trim() || undefined, phone: `+91${digits}`, priority: 1, alertsAgreed: f.alertsAgreed },
+              { onSuccess: () => setF({ name: '', relation: '', phone: '', alertsAgreed: false }) },
+            )
+          }
         />
       </Card>
     </>

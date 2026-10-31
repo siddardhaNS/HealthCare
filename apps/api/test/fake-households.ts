@@ -10,6 +10,8 @@ export function fakeHouseholds(consentRows: ConsentRow[]) {
   const invites: (InviteRecord & { acceptedAt: Date | null; revokedAt: Date | null })[] = [];
   const profiles = new Map<string, { fullName: string; language: 'en' | 'te' | 'hi' }>();
   const contacts = new Map<string, ContactRecord[]>();
+  /** Opt-ins recorded from the resident's confirmation (plan §13). */
+  const optins: { phone: string; agreed: boolean }[] = [];
   let seq = 0;
   const id = () => `00000000-0000-4000-8000-${String(++seq).padStart(12, '0')}`;
 
@@ -91,8 +93,16 @@ export function fakeHouseholds(consentRows: ConsentRow[]) {
     },
     async addContact(_actor, subject, c) {
       const rec = { ...c, id: id() };
+      if (c.alertsAgreed) optins.push({ phone: c.phone, agreed: true });
       contacts.set(subject, [...(contacts.get(subject) ?? []), rec]);
       return rec;
+    },
+    async setContactAlerts(_actor, subject, cid, agreed) {
+      const c = (contacts.get(subject) ?? []).find((x) => x.id === cid);
+      if (!c) return null;
+      c.alertsAgreed = agreed;
+      optins.push({ phone: c.phone, agreed });
+      return { ...c };
     },
     async removeContact(_actor, subject, cid) {
       const list = contacts.get(subject) ?? [];
@@ -136,5 +146,5 @@ export function fakeHouseholds(consentRows: ConsentRow[]) {
     coverageTeamOf = fn;
   };
 
-  return { repo, addSite, invites, members, residents, sites, homes, households, profiles, linkCoverage };
+  return { optins, repo, addSite, invites, members, residents, sites, homes, households, profiles, linkCoverage };
 }

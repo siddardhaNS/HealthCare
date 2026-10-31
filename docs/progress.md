@@ -5,11 +5,12 @@
 Your decisions are written up as plan §13: family = emergency contacts only, and the resident confirms each contact agreed to alerts.
 
 - **Done:** migration `20261031040000_contact_alerts.sql` (applied locally). It adds `emergency_contacts.alerts_agreed_at` / `alerts_confirmed_by`, and `messaging_optins.source` accepts `confirmed_by_resident`.
-- **Next, sub-step A** (contact opt-in):
-  - Drizzle schema, plus `alertsAgreed` in `EmergencyContactInput` / `EmergencyContact`.
-  - Repo: write the opt-in rows outside RLS.
-  - New `PUT /v1/people/{userId}/emergency-contacts/{id}/alerts`.
-  - Update the households fake, add tests, and add the tick in the resident Profile.
+- **Sub-step A done** (contact opt-in):
+  - `alertsAgreed` on emergency contacts (add, list) and new `PUT /v1/people/{userId}/emergency-contacts/{id}/alerts`.
+  - Each confirmation or withdrawal writes WhatsApp and SMS rows to `messaging_optins` (source `confirmed_by_resident`, service connection; the contact row is updated under RLS).
+  - 1 new test (API 249). Checked against the real DB.
+  - Resident Profile: a toggle per contact (red "Won't get SOS alerts until you confirm they agree" when off), and a tick on the add form. Checked on the emulator.
+  - Note for B: residents already have a consent, "Alert my family on every SOS" (`sos_family_alert`). Alerts must also respect it.
 - **Then sub-step B:**
   - Templates: `sos_alert_family`, `sos_alert_desk`, `sos_alert_gate`, `sos_update_family`.
   - One notify workflow per real SOS: WhatsApp now, SMS after 60 s if not delivered.

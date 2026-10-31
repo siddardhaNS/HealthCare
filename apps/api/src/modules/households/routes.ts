@@ -1,6 +1,7 @@
 import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi';
 import {
   CreateHousehold,
+  ContactAlerts,
   EmergencyContact,
   EmergencyContactInput,
   EmergencyContacts,
@@ -129,6 +130,16 @@ const routes = {
     request: { params: z.object({ userId: z.string().uuid() }), body: { content: { 'application/json': { schema: EmergencyContactInput } }, required: true } },
     responses: { 201: json(EmergencyContact, 'Added'), ...failures },
   }),
+  contactAlerts: createRoute({
+    method: 'put',
+    path: '/people/{userId}/emergency-contacts/{id}/alerts',
+    operationId: 'setEmergencyContactAlerts',
+    tags: ['households'],
+    summary: 'Confirm this contact agreed to SOS alerts on WhatsApp or SMS, or turn them off (plan §13; recorded as their opt-in)',
+    ...authed,
+    request: { params: z.object({ userId: z.string().uuid(), id: z.string().uuid() }), body: { content: { 'application/json': { schema: ContactAlerts } }, required: true } },
+    responses: { 200: json(EmergencyContact, 'Updated'), ...failures },
+  }),
   removeContact: createRoute({
     method: 'delete',
     path: '/people/{userId}/emergency-contacts/{id}',
@@ -189,7 +200,15 @@ export const householdRoutes = new OpenAPIHono<AppEnv>()
     const { userId } = c.req.valid('param');
     if (!(await canActFor(repo, me, userId))) return failure(c, fail('forbidden', 'You do not manage this person’s care.'));
     const b = c.req.valid('json');
-    return c.json(await repo.addContact(me, userId, { name: b.name, relation: b.relation ?? null, phone: b.phone, priority: b.priority }), 201);
+    return c.json(await repo.addContact(me, userId, { name: b.name, relation: b.relation ?? null, phone: b.phone, priority: b.priority, alertsAgreed: b.alertsAgreed }), 201);
+  })
+  .openapi(routes.contactAlerts, async (c) => {
+    const repo = c.get('deps').households;
+    const me = c.get('auth')!.userId;
+    const { userId, id } = c.req.valid('param');
+    if (!(await canActFor(repo, me, userId))) return failure(c, fail('forbidden', 'You do not manage this person’s care.'));
+    const r = await repo.setContactAlerts(me, userId, id, c.req.valid('json').agreed);
+    return r ? c.json(r, 200) : failure(c, fail('not_found', 'No such contact.'));
   })
   .openapi(routes.removeContact, async (c) => {
     const repo = c.get('deps').households;

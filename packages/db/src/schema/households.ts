@@ -78,6 +78,9 @@ export const emergencyContacts = pgTable('emergency_contacts', {
   relation: text('relation'),
   phone: text('phone').notNull(),
   priority: smallint('priority').notNull().default(1),
+  /** Plan §13: when the resident confirmed this contact agreed to SOS alerts (null = no alerts). */
+  alertsAgreedAt: timestamp('alerts_agreed_at', { withTimezone: true }),
+  alertsConfirmedBy: uuid('alerts_confirmed_by'),
 });
 
 export const profiles = pgTable('profiles', {

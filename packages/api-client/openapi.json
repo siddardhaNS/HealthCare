@@ -1056,11 +1056,26 @@
             "minimum": 1,
             "maximum": 5,
             "default": 1
+          },
+          "alertsAgreed": {
+            "type": "boolean",
+            "default": false
           }
         },
         "required": [
           "name",
           "phone"
+        ]
+      },
+      "ContactAlerts": {
+        "type": "object",
+        "properties": {
+          "agreed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "agreed"
         ]
       },
       "ResidentList": {
@@ -5544,6 +5559,122 @@
         "responses": {
           "201": {
             "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmergencyContact"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request (e.g. your own number)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (unknown code, home, invitation or contact)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict (already in a household, home needs an invitation, no household yet)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Invitation expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/people/{userId}/emergency-contacts/{id}/alerts": {
+      "put": {
+        "operationId": "setEmergencyContactAlerts",
+        "tags": [
+          "households"
+        ],
+        "summary": "Confirm this contact agreed to SOS alerts on WhatsApp or SMS, or turn them off (plan §13; recorded as their opt-in)",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "userId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContactAlerts"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
             "content": {
               "application/json": {
                 "schema": {

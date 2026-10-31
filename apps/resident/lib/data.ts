@@ -223,6 +223,17 @@ export function useAddContact(who: string) {
   });
 }
 
+/** Plan §13: the resident confirms (or withdraws) that this contact agreed to SOS alerts. */
+export function useContactAlerts(who: string) {
+  const { api } = useSession();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, agreed }: { id: string; agreed: boolean }) =>
+      unwrap(api.PUT('/v1/people/{userId}/emergency-contacts/{id}/alerts', { params: { path: { userId: who, id } }, body: { agreed } })),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.contacts(who) }),
+  });
+}
+
 export function useRemoveContact(who: string) {
   const { api } = useSession();
   const qc = useQueryClient();

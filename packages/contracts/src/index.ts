@@ -257,9 +257,18 @@ export const MyInvite = z
 export const MyInvites = z.object({ invites: z.array(MyInvite) }).openapi('MyInvites');
 
 export const EmergencyContactInput = z
-  .object({ name: z.string().trim().min(1, 'Enter a name').max(80), relation: Relation.optional(), phone: PhoneIN, priority: z.number().int().min(1).max(5).default(1) })
+  .object({
+    name: z.string().trim().min(1, 'Enter a name').max(80),
+    relation: Relation.optional(),
+    phone: PhoneIN,
+    priority: z.number().int().min(1).max(5).default(1),
+    /** Plan §13: the resident confirms this person agreed to get SOS alerts on WhatsApp or SMS. */
+    alertsAgreed: z.boolean().default(false),
+  })
   .openapi('EmergencyContactInput');
 export const EmergencyContact = EmergencyContactInput.extend({ id: z.string().uuid(), relation: z.string().nullable() }).openapi('EmergencyContact');
+/** Turns SOS alerts to a contact on (they agreed) or off. */
+export const ContactAlerts = z.object({ agreed: z.boolean() }).openapi('ContactAlerts');
 export const EmergencyContacts = z.object({ contacts: z.array(EmergencyContact) }).openapi('EmergencyContacts');
 
 // ── Console: residents directory ────────────────────────────────────────

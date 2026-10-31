@@ -68,7 +68,7 @@ export const messagingOptins = pgTable('messaging_optins', {
   phone: text('phone').notNull(),
   channel: text('channel', { enum: ['whatsapp', 'sms'] }).notNull(),
   status: text('status', { enum: ['opted_in', 'opted_out'] }).notNull(),
-  source: text('source', { enum: ['signin', 'profile', 'stop_reply', 'console'] }).notNull(),
+  source: text('source', { enum: ['signin', 'profile', 'stop_reply', 'console', 'confirmed_by_resident'] }).notNull(),
   consentVersion: text('consent_version'),
 });
 

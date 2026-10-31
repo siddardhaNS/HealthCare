@@ -283,6 +283,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/people/{userId}/emergency-contacts/{id}/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Confirm this contact agreed to SOS alerts on WhatsApp or SMS, or turn them off (plan §13; recorded as their opt-in) */
+        put: operations["setEmergencyContactAlerts"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/people/{userId}/emergency-contacts/{id}": {
         parameters: {
             query?: never;
@@ -1710,6 +1727,11 @@ export interface components {
             phone: string;
             /** @default 1 */
             priority: number;
+            /** @default false */
+            alertsAgreed: boolean;
+        };
+        ContactAlerts: {
+            agreed: boolean;
         };
         ResidentList: {
             residents: components["schemas"]["ResidentRow"][];
@@ -3482,6 +3504,87 @@ export interface operations {
         responses: {
             /** @description Added */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmergencyContact"];
+                };
+            };
+            /** @description Invalid request (e.g. your own number) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Not found (unknown code, home, invitation or contact) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Conflict (already in a household, home needs an invitation, no household yet) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Invitation expired */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    setEmergencyContactAlerts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContactAlerts"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -1,4 +1,4 @@
-import { and, asUser, consents, desc, emergencyContacts, eq, gt, householdInvites, householdMembers, households, homes, inArray, isNull, profiles, sites, sql, type Db } from '@repo/db';
+import { and, asUser, consents, messagingOptins, desc, emergencyContacts, eq, gt, householdInvites, householdMembers, households, homes, inArray, isNull, profiles, sites, sql, type Db } from '@repo/db';
 
 export interface Membership {
   householdId: string;
@@ -49,6 +49,8 @@ export interface ContactRecord {
   relation: string | null;
   phone: string;
   priority: number;
+  /** Plan §13: the contact agreed to SOS alerts. */
+  alertsAgreed: boolean;
 }
 
 /** Storage primitives; the rules live in service.ts. */
@@ -76,9 +78,25 @@ export interface HouseholdsRepo {
   contacts(actorId: string, subjectId: string): Promise<ContactRecord[]>;
   addContact(actorId: string, subjectId: string, c: Omit<ContactRecord, 'id'>): Promise<ContactRecord>;
   removeContact(actorId: string, subjectId: string, id: string): Promise<boolean>;
+  /** Records (or withdraws) the contact's agreement to SOS alerts, and the matching opt-in rows. Null if there is no such contact. */
+  setContactAlerts(actorId: string, subjectId: string, id: string, agreed: boolean): Promise<ContactRecord | null>;
 }
 
+const CONTACT_COLS = { id: emergencyContacts.id, name: emergencyContacts.name, relation: emergencyContacts.relation, phone: emergencyContacts.phone, priority: emergencyContacts.priority };
+const toContact = (r: { id: string; name: string; relation: string | null; phone: string; priority: number; alertsAgreedAt: Date | null }): ContactRecord => ({
+  id: r.id,
+  name: r.name,
+  relation: r.relation,
+  phone: r.phone,
+  priority: r.priority,
+  alertsAgreed: r.alertsAgreedAt !== null,
+});
+
 export function drizzleHouseholdsRepo(db: Db): HouseholdsRepo {
+  /** Plan §13: the resident's confirmation is the contact's opt-in, on both channels; withdrawing it opts them out. */
+  const recordOptin = (phone: string, agreed: boolean) =>
+    db.insert(messagingOptins).values((['whatsapp', 'sms'] as const).map((channel) => ({ phone, channel, status: agreed ? ('opted_in' as const) : ('opted_out' as const), source: 'confirmed_by_resident' as const })));
+
   const one = <T>(rows: T[]) => rows[0] ?? null;
   return {
     async membership(userId) {
@@ -191,16 +209,37 @@ export function drizzleHouseholdsRepo(db: Db): HouseholdsRepo {
     contacts: (actorId, subjectId) =>
       asUser(db, { sub: actorId }, (tx) =>
         tx
-          .select({ id: emergencyContacts.id, name: emergencyContacts.name, relation: emergencyContacts.relation, phone: emergencyContacts.phone, priority: emergencyContacts.priority })
+          .select({ ...CONTACT_COLS, alertsAgreedAt: emergencyContacts.alertsAgreedAt })
           .from(emergencyContacts)
           .where(eq(emergencyContacts.userId, subjectId))
-          .orderBy(emergencyContacts.priority, emergencyContacts.createdAt),
+          .orderBy(emergencyContacts.priority, emergencyContacts.createdAt)
+          .then((rows) => rows.map(toContact)),
       ),
-    addContact: (actorId, subjectId, c) =>
-      asUser(db, { sub: actorId }, async (tx) => {
-        const [r] = await tx.insert(emergencyContacts).values({ ...c, userId: subjectId }).returning();
-        return { id: r!.id, name: r!.name, relation: r!.relation, phone: r!.phone, priority: r!.priority };
-      }),
+    async addContact(actorId, subjectId, { alertsAgreed, ...c }) {
+      const r = await asUser(db, { sub: actorId }, async (tx) => {
+        const [row] = await tx
+          .insert(emergencyContacts)
+          .values({ ...c, userId: subjectId, ...(alertsAgreed ? { alertsAgreedAt: new Date(), alertsConfirmedBy: actorId } : {}) })
+          .returning();
+        return row!;
+      });
+      if (alertsAgreed) await recordOptin(r.phone, true);
+      return toContact(r);
+    },
+    async setContactAlerts(actorId, subjectId, id, agreed) {
+      const r = await asUser(db, { sub: actorId }, async (tx) =>
+        (
+          await tx
+            .update(emergencyContacts)
+            .set(agreed ? { alertsAgreedAt: new Date(), alertsConfirmedBy: actorId } : { alertsAgreedAt: null, alertsConfirmedBy: null })
+            .where(and(eq(emergencyContacts.id, id), eq(emergencyContacts.userId, subjectId)))
+            .returning()
+        )[0],
+      );
+      if (!r) return null;
+      await recordOptin(r.phone, agreed);
+      return toContact(r);
+    },
     removeContact: (actorId, subjectId, id) =>
       asUser(db, { sub: actorId }, async (tx) => (await tx.delete(emergencyContacts).where(and(eq(emergencyContacts.id, id), eq(emergencyContacts.userId, subjectId))).returning({ id: emergencyContacts.id })).length > 0),
   };

@@ -746,7 +746,10 @@
     "history": "Consent history",
     "historyEmpty": "No changes yet.",
     "historyGranted": "Turned on: {{title}}",
-    "historyWithdrawn": "Turned off: {{title}}"
+    "historyWithdrawn": "Turned off: {{title}}",
+    "alertsAgree": "They agree to get emergency alerts from us on WhatsApp or SMS",
+    "alertsOn": "Gets SOS alerts",
+    "alertsOff": "Won’t get SOS alerts until you confirm they agree"
   },
   "sos": {
     "confirmLead": "Alerting ambulances and the community desk in",

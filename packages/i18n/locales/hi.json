@@ -746,7 +746,10 @@
     "history": "सहमति का इतिहास",
     "historyEmpty": "अभी कोई बदलाव नहीं।",
     "historyGranted": "चालू किया: {{title}}",
-    "historyWithdrawn": "बंद किया: {{title}}"
+    "historyWithdrawn": "बंद किया: {{title}}",
+    "alertsAgree": "वे हमसे WhatsApp या SMS पर आपातकालीन अलर्ट पाने के लिए सहमत हैं",
+    "alertsOn": "SOS अलर्ट मिलेंगे",
+    "alertsOff": "जब तक आप उनकी सहमति की पुष्टि नहीं करते, SOS अलर्ट नहीं मिलेंगे"
   },
   "sos": {
     "confirmLead": "एम्बुलेंस और कम्युनिटी डेस्क को सूचना भेजी जा रही है",

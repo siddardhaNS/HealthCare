@@ -166,6 +166,29 @@ describe('managers and emergency contacts', () => {
     expect((await mom.del(`/v1/people/${MOM}/emergency-contacts/${added.id}`)).status).toBe(404);
   });
 
+  it('plan §13: SOS alerts only to contacts the resident confirms agreed; the confirmation is recorded as their opt-in', async () => {
+    const t = await testContext();
+    const { mom } = await family(t);
+    const contacts = `/v1/people/${MOM}/emergency-contacts`;
+    const off = (await (await mom.post(contacts, { name: 'Arjun', phone: '+919812345678' })).json()) as { id: string; alertsAgreed: boolean };
+    expect(off.alertsAgreed).toBe(false);
+    const on = (await (await mom.post(contacts, { name: 'Priya', phone: '+919812345679', alertsAgreed: true })).json()) as { alertsAgreed: boolean };
+    expect(on.alertsAgreed).toBe(true);
+    expect(t.hh.optins).toEqual([{ phone: '+919812345679', agreed: true }]);
+
+    // Confirmed later for an existing contact, then withdrawn.
+    const alerts = (id: string) => `${contacts}/${id}/alerts`;
+    const later = await mom.put(alerts(off.id), { agreed: true });
+    expect(await later.json()).toMatchObject({ id: off.id, alertsAgreed: true });
+    await mom.put(alerts(off.id), { agreed: false });
+    expect(t.hh.optins.slice(1)).toEqual([
+      { phone: '+919812345678', agreed: true },
+      { phone: '+919812345678', agreed: false },
+    ]);
+    expect((await mom.put(alerts(crypto.randomUUID()), { agreed: true })).status).toBe(404);
+    expect((await (await as(t, STRANGER)).put(alerts(off.id), { agreed: true })).status).toBe(403);
+  });
+
   it('validates contact phone numbers', async () => {
     const t = await testContext();
     const { mom } = await family(t);
