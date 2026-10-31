@@ -28,11 +28,12 @@ export default async function CommandCenter({ searchParams }: { searchParams: Pr
   // Hospital partner staff have their own home: incoming patients.
   if (roles.includes('hospital') && !roles.some((r) => deskRoles.includes(r))) redirect('/handovers');
   const api = await serverApi();
-  const [open, recent, fleet, sites] = await Promise.all([
+  const [open, recent, fleet, sites, config] = await Promise.all([
     api.GET('/v1/desk/sos', { params: { query: { view: 'open' } } }),
     api.GET('/v1/desk/sos', { params: { query: { view: 'recent' } } }),
     api.GET('/v1/desk/fleet'),
     api.GET('/v1/desk/sites'),
+    api.GET('/v1/config'),
   ]);
 
   const header = <h1 className="font-display text-h1 font-bold">{t('console.commandCenter')}</h1>;
@@ -62,6 +63,16 @@ export default async function CommandCenter({ searchParams }: { searchParams: Pr
           {header}
           <p className="text-text-muted">{t('console.cc.subtitle')}</p>
         </div>
+        {config.data && !config.data.deskPhone ? (
+          <Card role="status" className="flex flex-wrap items-center gap-2 bg-warning-soft text-small text-warning-text">
+            <span className="flex-1">{t('console.settings.commandCenterWarning')}</span>
+            {roles.includes('super_admin') ? (
+              <Link href="/settings" className="font-semibold underline underline-offset-4">
+                {t('console.settings.commandCenterLink')}
+              </Link>
+            ) : null}
+          </Card>
+        ) : null}
         <LiveBoard
           topics={topics}
           labels={{

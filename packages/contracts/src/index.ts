@@ -832,3 +832,19 @@ export const HandoverLinkView = z
   })
   .openapi('HandoverLinkView');
 export type HandoverLinkView = z.infer<typeof HandoverLinkView>;
+
+// ── Platform settings (plan §11) ─────────────────────────────────────────
+
+/** What every app reads before sign-in, and keeps on the phone for when it is offline. */
+export const AppConfig = z
+  .object({
+    /** The community desk number for the no-network SOS fallback; null until the super admin sets it. */
+    deskPhone: z.string().nullable(),
+  })
+  .openapi('AppConfig');
+export type AppConfig = z.infer<typeof AppConfig>;
+
+/** The desk may be a landline: +91 and ten digits. Null clears it (the button is hidden). */
+export const DeskPhoneUpdate = z
+  .object({ deskPhone: z.string().trim().regex(/^\+91\d{10}$/, 'Use +91 and the ten-digit number').nullable() })
+  .openapi('DeskPhoneUpdate');

@@ -108,6 +108,7 @@ export async function testContext(opts: { whatsappFails?: boolean; mailerFails?:
   const desk = fakeDesk(sos, dispatch, hh);
   const coverage = fakeCoverage(dispatch, hh);
   const sosSettings = fakeSosSettings(hh, sos);
+  const ops = { deskPhone: null as string | null, audit: [] as { from: string | null; to: string | null }[] };
   const handovers = fakeHandovers(() => sos.incidents);
   const links = recordingNotifier();
   const locator = memoryCrewLocator();
@@ -165,6 +166,13 @@ export async function testContext(opts: { whatsappFails?: boolean; mailerFails?:
     desk: desk.repo,
     sosSettings: sosSettings.repo,
     coverage: coverage.repo,
+    opsSettings: {
+      deskPhone: async () => ops.deskPhone,
+      setDeskPhone: async (phone) => {
+        ops.audit.push({ from: ops.deskPhone, to: phone });
+        ops.deskPhone = phone;
+      },
+    },
     handovers: handovers.repo,
     handoverNotifier: links.notifier,
     sosAlerts: alerts.alerts,
@@ -252,6 +260,7 @@ export async function testContext(opts: { whatsappFails?: boolean; mailerFails?:
     desk,
     coverage,
     sosSettings,
+    ops,
     handovers,
     links: links.sent,
     escalation,

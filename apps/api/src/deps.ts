@@ -17,6 +17,7 @@ import { drizzleSosRepo, type SosRepo } from './modules/sos/repo';
 import { drizzleDeskRepo, type DeskRepo } from './modules/sos/desk-repo';
 import { drizzleSosSettingsRepo, type SosSettingsRepo } from './modules/sos/settings-repo';
 import { drizzleCoverageRepo, type CoverageRepo } from './modules/coverage/repo';
+import { drizzleOpsSettingsRepo, type OpsSettingsRepo } from './modules/settings/repo';
 import { drizzleHandoverRepo, type HandoverRepo } from './modules/handover/repo';
 import { logHandoverNotifier, type HandoverNotifier } from './modules/handover/service';
 import { publishingSosRepo } from './modules/sos/live';
@@ -84,6 +85,7 @@ export interface Deps {
   desk: DeskRepo;
   sosSettings: SosSettingsRepo;
   coverage: CoverageRepo;
+  opsSettings: OpsSettingsRepo;
   handovers: HandoverRepo;
   handoverNotifier: HandoverNotifier;
   sosAlerts: SosAlerts;
@@ -132,6 +134,7 @@ export function depsFromEnv(source: Record<string, string | undefined> = process
     desk: drizzleDeskRepo(db),
     sosSettings: drizzleSosSettingsRepo(db),
     coverage: drizzleCoverageRepo(db),
+    opsSettings: drizzleOpsSettingsRepo(db),
     handovers: drizzleHandoverRepo(db),
     handoverNotifier: logHandoverNotifier({ printUrl: env.NODE_ENV === 'development' }),
     sosAlerts: dispatchAlerts({ dispatch, locator, sos, realtime }),

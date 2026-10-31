@@ -74,3 +74,12 @@ export async function setBackups(kind: 'site' | 'household', id: string, teamIds
   revalidatePath('/coverage/places');
   return next;
 }
+
+/** Sets the community desk number; an empty field clears it (residents then see no "Call community desk"). */
+export async function saveDeskPhone(prev: ActionState, form: FormData) {
+  const api = await serverApi();
+  const phone = text(form, 'deskPhone').replace(/[\s-]/g, '');
+  const next = finish(prev, await api.PUT('/v1/settings/desk-phone', { body: { deskPhone: phone || null } }), '/settings');
+  revalidatePath('/');
+  return next;
+}

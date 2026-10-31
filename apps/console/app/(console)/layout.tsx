@@ -56,6 +56,11 @@ export default async function ConsoleLayout({ children }: { children: ReactNode 
               {t('console.leads.title')}
             </Link>
           ) : null}
+          {claims.roles.some((r) => r === 'super_admin' || r === 'operations') ? (
+            <Link href="/settings" className="rounded-control px-3 py-2 font-semibold text-text-muted hover:bg-surface hover:text-text">
+              {t('console.settings.title')}
+            </Link>
+          ) : null}
         </nav>
         <div className="mt-auto flex flex-col gap-2 pt-6">
           {claims.email ? <span className="text-small text-text-muted">{t('console.signedInAs', { email: claims.email })}</span> : null}

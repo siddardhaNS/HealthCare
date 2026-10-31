@@ -473,6 +473,18 @@
       "confirmHint": "To confirm the patient was received, sign in to the partner portal.",
       "signIn": "Sign in to confirm",
       "confirmed": "Received at {{time}}"
+    },
+    "settings": {
+      "title": "Settings",
+      "deskPhone": "Community desk number",
+      "deskPhoneHint": "When the app cannot reach our servers during an SOS, residents see “Call community desk”, which dials this number. Phones keep the last number they downloaded, so a change reaches them the next time they are online. Every change is logged.",
+      "deskPhoneLabel": "Phone number (+91 and ten digits)",
+      "deskPhoneUnset": "Not set: residents without a network cannot call the desk. Set it before going live.",
+      "save": "Save",
+      "saved": "Saved",
+      "readOnly": "Only a super admin can change this.",
+      "commandCenterWarning": "The community desk number is not set, so residents without a network cannot call the desk.",
+      "commandCenterLink": "Set it in Settings"
     }
   },
   "auth": {

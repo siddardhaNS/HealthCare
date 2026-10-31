@@ -5,3 +5,4 @@ export * from './consent';
 export * from './households';
 export * from './health';
 export * from './sos';
+export * from './settings';

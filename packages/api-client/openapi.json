@@ -4156,6 +4156,35 @@
           "transporting",
           "handed_over"
         ]
+      },
+      "AppConfig": {
+        "type": "object",
+        "properties": {
+          "deskPhone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "deskPhone"
+        ]
+      },
+      "DeskPhoneUpdate": {
+        "type": "object",
+        "properties": {
+          "deskPhone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^\\+91\\d{10}$"
+          }
+        },
+        "required": [
+          "deskPhone"
+        ]
       }
     },
     "parameters": {}
@@ -11667,6 +11696,93 @@
           },
           "409": {
             "description": "Not possible now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/config": {
+      "get": {
+        "operationId": "appConfig",
+        "tags": [
+          "system"
+        ],
+        "summary": "Public settings every app reads and keeps on the phone: the community desk number for the no-network SOS fallback",
+        "responses": {
+          "200": {
+            "description": "Config",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppConfig"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/settings/desk-phone": {
+      "put": {
+        "operationId": "setDeskPhone",
+        "tags": [
+          "system"
+        ],
+        "summary": "Set or clear the community desk number (super admin; audited). Phones pick it up the next time they are online.",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeskPhoneUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppConfig"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
             "content": {
               "application/json": {
                 "schema": {
