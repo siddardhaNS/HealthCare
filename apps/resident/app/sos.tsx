@@ -182,15 +182,6 @@ function LiveSos({ id }: { id: string }) {
             </View>
           ) : null}
 
-          {s.state === 'escalated_to_108' ? (
-            <Card style={{ marginHorizontal: space[5], gap: space[3], backgroundColor: colors.dangerSoft, borderColor: colors.dangerBorder }} accessibilityLiveRegion="assertive">
-              <Text weight="bold" tone="danger">
-                {t('sos.escalatedBanner')}
-              </Text>
-              <Button label={t('sos.call108')} tone="danger" onPress={() => dial('108')} />
-            </Card>
-          ) : null}
-
           {approaching(s.state) ? <SosMap you={s.location} ambulance={s.crew?.position ?? null} distanceM={s.crew?.distanceM ?? null} width={width} /> : null}
 
           <View style={{ paddingHorizontal: space[5], gap: space[3] }}>
@@ -235,14 +226,8 @@ function LiveSos({ id }: { id: string }) {
             <>
               {canCancel ? (
                 <Button testID="sos-cancel" label={t('sos.cancel')} tone="neutral" style={{ flex: 1 }} onPress={() => setConfirmCancel(true)} disabled={confirmCancel} />
-              ) : (
-                <Button label={t('sos.call108')} tone="neutral" style={{ flex: 1 }} onPress={() => dial('108')} />
-              )}
-              {deskPhone ? (
-                <Button label={t('sos.callDeskShort')} tone="danger" style={{ flex: 1 }} onPress={() => dial(deskPhone)} />
-              ) : canCancel ? (
-                <Button label={t('sos.call108')} tone="danger" style={{ flex: 1 }} onPress={() => dial('108')} />
               ) : null}
+              {deskPhone ? <Button label={t('sos.callDeskShort')} tone="danger" style={{ flex: 1 }} onPress={() => dial(deskPhone)} /> : null}
             </>
           )}
         </View>
@@ -337,7 +322,7 @@ function Steps({ sos }: { sos: ResidentSos }) {
   const { colors, space } = useTheme();
   const order: SosState[] = ['raised', 'dispatching', 'accepted', ...crewSteps];
   const reachedAt = new Map(sos.timeline.map((e) => [e.to, e.at] as const));
-  // Waiting for an accept after the 108 prompt is still the dispatching step.
+  // Past incidents in the retired 108 state (plan §11) show as still finding a crew.
   const current: SosState = sos.state === 'escalated_to_108' ? 'dispatching' : sos.state;
   const curIdx = order.indexOf(current);
   const time = (iso: string) => new Intl.DateTimeFormat(`${i18n.language}-IN`, { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' }).format(new Date(iso));

@@ -1,9 +1,8 @@
 // Resident SOS: docs/plans/phase-3-sos.md §3.1–3.2 and §3.6.
 // Never block the person on the network: raising retries in the background
-// while the 108 / desk buttons are on screen, and live updates come from
+// while the desk button is on screen, and live updates come from
 // Realtime with polling underneath, so a lost push is never a lost update.
 import { useCallback, useEffect, useRef, useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { randomUUID } from 'expo-crypto';
@@ -11,7 +10,8 @@ import * as Location from 'expo-location';
 import type { Schemas } from '@repo/api-client';
 import { distanceM, estimateEtaS } from '@repo/contracts/sos';
 import { useSession } from '@repo/mobile';
-import { ApiError, unwrap, useHousehold } from './data';
+import { useAppConfig } from './app-config';
+import { ApiError, unwrap } from './data';
 import { raiseWithRetry } from './raise';
 
 export type ResidentSos = Schemas['ResidentSos'];
@@ -97,7 +97,7 @@ function onBackOnline(wake: () => void) {
  * Raises the SOS with one idempotency key for this press, so retries and a
  * second press can only ever create one incident. Each attempt gives up
  * after 4 s; after the first slow or failed attempt `slow` is set and the
- * screen shows "Call community desk" / "Call 108" while retries go on.
+ * screen shows "Call community desk" while retries go on.
  */
 export function useRaiseSos() {
   const { api } = useSession();
@@ -229,26 +229,11 @@ export function useCancelSos(id: string) {
 
 // ── Phone fallbacks ─────────────────────────────────────────────────────
 
-const DESK_PHONE_KEY = 'sos.deskPhone';
-
 /**
- * The community desk's number, kept on the phone so "Call community desk"
- * works when the network does not. Null for a household without a community.
+ * The community desk number (plan §11): one number set by the super admin in
+ * the console, kept on the phone so "Call community desk" works when the
+ * network does not. Null until it is set (the button is hidden).
  */
 export function useDeskPhone(): string | null {
-  const household = useHousehold();
-  const [stored, setStored] = useState<string | null>(null);
-  const fromApi = household.data ? (household.data.household?.community?.deskPhone ?? null) : undefined;
-
-  useEffect(() => {
-    void AsyncStorage.getItem(DESK_PHONE_KEY)
-      .then(setStored)
-      .catch(() => undefined);
-  }, []);
-  useEffect(() => {
-    if (fromApi === undefined) return;
-    void (fromApi ? AsyncStorage.setItem(DESK_PHONE_KEY, fromApi) : AsyncStorage.removeItem(DESK_PHONE_KEY)).catch(() => undefined);
-  }, [fromApi]);
-
-  return fromApi === undefined ? stored : fromApi;
+  return useAppConfig().deskPhone;
 }

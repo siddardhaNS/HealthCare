@@ -1,5 +1,5 @@
 # SOS with the network completely down (plan §7 failure path): the alert is
-# sent with no network, "Call 108" appears within 4 s while the app keeps
+# sent with no network, the phone fallback appears within 4 s while the app keeps
 # retrying, and when the network comes back the SOS lands once and the live
 # screen opens. Android only (Maestro's airplane mode); iOS simulators have none.
 #
@@ -19,9 +19,10 @@ appId: in.example.resident
 - tapOn:
     id: sos-send-now
 # Never block on the network: the phone fallback shows within the 4 s attempt timeout.
+# ("Call community desk" when the console has a desk number, a note otherwise; plan §11, no 108.)
 - extendedWaitUntil:
     visible:
-      id: call-108
+      text: "Still trying to reach us.*"
     timeout: 6000
 - assertNotVisible:
     id: sos-live

@@ -718,7 +718,6 @@
     "slow": "Still trying to reach us. Call now if you need help:",
     "refused": "Your SOS could not be sent. Please call now:",
     "callDesk": "Call community desk",
-    "call108": "Call 108",
     "callDeskShort": "Call desk",
     "callCrew": "Call ambulance crew",
     "cancel": "Cancel SOS",
@@ -734,7 +733,7 @@
     "title": {
       "raised": "SOS sent",
       "dispatching": "Finding an ambulance",
-      "escalated_to_108": "Call 108 now",
+      "escalated_to_108": "Finding an ambulance",
       "accepted": "Help is on the way",
       "en_route": "Help is on the way",
       "on_scene": "Crew is with you",
@@ -746,7 +745,7 @@
     "subtitle": {
       "raised": "Stay where you are.",
       "dispatching": "Alerting the nearest ambulances. Stay where you are.",
-      "escalated_to_108": "No ambulance has accepted yet. We are still trying.",
+      "escalated_to_108": "Alerting the nearest ambulances. Stay where you are.",
       "accepted": "Stay where you are.",
       "en_route": "Stay where you are.",
       "on_scene": "The crew is looking after you.",
@@ -758,14 +757,13 @@
     "short": {
       "raised": "alert sent",
       "dispatching": "finding an ambulance",
-      "escalated_to_108": "call 108",
+      "escalated_to_108": "finding an ambulance",
       "accepted": "ambulance assigned",
       "en_route": "ambulance on the way",
       "on_scene": "crew with you",
       "transporting": "going to hospital",
       "handed_over": "at the hospital"
     },
-    "escalatedBanner": "No ambulance has accepted in time. Call 108 now; we will keep looking and tell you if one accepts.",
     "etaLabel": "Ambulance arriving in",
     "etaUnknown": "Location coming",
     "etaMinutes": "{{count}} min",
@@ -791,6 +789,7 @@
     },
     "now": "now",
     "erTitle": "Hospital handover",
-    "erPending": "Shown here once a hospital is chosen. Only what your consent settings allow is shared."
+    "erPending": "Shown here once a hospital is chosen. Only what your consent settings allow is shared.",
+    "noDeskNumber": "The community desk number is not available yet. Keep this screen open: we keep trying."
   }
 }

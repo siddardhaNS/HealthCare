@@ -15,6 +15,7 @@ import { Screen, ThemeProvider, useTheme } from '@repo/ui-native';
 import { scrubSentryEvent, sentryTracesSampleRate } from '@repo/config/sentry';
 import { config } from '../lib/config';
 import { queryClient, useOnboardingStep, useProfile } from '../lib/data';
+import { offeredLanguage, useAppConfig } from '../lib/app-config';
 import { EmergencyCalls } from '../lib/emergency-calls';
 import { ErrorState } from '../lib/ui';
 
@@ -39,8 +40,11 @@ function Routes({ fontsReady }: { fontsReady: boolean }) {
   const { session, loading } = useSession();
   const onboarding = useOnboardingStep();
   const { i18n } = useTranslation();
-  const language = useProfile().data?.language;
-  // Speak the person's chosen language everywhere once their profile has it.
+  const config = useAppConfig();
+  const profile = useProfile().data;
+  // Speak the person's chosen language everywhere once their profile has it,
+  // if the super admin has it switched on; otherwise English.
+  const language = profile ? offeredLanguage(config, profile.language) : null;
   useEffect(() => {
     if (language && i18n.language !== language) void i18n.changeLanguage(language);
   }, [language, i18n]);
