@@ -70,6 +70,7 @@ function CrewHome({ onSignOut }: { onSignOut: () => void }) {
   const setDuty = useSetDuty();
   const [notice, setNotice] = useState<string | null>(null);
   const [tracking, setTracking] = useState<boolean | null>(null);
+  const [locating, setLocating] = useState(false);
 
   // Standby: share position while on duty, free and in the foreground.
   useEffect(() => {
@@ -112,7 +113,9 @@ function CrewHome({ onSignOut }: { onSignOut: () => void }) {
 
   const toggleDuty = async (on: boolean) => {
     setNotice(null);
-    const location = on ? await currentPoint() : null;
+    // A location fix can take seconds: keep the switch locked meanwhile, so a second tap doesn't undo the first.
+    setLocating(on);
+    const location = on ? await currentPoint().finally(() => setLocating(false)) : null;
     if (on && !location) setNotice(t('field.locationNeeded'));
     setDuty.mutate(
       { onDuty: on, ...(location ? { location } : {}) },
@@ -152,12 +155,12 @@ function CrewHome({ onSignOut }: { onSignOut: () => void }) {
 
           <Card style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <Text variant="bodyLg" weight="bold" tone={onDuty ? 'accent' : 'muted'}>
-              {onDuty ? t('field.onDuty') : t('field.offDuty')}
+              {locating ? t('field.locating') : onDuty ? t('field.onDuty') : t('field.offDuty')}
             </Text>
             <Switch
               accessibilityLabel={t('field.onDuty')}
               value={onDuty}
-              disabled={setDuty.isPending}
+              disabled={setDuty.isPending || locating}
               onValueChange={(v) => void toggleDuty(v)}
               trackColor={{ false: colors.borderStrong, true: colors.accent }}
               thumbColor={colors.text}

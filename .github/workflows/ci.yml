@@ -44,3 +44,70 @@ jobs:
           pnpm --filter console e2e
       - name: Dependency audit
         run: pnpm audit --audit-level high
+
+  # Signed-in console journeys (password + TOTP, command center, coverage, hospital
+  # handover, partner portal) against a local Supabase stack on the runner. A job of
+  # its own, so a failure in `verify` never skips it. Secrets are generated per run
+  # and exist only on the runner.
+  e2e-signed-in:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Local secrets for this run
+        run: |
+          hook="v1,whsec_$(openssl rand -base64 32)"
+          echo "SEND_SMS_HOOK_SECRET=$hook" > supabase/.env
+          {
+            echo "SEND_SMS_HOOK_SECRET=$hook"
+            echo "OTP_FALLBACK_KEY=$(openssl rand -base64 32)"
+            echo "PHONE_HASH_KEY=$(openssl rand -hex 32)"
+            echo "FIELD_ENC_KEY=$(openssl rand -base64 32)"
+          } > .env.ci
+
+      - name: Start the local Supabase stack
+        run: pnpm supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor,postgres-meta
+
+      - name: Write .env files from the local stack
+        run: |
+          eval "$(pnpm -s supabase status -o env | grep -E '^[A-Z_0-9]+=')"
+          {
+            echo "SUPABASE_URL=$API_URL"
+            echo "SUPABASE_SECRET_KEY=$SECRET_KEY"
+            echo "DATABASE_URL=$DB_URL"
+            echo "MESSAGING_MODE=log"
+            cat .env.ci
+          } > .env
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL"
+            echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$PUBLISHABLE_KEY"
+            echo "NEXT_PUBLIC_API_URL=http://localhost:3001"
+          } > apps/console/.env.local
+
+      - name: Start the API
+        run: |
+          pnpm --filter api dev > api.log 2>&1 &
+          for i in $(seq 1 90); do curl -sf http://localhost:3001/v1/health && exit 0; sleep 2; done
+          cat api.log; exit 1
+
+      - name: Signed-in console e2e
+        run: |
+          pnpm --filter console exec playwright install --with-deps chromium
+          pnpm --filter console e2e:signed-in
+
+      - name: Traces and API log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-signed-in
+          path: |
+            apps/console/test-results
+            api.log
+          retention-days: 7

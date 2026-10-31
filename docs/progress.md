@@ -1,5 +1,35 @@
 # Progress
 
+## 2026-10-31 · Phase 3, step 8 (part 4): e2e un-skipped, signed-in CI job, Expo dependencies
+
+### The three skipped console tests now run and pass
+- **"The test crew gets no offer"** was a test bug.
+  - `crewAccepts` asked the desk to offer the job right after the SOS was raised, while it was still `raised` (the escalation workflow moves it to `dispatching` a moment later). The API correctly refuses that.
+  - It now waits for dispatch to begin. The tests follow plan §11: the crew picks the hospital (`crewPicks`).
+- **`/hospitals` WCAG AA:** the 4 contrast failures came from fading inactive cards with `opacity-70`.
+  - Inactive hospital and team cards now use a dashed border, plus the "Inactive" label they already had.
+  - The axe failure message now names each failing element.
+- **Flakes found and fixed:**
+  - Forms that submit through `onSubmit` did a plain browser GET when clicked before React hydrated (seen as a test SOS that never started). This affected desk users on a slow network too.
+    - Their buttons and fields now stay disabled until hydrated (`useHydrated`, via `useSyncExternalStore`).
+  - Global setup's TOTP check also tries the neighbouring 30 s windows (the local stack's clock drifts under load).
+- The signed-in suite passes **9/9, twice in a row**.
+
+### CI
+- New job **`e2e-signed-in`**: it starts the local Supabase stack on the runner (without studio, imgproxy, edge-runtime, logflare, vector, supavisor, postgres-meta) and writes `.env` files from `supabase status`. Per-run secrets are generated with `openssl`.
+  - It runs the API in dev mode, and Playwright builds and starts the console.
+  - It uploads traces and the API log on failure.
+  - It is separate from `verify`, so a red step there never skips it.
+- **Expo dependency check fixed:** `expo install --fix` in both apps (Expo SDK 58 patch releases, react-native 0.88.0 → 0.88.1).
+  - Both native dev builds were rebuilt (`expo prebuild` + `expo run:android`: resident 10 min, field 4.5 min).
+  - On the emulator: resident Home and Health, field duty on/off. No native errors.
+- **Field app fix found while testing:** going on duty waits for a location fix (seconds). Meanwhile the switch looked off and stayed tappable, so a second tap undid the first (seen in `crew_shifts`).
+  - The switch is now locked during the wait and says "Getting your location…".
+
+### Next
+- Watch the first run of the `e2e-signed-in` CI job.
+- Clean-up idea: e2e runs leave three deactivated test teams each time (teams cannot be deleted). Consider a delete for unused teams, or reusing named test teams.
+
 ## 2026-10-31 · Phase 3, step 8 (plan §11, part 3): no 108 anywhere, desk number, languages, crew picks the hospital
 
 Plan §11 is now built. Your answers today:

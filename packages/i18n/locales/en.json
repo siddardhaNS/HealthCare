@@ -116,7 +116,8 @@
       "callEr": "Call the ER",
       "change": "Change hospital",
       "keep": "Keep the current hospital"
-    }
+    },
+    "locating": "Getting your location…"
   },
   "web": {
     "heroTitle": "Doctors, medicines, lab tests and a 24×7 SOS for every home",
