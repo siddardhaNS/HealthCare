@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { MAX_BACKUP_TEAMS } from '@repo/contracts';
 import { sosThresholds } from '@repo/contracts/sos';
 import type { CoverageRepo, TeamRow } from '../src/modules/coverage/repo';
 import type { SosSettingsRepo } from '../src/modules/sos/settings-repo';
@@ -23,6 +24,8 @@ export function fakeCoverage(dispatch: ReturnType<typeof fakeDispatch>, hh: Retu
     return t?.active ? t.name : null;
   });
   const syncDispatchTeam = (t: TeamRow) => dispatch.teams.set(t.id, { name: t.name, active: t.active });
+  const maps = (kind: 'site' | 'household') => (kind === 'site' ? { primary: dispatch.siteTeam, backups: dispatch.siteBackups } : { primary: dispatch.householdTeam, backups: dispatch.householdBackups });
+  const setList = (kind: 'site' | 'household', id: string, list: string[]) => (list.length ? maps(kind).backups.set(id, list) : maps(kind).backups.delete(id));
   const siteHouseholds = (siteId: string) => hh.households.filter((h) => hh.homes.find((m) => m.id === h.homeId)?.siteId === siteId).length;
 
   const repo: CoverageRepo = {
@@ -88,9 +91,13 @@ export function fakeCoverage(dispatch: ReturnType<typeof fakeDispatch>, hh: Retu
       ];
       return all
         .filter((p) => (!uncovered || !p.teamId) && (!q || `${p.name} ${p.city}`.toLowerCase().includes(q.toLowerCase())))
-        .map((p) => ({ ...p, teamName: name(p.teamId) }));
+        .map((p) => ({
+          ...p,
+          teamName: name(p.teamId),
+          backups: (maps(p.kind).backups.get(p.id) ?? []).map((t) => ({ teamId: t, teamName: name(t)!, active: teams.find((x) => x.id === t)!.active })),
+        }));
     },
-    async assign(teamId, { sites, households }) {
+    async assign(teamId, { sites, households }, _actor, as = 'primary') {
       if (teamId) {
         const t = teams.find((x) => x.id === teamId);
         if (!t) return { ok: false, error: 'no_team' };
@@ -98,6 +105,19 @@ export function fakeCoverage(dispatch: ReturnType<typeof fakeDispatch>, hh: Retu
       }
       if (sites.some((s) => !hh.sites.some((x) => x.id === s)) || households.some((h) => !hh.households.some((x) => x.id === h))) return { ok: false, error: 'unknown_place' };
       if (households.some((h) => hh.households.find((x) => x.id === h)!.homeId !== null)) return { ok: false, error: 'not_standalone' };
+      const places = [...sites.map((id) => ['site', id] as const), ...households.map((id) => ['household', id] as const)];
+      if (as === 'backup') {
+        if (places.some(([k, id]) => !maps(k).primary.has(id))) return { ok: false, error: 'no_primary' };
+        const todo = places.filter(([k, id]) => maps(k).primary.get(id) !== teamId && !(maps(k).backups.get(id) ?? []).includes(teamId!));
+        if (todo.some(([k, id]) => (maps(k).backups.get(id) ?? []).length >= MAX_BACKUP_TEAMS)) return { ok: false, error: 'too_many_backups' };
+        for (const [k, id] of todo) {
+          const from = maps(k).backups.get(id) ?? [];
+          setList(k, id, [...from, teamId!]);
+          audit.push({ action: 'coverage_backups_set', entityId: id, metadata: { kind: k, from, to: [...from, teamId] } });
+        }
+        return { ok: true, changed: todo.length };
+      }
+      for (const [k, id] of places) setList(k, id, teamId ? (maps(k).backups.get(id) ?? []).filter((t) => t !== teamId) : []);
       let changed = 0;
       for (const [map, ids, kind] of [[dispatch.siteTeam, sites, 'site'], [dispatch.householdTeam, households, 'household']] as const) {
         for (const id of ids) {
@@ -111,6 +131,21 @@ export function fakeCoverage(dispatch: ReturnType<typeof fakeDispatch>, hh: Retu
         }
       }
       return { ok: true, changed };
+    },
+    async setBackups({ kind, id }, teamIds) {
+      const place = kind === 'site' ? hh.sites.find((x) => x.id === id) : hh.households.find((x) => x.id === id);
+      if (!place) return { ok: false, error: 'unknown_place' };
+      if (kind === 'household' && hh.households.find((x) => x.id === id)!.homeId !== null) return { ok: false, error: 'not_standalone' };
+      if (teamIds.some((t) => !teams.some((x) => x.id === t))) return { ok: false, error: 'no_team' };
+      const primary = maps(kind).primary.get(id);
+      const from = maps(kind).backups.get(id) ?? [];
+      if (teamIds.length && !primary) return { ok: false, error: 'no_primary' };
+      if (primary && teamIds.includes(primary)) return { ok: false, error: 'is_primary' };
+      if (teamIds.some((t) => !teams.find((x) => x.id === t)!.active && !from.includes(t))) return { ok: false, error: 'team_inactive' };
+      if (from.join() === teamIds.join()) return { ok: true, changed: false };
+      setList(kind, id, teamIds);
+      audit.push({ action: 'coverage_backups_set', entityId: id, metadata: { kind, from, to: teamIds } });
+      return { ok: true, changed: true };
     },
   };
   return { repo, teams, ambulances, audit, crewNames };

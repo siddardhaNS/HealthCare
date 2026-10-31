@@ -57,9 +57,20 @@ export async function assignPlaces(prev: ActionState & { changed?: number }, for
   const api = await serverApi();
   const team = text(form, 'teamId');
   const r = await api.PUT('/v1/coverage/assignments', {
-    body: { teamId: team === 'none' ? null : team, sites: form.getAll('site').map(String), households: form.getAll('household').map(String) },
+    // "as" comes from the button pressed: Set as primary, or Add as backup.
+    body: { teamId: team === 'none' ? null : team, as: text(form, 'as') === 'backup' ? 'backup' : 'primary', sites: form.getAll('site').map(String), households: form.getAll('household').map(String) },
   });
   const next = finish(prev, r, '/coverage/places');
   revalidatePath('/coverage');
   return { ...next, changed: r.data?.changed };
+}
+
+/** Saves a place's backup teams in this order; a team chosen in the form (teamId) is added at the end. */
+export async function setBackups(kind: 'site' | 'household', id: string, teamIds: string[], prev: ActionState, form: FormData) {
+  const api = await serverApi();
+  const added = text(form, 'teamId');
+  const r = await api.PUT('/v1/coverage/backups', { body: { kind, id, teamIds: added ? [...teamIds, added] : teamIds } });
+  const next = finish(prev, r, `/coverage/places/${kind}/${id}`);
+  revalidatePath('/coverage/places');
+  return next;
 }

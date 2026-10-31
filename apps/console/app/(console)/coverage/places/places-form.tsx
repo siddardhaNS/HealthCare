@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRef } from 'react';
 import type { CoveragePlace } from '@repo/contracts';
 import { Button, cn } from '@repo/ui-web';
@@ -15,7 +16,12 @@ export interface PlacesLabels {
   assignTo: string;
   chooseTeam: string;
   unassign: string;
-  assign: string;
+  setPrimary: string;
+  addBackup: string;
+  primary: string;
+  backupsLine: string;
+  editBackups: string;
+  editBackupsA11y: string;
   assigned: string;
   unnamedHome: string;
   community: string;
@@ -24,7 +30,7 @@ export interface PlacesLabels {
 
 const field = 'min-h-tap rounded-control border border-border-strong bg-surface px-3 text-text';
 
-/** Places with checkboxes, and one "assign selected to …" action at the bottom. */
+/** Places with checkboxes, and "set as primary" / "add as backup" for the selected ones at the bottom (plan §11). */
 export function PlacesForm({ places, teams, labels }: { places: CoveragePlace[]; teams: { id: string; name: string; active: boolean }[]; labels: PlacesLabels }) {
   const table = useRef<HTMLTableElement>(null);
   const toggleAll = (on: boolean) => table.current?.querySelectorAll<HTMLInputElement>('input[data-place]').forEach((c) => (c.checked = on));
@@ -44,6 +50,9 @@ export function PlacesForm({ places, teams, labels }: { places: CoveragePlace[];
               <th scope="col" className="px-4 py-3 font-semibold">
                 {labels.coveredBy}
               </th>
+              <th scope="col" className="px-4 py-3">
+                <span className="sr-only">{labels.editBackups}</span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -60,7 +69,21 @@ export function PlacesForm({ places, teams, labels }: { places: CoveragePlace[];
                       {[labels.kind[p.kind], p.city, p.kind === 'site' ? labels.households.replace('{{count}}', String(p.households)) : null].filter(Boolean).join(' · ')}
                     </div>
                   </td>
-                  <td className={cn('px-4 py-2', !p.teamName && 'text-warning-text')}>{p.teamName ?? labels.noTeam}</td>
+                  <td className="px-4 py-2">
+                    <div className={cn(!p.teamName && 'text-warning-text')}>{p.teamName ? labels.primary.replace('{{team}}', p.teamName) : labels.noTeam}</div>
+                    {p.backups.length > 0 ? (
+                      <div className="text-caption text-text-muted">{labels.backupsLine.replace('{{teams}}', p.backups.map((b, i) => `${i + 1}. ${b.teamName}`).join(', '))}</div>
+                    ) : null}
+                  </td>
+                  <td className="px-4 py-2 text-right">
+                    <Link
+                      href={`/coverage/places/${p.kind}/${p.id}`}
+                      aria-label={labels.editBackupsA11y.replace('{{place}}', name)}
+                      className="inline-flex min-h-tap items-center text-small font-semibold text-accent-text underline-offset-4 hover:underline"
+                    >
+                      {labels.editBackups}
+                    </Link>
+                  </td>
                 </tr>
               );
             })}
@@ -84,7 +107,12 @@ export function PlacesForm({ places, teams, labels }: { places: CoveragePlace[];
             <option value="none">{labels.unassign}</option>
           </select>
         </label>
-        <Button type="submit">{labels.assign}</Button>
+        <Button type="submit" name="as" value="primary">
+          {labels.setPrimary}
+        </Button>
+        <Button type="submit" name="as" value="backup" variant="outline">
+          {labels.addBackup}
+        </Button>
       </div>
     </ActionForm>
   );

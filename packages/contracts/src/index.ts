@@ -691,18 +691,40 @@ export const CoveragePlace = z
     name: z.string(),
     city: z.string().nullable(),
     households: z.number().int(),
+    /** The primary team: offered the SOS first. */
     teamId: z.string().uuid().nullable(),
     teamName: z.string().nullable(),
+    /** Backup teams in the order they are offered the SOS, one per timeout (plan §11). */
+    backups: z.array(z.object({ teamId: z.string().uuid(), teamName: z.string(), active: z.boolean() })),
   })
   .openapi('CoveragePlace');
 export type CoveragePlace = z.infer<typeof CoveragePlace>;
 export const CoveragePlaces = z.object({ places: z.array(CoveragePlace) }).openapi('CoveragePlaces');
 
-/** Assigns (or, with teamId null, unassigns) places in bulk. A place covered by another team moves. */
+/** Most backup teams one place can have (plan §11). */
+export const MAX_BACKUP_TEAMS = 9;
+
+/**
+ * Assigns places in bulk. As `primary` (the default): a place covered by another
+ * team moves, and teamId null removes the cover and the place's backups. As
+ * `backup`: the team is added at the end of each place's backup list.
+ */
 export const CoverageAssign = z
-  .object({ teamId: z.string().uuid().nullable(), sites: z.array(z.string().uuid()).max(500).default([]), households: z.array(z.string().uuid()).max(500).default([]) })
+  .object({
+    teamId: z.string().uuid().nullable(),
+    as: z.enum(['primary', 'backup']).default('primary'),
+    sites: z.array(z.string().uuid()).max(500).default([]),
+    households: z.array(z.string().uuid()).max(500).default([]),
+  })
   .refine((v) => v.sites.length + v.households.length > 0, { message: 'Choose at least one place.' })
+  .refine((v) => v.as === 'primary' || v.teamId !== null, { message: 'Choose a team to add as a backup.', path: ['teamId'] })
   .openapi('CoverageAssign');
+
+/** Replaces one place's backup teams with this ordered list (reorder, remove or add). */
+export const CoverageBackups = z
+  .object({ kind: z.enum(['site', 'household']), id: z.string().uuid(), teamIds: z.array(z.string().uuid()).max(MAX_BACKUP_TEAMS) })
+  .refine((v) => new Set(v.teamIds).size === v.teamIds.length, { message: 'A team can be a backup only once per place.', path: ['teamIds'] })
+  .openapi('CoverageBackups');
 
 // ── Hospital handover (plan §3.7, §10) ──────────────────────────────────
 

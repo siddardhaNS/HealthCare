@@ -1043,8 +1043,25 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Assign places to a team in bulk (a place covered by another team moves), or unassign them (teamId null) */
+        /** Assign places to a primary team in bulk (a place covered by another team moves), unassign them (teamId null), or add a backup team to each */
         put: operations["assignCoverage"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/coverage/backups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace one place’s backup teams with an ordered list (offered in this order, one per timeout; plan §11) */
+        put: operations["setCoverageBackups"];
         post?: never;
         delete?: never;
         options?: never;
@@ -2107,14 +2124,32 @@ export interface components {
             /** Format: uuid */
             teamId: string | null;
             teamName: string | null;
+            backups: {
+                /** Format: uuid */
+                teamId: string;
+                teamName: string;
+                active: boolean;
+            }[];
         };
         CoverageAssign: {
             /** Format: uuid */
             teamId: string | null;
+            /**
+             * @default primary
+             * @enum {string}
+             */
+            as: "primary" | "backup";
             /** @default [] */
             sites: string[];
             /** @default [] */
             households: string[];
+        };
+        CoverageBackups: {
+            /** @enum {string} */
+            kind: "site" | "household";
+            /** Format: uuid */
+            id: string;
+            teamIds: string[];
         };
         HandoverLinkView: {
             ref: string;
@@ -6542,6 +6577,77 @@ export interface operations {
                 content: {
                     "application/json": {
                         changed: number;
+                    };
+                };
+            };
+            /** @description Invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Not possible */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    setCoverageBackups: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CoverageBackups"];
+            };
+        };
+        responses: {
+            /** @description Done */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        changed: boolean;
                     };
                 };
             };

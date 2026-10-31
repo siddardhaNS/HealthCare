@@ -1,5 +1,46 @@
 # Progress
 
+## 2026-10-31 · Phase 3, step 8 (plan §11, part 2): backup teams in the console
+
+Already in `ebe7ac0` (30 Oct, not logged then): the workflow offers the primary team, then at every timeout alarms the desk and offers the next backup team, then the nearest free crews (up to 20 rings). The 108 step is gone from the state machine.
+
+### This session
+- **API:**
+  - `GET /v1/coverage/places` now returns each place's ordered `backups`.
+  - `PUT /v1/coverage/assignments` takes `as: primary | backup`. "Backup" adds the team to the end of each selected place's list, and skips places the team already covers.
+  - New `PUT /v1/coverage/backups` replaces one place's list (reorder, remove, add) in a single call. It is audited as `coverage_backups_set` with the before and after lists.
+  - Rules:
+    - a place needs a primary team before it can have backups
+    - at most 9 backups per place
+    - no duplicates, and the primary can't also be a backup
+    - an inactive team can stay on a list (dispatch skips it) but can't be added
+    - a backup made primary leaves the list
+    - removing a place's cover removes its backups too
+    - ranks are always rewritten as 1..n, so there are no gaps
+- **Console:**
+  - The places page shows "Primary: X" and "Backups: 1. Y, 2. Z" on each row, with **Set as primary** and **Add as backup** buttons.
+  - New page `/coverage/places/{kind}/{id}` to move teams up or down, remove them, and add backups.
+  - Strings added in en / te / hi.
+- **Bug found in Chrome and fixed:** making a backup team the primary failed with a 500 (unique index: the team was inserted as primary while it was still on the backup list). The unit tests run on in-memory fakes and missed it.
+  - New signed-in e2e test `e2e-signed-in/coverage.spec.ts` runs against the real database.
+  - Checked that the test fails when the bug is put back.
+- Fixed a stale assertion in `escalation.workflow.test.ts`. It failed at HEAD; under §11 the desk alarm now comes before the next ring.
+- The local DB had not applied `20261030020000_backup_teams.sql`; it is applied now.
+
+### Tests
+- API: 238 unit + 7 workflow tests pass.
+- Signed-in console e2e: 6 pass (3 still `fixme`).
+- Typecheck, lint and `pnpm check` pass.
+- Clicked through in Chrome: add backup (including the refusal when a place has no primary), add, move up, remove, backup → primary.
+
+### Next (rest of §11)
+- Thresholds page: one value, "Next crew after (s)". Drop the 108 field.
+- Alarm text that names the team: "ABC did not respond, offered to XYZ".
+- Community desk number setting, plus the public config endpoint.
+- Resident app: remove "Call 108", add "Call community desk".
+- Crew chooses the hospital. Still open: ⚑ no automatic hospital at all?
+- Re-run the load test.
+
 ## 2026-10-30 · Phase 3, step 7 (part 1): SOS load test, two dispatch fixes, signed-in console e2e
 
 ### Load test (`pnpm --filter api load:sos`)

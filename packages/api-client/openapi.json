@@ -3221,6 +3221,29 @@
               "string",
               "null"
             ]
+          },
+          "backups": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "teamId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "teamName": {
+                  "type": "string"
+                },
+                "active": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "teamId",
+                "teamName",
+                "active"
+              ]
+            }
           }
         },
         "required": [
@@ -3230,7 +3253,8 @@
           "city",
           "households",
           "teamId",
-          "teamName"
+          "teamName",
+          "backups"
         ]
       },
       "CoverageAssign": {
@@ -3242,6 +3266,14 @@
               "null"
             ],
             "format": "uuid"
+          },
+          "as": {
+            "type": "string",
+            "enum": [
+              "primary",
+              "backup"
+            ],
+            "default": "primary"
           },
           "sites": {
             "type": "array",
@@ -3264,6 +3296,35 @@
         },
         "required": [
           "teamId"
+        ]
+      },
+      "CoverageBackups": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "site",
+              "household"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "teamIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "maxItems": 9
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "teamIds"
         ]
       },
       "HandoverLinkView": {
@@ -9648,7 +9709,7 @@
         "tags": [
           "coverage"
         ],
-        "summary": "Assign places to a team in bulk (a place covered by another team moves), or unassign them (teamId null)",
+        "summary": "Assign places to a primary team in bulk (a place covered by another team moves), unassign them (teamId null), or add a backup team to each",
         "security": [
           {
             "bearer": []
@@ -9674,6 +9735,100 @@
                   "properties": {
                     "changed": {
                       "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "changed"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not possible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/coverage/backups": {
+      "put": {
+        "operationId": "setCoverageBackups",
+        "tags": [
+          "coverage"
+        ],
+        "summary": "Replace one place’s backup teams with an ordered list (offered in this order, one per timeout; plan §11)",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CoverageBackups"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Done",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "changed": {
+                      "type": "boolean"
                     }
                   },
                   "required": [

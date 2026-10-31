@@ -100,7 +100,8 @@ describe('SOS escalation workflow', () => {
     expect(kinds(id).slice(-2)).toEqual(['desk_alarm:raised', 'offer_ring:1']);
     await again.wakeUp({ correlationIds: [sleep] });
     await waitForSleep(again);
-    expect(kinds(id).at(-1)).toBe('desk_alarm:no_accept');
+    // Plan §11: the desk is alarmed, then the next ring is offered.
+    expect(kinds(id).slice(-2)).toEqual(['desk_alarm:no_accept', 'offer_ring:2']);
     // The new run hears the next accept.
     await crewAccepts(id, CREWS[1]!);
     expect(await again.returnValue).toBe('settled_after_more_rings');

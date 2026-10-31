@@ -163,6 +163,75 @@ describe('coverage teams', () => {
     expect((await s.ops.patch(`/v1/coverage/teams/${randomUUID()}`, { active: false })).status).toBe(404);
   });
 
+  describe('backup teams (plan §11)', () => {
+    const team = async (s: Awaited<ReturnType<typeof setup>>, name: string) => ((await (await s.ops.post('/v1/coverage/teams', { name })).json()) as { id: string }).id;
+    const backupsOf = async (s: Awaited<ReturnType<typeof setup>>, id: string) => (await places(s)).find((p) => p.id === id)!.backups.map((b) => b.teamName);
+
+    it('adds backups in bulk, in order, after a primary; skips places the team already covers', async () => {
+      const s = await setup();
+      const [abc, xyz, pqr] = [await team(s, 'ABC'), await team(s, 'XYZ'), await team(s, 'PQR')];
+      // No primary yet: a backup alone would become the first ring.
+      expect((await s.ops.put('/v1/coverage/assignments', { teamId: xyz, as: 'backup', sites: [s.green.id] })).status).toBe(409);
+      await s.ops.put('/v1/coverage/assignments', { teamId: abc, sites: [s.green.id], households: [s.standalone] });
+      expect(await (await s.ops.put('/v1/coverage/assignments', { teamId: xyz, as: 'backup', sites: [s.green.id], households: [s.standalone] })).json()).toEqual({ changed: 2 });
+      expect(await (await s.ops.put('/v1/coverage/assignments', { teamId: pqr, as: 'backup', sites: [s.green.id] })).json()).toEqual({ changed: 1 });
+      // Already the primary, or already a backup: nothing changes.
+      expect(await (await s.ops.put('/v1/coverage/assignments', { teamId: abc, as: 'backup', sites: [s.green.id] })).json()).toEqual({ changed: 0 });
+      expect(await (await s.ops.put('/v1/coverage/assignments', { teamId: xyz, as: 'backup', sites: [s.green.id] })).json()).toEqual({ changed: 0 });
+      expect(await backupsOf(s, s.green.id)).toEqual(['XYZ', 'PQR']);
+      expect((await places(s)).find((p) => p.id === s.green.id)).toMatchObject({ teamName: 'ABC' });
+      // Dispatch tries them in this order.
+      expect(await s.t.dispatch.repo.teamsForHousehold(s.standalone)).toEqual([abc, xyz]);
+      expect((await s.ops.put('/v1/coverage/assignments', { teamId: null, as: 'backup', sites: [s.green.id] })).status).toBe(400);
+    });
+
+    it('reorders and removes with one ordered list; refuses duplicates, the primary and new inactive teams', async () => {
+      const s = await setup();
+      const [abc, xyz, pqr] = [await team(s, 'ABC'), await team(s, 'XYZ'), await team(s, 'PQR')];
+      await s.ops.put('/v1/coverage/assignments', { teamId: abc, households: [s.standalone] });
+      const set = (teamIds: string[]) => s.ops.put('/v1/coverage/backups', { kind: 'household', id: s.standalone, teamIds });
+      expect(await (await set([xyz, pqr])).json()).toEqual({ changed: true });
+      expect(await (await set([pqr, xyz])).json()).toEqual({ changed: true });
+      expect(await s.t.dispatch.repo.teamsForHousehold(s.standalone)).toEqual([abc, pqr, xyz]);
+      expect(await (await set([pqr, xyz])).json()).toEqual({ changed: false });
+      expect((await set([xyz, xyz])).status).toBe(400);
+      expect((await set([abc])).status).toBe(409);
+      expect((await set([randomUUID()])).status).toBe(404);
+      // An inactive team already on the list may stay (dispatch skips it); it cannot be added anew.
+      await s.ops.patch(`/v1/coverage/teams/${pqr}`, { active: false });
+      expect(await s.t.dispatch.repo.teamsForHousehold(s.standalone)).toEqual([abc, xyz]);
+      expect((await places(s)).find((p) => p.id === s.standalone)!.backups).toEqual([
+        { teamId: pqr, teamName: 'PQR', active: false },
+        { teamId: xyz, teamName: 'XYZ', active: true },
+      ]);
+      expect(await (await set([xyz, pqr])).json()).toEqual({ changed: true });
+      expect((await set([])).status).toBe(200);
+      await s.ops.patch(`/v1/coverage/teams/${pqr}`, { active: true });
+      await s.ops.patch(`/v1/coverage/teams/${xyz}`, { active: false });
+      expect((await set([xyz])).status).toBe(409);
+      expect(s.t.coverage.audit.filter((a) => a.action === 'coverage_backups_set').map((a) => a.metadata.to)).toEqual([[xyz, pqr], [pqr, xyz], [xyz, pqr], []]);
+    });
+
+    it('refuses homes inside a community and unknown places; the desk cannot change backups', async () => {
+      const s = await setup();
+      const inGreen = s.t.hh.households.find((h) => h.homeId !== null)!.id;
+      expect((await s.ops.put('/v1/coverage/backups', { kind: 'household', id: inGreen, teamIds: [] })).status).toBe(400);
+      expect((await s.ops.put('/v1/coverage/backups', { kind: 'site', id: randomUUID(), teamIds: [] })).status).toBe(404);
+      expect((await s.desk.put('/v1/coverage/backups', { kind: 'site', id: s.green.id, teamIds: [] })).status).toBe(403);
+    });
+
+    it('a backup made primary leaves the backup list; removing the cover removes the backups', async () => {
+      const s = await setup();
+      const [abc, xyz, pqr] = [await team(s, 'ABC'), await team(s, 'XYZ'), await team(s, 'PQR')];
+      await s.ops.put('/v1/coverage/assignments', { teamId: abc, sites: [s.green.id] });
+      await s.ops.put('/v1/coverage/backups', { kind: 'site', id: s.green.id, teamIds: [xyz, pqr] });
+      await s.ops.put('/v1/coverage/assignments', { teamId: xyz, sites: [s.green.id] });
+      expect((await places(s)).find((p) => p.id === s.green.id)).toMatchObject({ teamName: 'XYZ', backups: [{ teamName: 'PQR' }] });
+      await s.ops.put('/v1/coverage/assignments', { teamId: null, sites: [s.green.id] });
+      expect((await places(s)).find((p) => p.id === s.green.id)).toMatchObject({ teamId: null, backups: [] });
+    });
+  });
+
   it('dispatch offers a stand-alone home’s SOS to the team assigned here', async () => {
     const s = await setup();
     const abc = (await (await s.ops.post('/v1/coverage/teams', { name: 'ABC team' })).json()) as { id: string };

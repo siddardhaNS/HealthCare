@@ -1,5 +1,5 @@
 import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi';
-import { CoverageAssign, CoverageMember, CoveragePlaces, CoverageTeam, CoverageTeamCreate, CoverageTeamUpdate, CoverageTeams, ErrorBody, type ErrorBody as ErrorBodyT } from '@repo/contracts';
+import { CoverageAssign, CoverageBackups, CoverageMember, CoveragePlaces, CoverageTeam, CoverageTeamCreate, CoverageTeamUpdate, CoverageTeams, ErrorBody, type ErrorBody as ErrorBodyT } from '@repo/contracts';
 import type { Context } from 'hono';
 import type { AppEnv } from '../../app';
 import { requireAuth, requireStaff } from '../../middleware/auth';
@@ -21,6 +21,9 @@ const assignMessage: Record<AssignFailure, [number, string]> = {
   team_inactive: [409, 'This team is inactive. Reactivate it before giving it places to cover.'],
   not_standalone: [400, 'Homes inside a community follow the community’s team; assign the community instead.'],
   unknown_place: [404, 'One of these places no longer exists. Refresh and try again.'],
+  no_primary: [409, 'Every place needs a primary team before it can have backups. Set the primary first.'],
+  too_many_backups: [409, 'A place can have at most 9 backup teams.'],
+  is_primary: [409, 'This team is already the primary team for this place.'],
 };
 
 /** A team as listed, without members (create / update answers). */
@@ -74,10 +77,20 @@ const r = {
     path: '/coverage/assignments',
     operationId: 'assignCoverage',
     tags: ['coverage'],
-    summary: 'Assign places to a team in bulk (a place covered by another team moves), or unassign them (teamId null)',
+    summary: 'Assign places to a primary team in bulk (a place covered by another team moves), unassign them (teamId null), or add a backup team to each',
     ...managers,
     request: body(CoverageAssign),
     responses: { 200: json(z.object({ changed: z.number().int() }), 'Done'), ...failures },
+  }),
+  backups: createRoute({
+    method: 'put',
+    path: '/coverage/backups',
+    operationId: 'setCoverageBackups',
+    tags: ['coverage'],
+    summary: 'Replace one place’s backup teams with an ordered list (offered in this order, one per timeout; plan §11)',
+    ...managers,
+    request: body(CoverageBackups),
+    responses: { 200: json(z.object({ changed: z.boolean() }), 'Done'), ...failures },
   }),
 };
 
@@ -116,8 +129,17 @@ export const coverageRoutes = new OpenAPIHono<AppEnv>()
     return c.json({ places: await c.get('deps').coverage.places({ uncovered: uncovered === 'true', q }) }, 200);
   })
   .openapi(r.assign, async (c) => {
-    const { teamId, sites, households } = c.req.valid('json');
-    const result = await c.get('deps').coverage.assign(teamId, { sites, households }, me(c));
+    const { teamId, as, sites, households } = c.req.valid('json');
+    const result = await c.get('deps').coverage.assign(teamId, { sites, households }, me(c), as);
+    if (!result.ok) {
+      const [status, message] = assignMessage[result.error];
+      return c.json(err(c, result.error, message), status as 400 | 404 | 409);
+    }
+    return c.json({ changed: result.changed }, 200);
+  })
+  .openapi(r.backups, async (c) => {
+    const { kind, id, teamIds } = c.req.valid('json');
+    const result = await c.get('deps').coverage.setBackups({ kind, id }, teamIds, me(c));
     if (!result.ok) {
       const [status, message] = assignMessage[result.error];
       return c.json(err(c, result.error, message), status as 400 | 404 | 409);
