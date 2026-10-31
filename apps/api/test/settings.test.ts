@@ -13,7 +13,7 @@ describe('community desk number (plan §11)', () => {
     const res = await t.app.request('/v1/config');
     expect(res.status).toBe(200);
     expect(res.headers.get('cache-control')).toContain('max-age=60');
-    expect(await res.json()).toEqual({ deskPhone: null });
+    expect(await res.json()).toEqual({ deskPhone: null, languages: ['en'] });
   });
 
   it('only a super admin sets or clears it; every change is audited', async () => {
@@ -21,8 +21,8 @@ describe('community desk number (plan §11)', () => {
     expect((await put(t, OPS, ['operations'], { deskPhone: '+914023456789' })).status).toBe(403);
     expect((await t.app.request('/v1/settings/desk-phone', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: '{"deskPhone":null}' })).status).toBe(401);
     const res = await put(t, ADMIN, ['super_admin'], { deskPhone: ' +914023456789 ' });
-    expect(await res.json()).toEqual({ deskPhone: '+914023456789' });
-    expect(await (await t.app.request('/v1/config')).json()).toEqual({ deskPhone: '+914023456789' });
+    expect(await res.json()).toEqual({ deskPhone: '+914023456789', languages: ['en'] });
+    expect(await (await t.app.request('/v1/config')).json()).toEqual({ deskPhone: '+914023456789', languages: ['en'] });
     await put(t, ADMIN, ['super_admin'], { deskPhone: null });
     expect(t.ops.audit).toEqual([
       { from: null, to: '+914023456789' },
@@ -33,6 +33,27 @@ describe('community desk number (plan §11)', () => {
   it.each(['04023456789', '+91402345678', '+1 4023456789', ''])('refuses %j', async (deskPhone) => {
     const t = await testContext();
     expect((await put(t, ADMIN, ['super_admin'], { deskPhone })).status).toBe(400);
+    expect(t.ops.audit).toEqual([]);
+  });
+});
+
+describe('languages offered (2026-10-31)', () => {
+  const put = async (t: Awaited<ReturnType<typeof testContext>>, roles: string[], body: unknown) =>
+    t.app.request('/v1/settings/languages', { method: 'PUT', headers: { authorization: `Bearer ${await t.token({ sub: ADMIN, aal: 'aal2', app_roles: roles })}`, 'content-type': 'application/json' }, body: JSON.stringify(body) });
+
+  it('English only by default; the super admin enables others, in a fixed order, English always first', async () => {
+    const t = await testContext();
+    expect(((await (await t.app.request('/v1/config')).json()) as { languages: string[] }).languages).toEqual(['en']);
+    expect(await (await put(t, ['super_admin'], { enabled: ['hi', 'te'] })).json()).toMatchObject({ languages: ['en', 'te', 'hi'] });
+    expect(await (await put(t, ['super_admin'], { enabled: [] })).json()).toMatchObject({ languages: ['en'] });
+    expect(t.ops.audit.map((a) => a.to)).toEqual([['en', 'te', 'hi'], ['en']]);
+  });
+
+  it('English cannot be switched off, unknown languages are refused, and only a super admin may change it', async () => {
+    const t = await testContext();
+    expect((await put(t, ['super_admin'], { enabled: ['en'] })).status).toBe(400);
+    expect((await put(t, ['super_admin'], { enabled: ['ta'] })).status).toBe(400);
+    expect((await put(t, ['operations'], { enabled: ['te'] })).status).toBe(403);
     expect(t.ops.audit).toEqual([]);
   });
 });

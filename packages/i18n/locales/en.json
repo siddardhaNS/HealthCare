@@ -484,7 +484,10 @@
       "saved": "Saved",
       "readOnly": "Only a super admin can change this.",
       "commandCenterWarning": "The community desk number is not set, so residents without a network cannot call the desk.",
-      "commandCenterLink": "Set it in Settings"
+      "commandCenterLink": "Set it in Settings",
+      "languages": "Languages in the apps",
+      "languagesHint": "English is always offered. Tick other languages to offer them in the resident and field apps once their translations are reviewed. Someone using a language that is switched off sees English. Phones pick up a change the next time they are online. Every change is logged.",
+      "alwaysOn": "Always on"
     }
   },
   "auth": {

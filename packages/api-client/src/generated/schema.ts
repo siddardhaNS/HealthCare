@@ -1401,7 +1401,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Public settings every app reads and keeps on the phone: the community desk number for the no-network SOS fallback */
+        /** Public settings every app reads and keeps on the phone: the community desk number for the no-network SOS fallback, and the languages offered */
         get: operations["appConfig"];
         put?: never;
         post?: never;
@@ -1421,6 +1421,23 @@ export interface paths {
         get?: never;
         /** Set or clear the community desk number (super admin; audited). Phones pick it up the next time they are online. */
         put: operations["setDeskPhone"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/settings/languages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Choose the languages offered besides English, which is always on (super admin; audited) */
+        put: operations["setLanguages"];
         post?: never;
         delete?: never;
         options?: never;
@@ -2375,9 +2392,13 @@ export interface components {
         CrewStep: "en_route" | "on_scene" | "transporting" | "handed_over";
         AppConfig: {
             deskPhone: string | null;
+            languages: ("en" | "te" | "hi")[];
         };
         DeskPhoneUpdate: {
             deskPhone: string | null;
+        };
+        LanguagesUpdate: {
+            enabled: ("te" | "hi")[];
         };
     };
     responses: never;
@@ -8164,6 +8185,57 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["DeskPhoneUpdate"];
+            };
+        };
+        responses: {
+            /** @description Saved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppConfig"];
+                };
+            };
+            /** @description Invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    setLanguages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LanguagesUpdate"];
             };
         };
         responses: {

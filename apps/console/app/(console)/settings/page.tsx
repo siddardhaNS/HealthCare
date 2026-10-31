@@ -1,9 +1,9 @@
-import { createI18n } from '@repo/i18n';
+import { createI18n, languages } from '@repo/i18n';
 import { Button, Card } from '@repo/ui-web';
 import { serverApi } from '@/lib/api';
 import { getStaffClaims } from '@/lib/supabase/server';
 import { ActionForm } from '../_coverage/action-form';
-import { saveDeskPhone } from '../_coverage/actions';
+import { saveDeskPhone, saveLanguages } from '../_coverage/actions';
 
 const field = 'min-h-tap w-64 rounded-control border border-border-strong bg-surface px-3 text-text tabular-nums';
 
@@ -14,6 +14,7 @@ export default async function SettingsPage() {
   const canEdit = !!claims?.roles.includes('super_admin');
   const { data } = await api.GET('/v1/config');
   const deskPhone = data?.deskPhone ?? null;
+  const enabled: string[] = data?.languages ?? ['en'];
 
   return (
     <>
@@ -46,6 +47,35 @@ export default async function SettingsPage() {
             <p className="text-small text-text-muted">{t('console.settings.readOnly')}</p>
           </>
         )}
+      </Card>
+
+      <Card className="flex max-w-3xl flex-col gap-3 rounded-panel p-5">
+        <h2 className="font-display text-title font-bold">{t('console.settings.languages')}</h2>
+        <p className="text-small text-text-muted">{t('console.settings.languagesHint')}</p>
+        <ActionForm action={saveLanguages} doneText={t('console.settings.saved')} label={t('console.settings.languages')} className="flex flex-col gap-3">
+          <fieldset className="flex flex-col gap-2">
+            <legend className="sr-only">{t('console.settings.languages')}</legend>
+            {languages.map((l) => (
+              <label key={l.code} className="flex min-h-tap items-center gap-3 text-body">
+                <input
+                  type="checkbox"
+                  name="language"
+                  value={l.code}
+                  defaultChecked={l.code === 'en' || enabled.includes(l.code)}
+                  disabled={l.code === 'en' || !canEdit}
+                  className="size-5"
+                />
+                <span lang={l.code}>{l.label}</span>
+                {l.code === 'en' ? <span className="text-small text-text-muted">{t('console.settings.alwaysOn')}</span> : null}
+              </label>
+            ))}
+          </fieldset>
+          {canEdit ? (
+            <Button type="submit" variant="outline" className="self-start">
+              {t('console.settings.save')}
+            </Button>
+          ) : null}
+        </ActionForm>
       </Card>
     </>
   );

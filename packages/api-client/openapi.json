@@ -4165,10 +4165,22 @@
               "string",
               "null"
             ]
+          },
+          "languages": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "en",
+                "te",
+                "hi"
+              ]
+            }
           }
         },
         "required": [
-          "deskPhone"
+          "deskPhone",
+          "languages"
         ]
       },
       "DeskPhoneUpdate": {
@@ -4184,6 +4196,25 @@
         },
         "required": [
           "deskPhone"
+        ]
+      },
+      "LanguagesUpdate": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "te",
+                "hi"
+              ]
+            },
+            "maxItems": 2
+          }
+        },
+        "required": [
+          "enabled"
         ]
       }
     },
@@ -11713,7 +11744,7 @@
         "tags": [
           "system"
         ],
-        "summary": "Public settings every app reads and keeps on the phone: the community desk number for the no-network SOS fallback",
+        "summary": "Public settings every app reads and keeps on the phone: the community desk number for the no-network SOS fallback, and the languages offered",
         "responses": {
           "200": {
             "description": "Config",
@@ -11746,6 +11777,72 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/DeskPhoneUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppConfig"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/settings/languages": {
+      "put": {
+        "operationId": "setLanguages",
+        "tags": [
+          "system"
+        ],
+        "summary": "Choose the languages offered besides English, which is always on (super admin; audited)",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LanguagesUpdate"
               }
             }
           }

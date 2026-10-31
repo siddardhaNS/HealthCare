@@ -6,5 +6,7 @@ export const opsSettings = pgTable('ops_settings', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   /** The community desk number residents call when the app is offline. Null until set. */
   deskPhone: text('desk_phone'),
+  /** Languages the apps offer; always includes 'en'. */
+  languages: text('languages').array().notNull().default(['en']),
   updatedBy: uuid('updated_by'),
 });

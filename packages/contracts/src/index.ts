@@ -840,6 +840,8 @@ export const AppConfig = z
   .object({
     /** The community desk number for the no-network SOS fallback; null until the super admin sets it. */
     deskPhone: z.string().nullable(),
+    /** Languages the apps offer, English first. Others appear only when the super admin enables them. */
+    languages: z.array(z.enum(['en', 'te', 'hi'])),
   })
   .openapi('AppConfig');
 export type AppConfig = z.infer<typeof AppConfig>;
@@ -848,3 +850,6 @@ export type AppConfig = z.infer<typeof AppConfig>;
 export const DeskPhoneUpdate = z
   .object({ deskPhone: z.string().trim().regex(/^\+91\d{10}$/, 'Use +91 and the ten-digit number').nullable() })
   .openapi('DeskPhoneUpdate');
+
+/** Languages to offer besides English, which is always on. */
+export const LanguagesUpdate = z.object({ enabled: z.array(z.enum(['te', 'hi'])).max(2) }).openapi('LanguagesUpdate');

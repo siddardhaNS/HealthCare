@@ -83,3 +83,10 @@ export async function saveDeskPhone(prev: ActionState, form: FormData) {
   revalidatePath('/');
   return next;
 }
+
+/** The languages ticked besides English (always on). */
+export async function saveLanguages(prev: ActionState, form: FormData) {
+  const api = await serverApi();
+  const enabled = form.getAll('language').map(String).filter((l): l is 'te' | 'hi' => l === 'te' || l === 'hi');
+  return finish(prev, await api.PUT('/v1/settings/languages', { body: { enabled } }), '/settings');
+}

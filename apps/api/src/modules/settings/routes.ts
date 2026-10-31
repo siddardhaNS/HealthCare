@@ -1,5 +1,6 @@
 import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi';
-import { AppConfig, DeskPhoneUpdate, ErrorBody } from '@repo/contracts';
+import { AppConfig, DeskPhoneUpdate, ErrorBody, LanguagesUpdate } from '@repo/contracts';
+import type { Context } from 'hono';
 import type { AppEnv } from '../../app';
 import { requireAuth, requireStaff } from '../../middleware/auth';
 
@@ -12,7 +13,7 @@ const r = {
     path: '/config',
     operationId: 'appConfig',
     tags: ['system'],
-    summary: 'Public settings every app reads and keeps on the phone: the community desk number for the no-network SOS fallback',
+    summary: 'Public settings every app reads and keeps on the phone: the community desk number for the no-network SOS fallback, and the languages offered',
     responses: { 200: json(AppConfig, 'Config') },
   }),
   deskPhone: createRoute({
@@ -26,17 +27,37 @@ const r = {
     request: { body: { content: { 'application/json': { schema: DeskPhoneUpdate } }, required: true } },
     responses: { 200: json(AppConfig, 'Saved'), ...failures },
   }),
+  languages: createRoute({
+    method: 'put',
+    path: '/settings/languages',
+    operationId: 'setLanguages',
+    tags: ['system'],
+    summary: 'Choose the languages offered besides English, which is always on (super admin; audited)',
+    security: [{ bearer: [] }],
+    middleware: [requireAuth, requireStaff(['super_admin'])],
+    request: { body: { content: { 'application/json': { schema: LanguagesUpdate } }, required: true } },
+    responses: { 200: json(AppConfig, 'Saved'), ...failures },
+  }),
+};
+
+const config = async (c: Context<AppEnv>) => {
+  const { opsSettings } = c.get('deps');
+  const [deskPhone, languages] = await Promise.all([opsSettings.deskPhone(), opsSettings.languages()]);
+  return { deskPhone, languages };
 };
 
 export const settingsRoutes = new OpenAPIHono<AppEnv>()
   .openapi(r.config, async (c) => {
     // Not personal: shared caches may keep it briefly, so a busy SOS hour does not hit the database.
     c.header('cache-control', 'public, max-age=60, s-maxage=60');
-    return c.json({ deskPhone: await c.get('deps').opsSettings.deskPhone() }, 200);
+    return c.json(await config(c), 200);
   })
   .openapi(r.deskPhone, async (c) => {
     const { deskPhone } = c.req.valid('json');
-    const { opsSettings } = c.get('deps');
-    await opsSettings.setDeskPhone(deskPhone, c.get('auth')!.userId);
-    return c.json({ deskPhone: await opsSettings.deskPhone() }, 200);
+    await c.get('deps').opsSettings.setDeskPhone(deskPhone, c.get('auth')!.userId);
+    return c.json(await config(c), 200);
+  })
+  .openapi(r.languages, async (c) => {
+    await c.get('deps').opsSettings.setLanguages(c.req.valid('json').enabled, c.get('auth')!.userId);
+    return c.json(await config(c), 200);
   });
