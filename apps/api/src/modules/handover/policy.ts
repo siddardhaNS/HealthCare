@@ -7,8 +7,6 @@ import type { LatLng } from '../../lib/crew-locator';
 import { age, decNotes } from '../health/service';
 import type { PatientData } from './repo';
 
-/** ⚑4: the preferred hospital wins if its ETA is at most this much worse than the nearest. */
-export const PREFERRED_SLACK_S = 600;
 /** How long the handover link works. */
 export const HANDOVER_TTL_MS = 6 * 60 * 60_000;
 
@@ -20,28 +18,16 @@ export interface HospitalOption {
   lng: number;
 }
 
-export type HospitalChoice = { hospitalId: string; etaS: number; preferred: boolean } | null;
-
-/** Active hospitals with capacity, nearest first, with their ETA from `from`. */
-export function rankHospitals<T extends HospitalOption>(from: LatLng, hospitals: T[]): (T & { etaS: number })[] {
-  return hospitals
-    .filter((h) => h.active && h.hasCapacity)
-    .map((h) => ({ ...h, etaS: estimateEtaS(distanceM(from, h)) }))
-    .sort((a, b) => a.etaS - b.etaS);
-}
-
 /**
- * ⚑4: the person's preferred hospital if it has capacity and is at most
- * 10 minutes further than the nearest one with capacity; otherwise the
- * nearest with capacity. Null when no hospital has capacity.
+ * Plan §11: the crew picks the hospital, so nothing is chosen here. Every
+ * active hospital, ER full or not, nearest first; ETA null when we do not
+ * know where the patient is (then by name).
  */
-export function chooseHospital(from: LatLng, hospitals: HospitalOption[], preferredId: string | null): HospitalChoice {
-  const ranked = rankHospitals(from, hospitals);
-  const nearest = ranked[0];
-  if (!nearest) return null;
-  const preferred = preferredId ? ranked.find((h) => h.id === preferredId) : undefined;
-  if (preferred && preferred.etaS - nearest.etaS <= PREFERRED_SLACK_S) return { hospitalId: preferred.id, etaS: preferred.etaS, preferred: true };
-  return { hospitalId: nearest.id, etaS: nearest.etaS, preferred: false };
+export function hospitalsByDistance<T extends HospitalOption & { name: string }>(from: LatLng | null, hospitals: T[]): (T & { etaS: number | null })[] {
+  return hospitals
+    .filter((h) => h.active)
+    .map((h) => ({ ...h, etaS: from ? estimateEtaS(distanceM(from, h)) : null }))
+    .sort((a, b) => (a.etaS ?? Infinity) - (b.etaS ?? Infinity) || a.name.localeCompare(b.name));
 }
 
 /** A random link token; only its hash is stored, so a database read never yields a working link. */

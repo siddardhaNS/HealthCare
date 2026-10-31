@@ -4,6 +4,7 @@ import {
   FirstAidNotes,
   HandoverLinkView,
   HandoverRedirect,
+  NearbyHospital,
   HandoverSummary,
   Hospital,
   HospitalCapacity,
@@ -141,12 +142,12 @@ const r = {
     path: '/sos/{id}/hospitals',
     operationId: 'crewHospitals',
     tags: ['handover'],
-    summary: 'Crew: hospitals to send the patient to, nearest with capacity first',
+    summary: 'Crew: every active hospital, nearest to the patient first, with ER full / accepting and the person’s preferred one marked (plan §11)',
     ...authed,
     request: idParam,
     responses: {
       200: json(
-        z.object({ hospitals: z.array(z.object({ id: z.string().uuid(), name: z.string(), hasCapacity: z.boolean(), etaS: z.number().int().nullable() })) }),
+        z.object({ hospitals: z.array(NearbyHospital) }),
         'Hospitals',
       ),
       ...failures,
@@ -157,7 +158,7 @@ const r = {
     path: '/sos/{id}/hospital',
     operationId: 'crewRedirectHospital',
     tags: ['handover'],
-    summary: 'Crew: send the patient to another hospital, with a reason (a new link is issued, the old one stops working)',
+    summary: 'Crew: pick the receiving hospital, which opens the handover (no reason needed the first time), or change it with a reason (a new link is issued, the old one stops working)',
     ...authed,
     request: { ...idParam, ...body(HandoverRedirect) },
     responses: { 200: json(HandoverSummary, 'Updated'), ...failures },
@@ -304,7 +305,7 @@ export const handoverRoutes = new OpenAPIHono<AppEnv>()
     const job = await crewJob(c, c.req.valid('param').id);
     if (isSosFailure(job)) return failure(c, job);
     const { hospitalId, reason } = c.req.valid('json');
-    const done = await redirectHandover(c.get('deps'), job.incident, hospitalId, reason, { id: job.userId, role: 'crew' });
+    const done = await redirectHandover(c.get('deps'), job.incident, hospitalId, reason ?? null, { id: job.userId, role: 'crew' });
     return isSosFailure(done) ? failure(c, done) : c.json(toSummary(done), 200);
   })
   .openapi(r.notes, async (c) => {

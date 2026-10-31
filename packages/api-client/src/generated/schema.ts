@@ -1161,7 +1161,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Crew: hospitals to send the patient to, nearest with capacity first */
+        /** Crew: every active hospital, nearest to the patient first, with ER full / accepting and the person’s preferred one marked (plan §11) */
         get: operations["crewHospitals"];
         put?: never;
         post?: never;
@@ -1179,7 +1179,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Crew: send the patient to another hospital, with a reason (a new link is issued, the old one stops working) */
+        /** Crew: pick the receiving hospital, which opens the handover (no reason needed the first time), or change it with a reason (a new link is issued, the old one stops working) */
         put: operations["crewRedirectHospital"];
         post?: never;
         delete?: never;
@@ -2037,13 +2037,7 @@ export interface components {
         DeskIncidentDetail: components["schemas"]["DeskIncident"] & {
             offers: components["schemas"]["DeskOffer"][];
             handover: components["schemas"]["HandoverSummary"];
-            hospitalsNearby: {
-                /** Format: uuid */
-                id: string;
-                name: string;
-                hasCapacity: boolean;
-                etaS: number | null;
-            }[];
+            hospitalsNearby: components["schemas"]["NearbyHospital"][];
         };
         DeskOffer: {
             /** Format: uuid */
@@ -2055,6 +2049,14 @@ export interface components {
             offeredAt: string;
             /** @enum {string|null} */
             response: "accepted" | "declined" | "expired" | "released" | null;
+        };
+        NearbyHospital: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            hasCapacity: boolean;
+            etaS: number | null;
+            preferred: boolean;
         };
         TestSosCreate: {
             /** Format: uuid */
@@ -2081,7 +2083,7 @@ export interface components {
         HandoverRedirect: {
             /** Format: uuid */
             hospitalId: string;
-            reason: string;
+            reason?: string;
         };
         SiteSosSettingsList: {
             sites: components["schemas"]["SiteSosSettings"][];
@@ -7081,13 +7083,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        hospitals: {
-                            /** Format: uuid */
-                            id: string;
-                            name: string;
-                            hasCapacity: boolean;
-                            etaS: number | null;
-                        }[];
+                        hospitals: components["schemas"]["NearbyHospital"][];
                     };
                 };
             };

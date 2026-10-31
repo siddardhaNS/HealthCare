@@ -15,7 +15,7 @@ export interface LiveLabels {
   dismiss: string;
   /** With {{ref}} still in them; filled in here. */
   /** no_accept_*: plan §11, the team that did not respond ({{missed}}) and the next one offered ({{next}}). */
-  alarm: { raised: string; no_accept: string; no_accept_team: string; no_accept_nearest: string; no_hospital: string };
+  alarm: { raised: string; no_accept: string; no_accept_team: string; no_accept_nearest: string };
 }
 
 /** Refreshes at most this often when pushes arrive (positions come every few seconds). */
@@ -96,7 +96,6 @@ export function LiveBoard({ topics, labels }: { topics: string[]; labels: LiveLa
           else if (p.offeredTo) alarm('no_accept_team', p.incidentId, { missed: p.missed, next: p.offeredTo });
           else alarm('no_accept_nearest', p.incidentId, { missed: p.missed });
         }
-        if (event === 'alarm' && p.incidentId && p.why === 'no_hospital') alarm('no_hospital', p.incidentId);
         if (event === 'state' && p.state === 'raised' && p.incidentId) alarm('raised', p.incidentId);
         refresh();
       }),

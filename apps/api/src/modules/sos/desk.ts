@@ -172,8 +172,8 @@ export async function testSos(d: DeskDeps, staff: Staff, siteId: string): Promis
   return result;
 }
 
-/** Choose or change the receiving hospital, with a reason (e.g. none had capacity on accept, or the ER is full). */
-export async function deskRedirectHospital(d: DeskDeps, staff: Staff, row: IncidentRow, hospitalId: string, reason: string): Promise<IncidentRow | SosFailure> {
+/** Choose or change the receiving hospital, with a reason (e.g. the crew has not picked one, or the ER is full). */
+export async function deskRedirectHospital(d: DeskDeps, staff: Staff, row: IncidentRow, hospitalId: string, reason: string | null): Promise<IncidentRow | SosFailure> {
   if (!staff.canAct) return forbidden();
   const done = await redirectHandover(d, row, hospitalId, reason, { id: staff.id, role: 'desk' });
   return isSosFailure(done) ? done : row;

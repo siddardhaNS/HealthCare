@@ -132,5 +132,5 @@ export const deskRoutes = new OpenAPIHono<AppEnv>()
   .openapi(r.close, (c) => act(c, c.req.valid('param').id, (s, row) => deskClose(deps(c), s, row, c.req.valid('json').reason ?? null)))
   .openapi(r.hospital, (c) => {
     const { hospitalId, reason } = c.req.valid('json');
-    return act(c, c.req.valid('param').id, (s, row) => deskRedirectHospital(deps(c), s, row, hospitalId, reason));
+    return act(c, c.req.valid('param').id, (s, row) => deskRedirectHospital(deps(c), s, row, hospitalId, reason ?? null));
   });

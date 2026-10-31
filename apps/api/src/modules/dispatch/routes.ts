@@ -7,7 +7,6 @@ import { requireAuth } from '../../middleware/auth';
 import { toIncident } from '../sos/service';
 import { isSosFailure, type SosFailure } from '../sos/transition';
 import type { IncidentRow } from '../sos/repo';
-import { openHandoverSafely } from '../handover/service';
 import { toSummary } from '../handover/summary';
 import type { CrewRow } from './repo';
 import { acceptOffer, advanceJob, declineOffer, reportLocation, setDuty } from './service';
@@ -137,8 +136,6 @@ export const dispatchRoutes = new OpenAPIHono<AppEnv>()
     const deps = c.get('deps');
     const done = await acceptOffer(deps, crew, c.req.valid('param').id);
     if (isSosFailure(done)) return failure(c, done);
-    // The receiving hospital is chosen as soon as a crew accepts (plan §3.7).
-    await openHandoverSafely(deps, done, c.get('requestId'));
     return c.json(toIncident(done, await deps.sos.events(done.id)), 200);
   })
   // Registered before the nullable job route, so the CrewJob component itself is not nullable.

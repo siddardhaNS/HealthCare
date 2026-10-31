@@ -179,6 +179,7 @@ export function IncidentPanel({ i, fleet, canAct, t }: { i: DeskIncidentDetail; 
                       h.name,
                       h.etaS !== null ? t('console.cc.hospitalEta', { min: Math.max(1, Math.round(h.etaS / 60)) }) : null,
                       h.hasCapacity ? null : t('console.cc.hospitalFull'),
+                      h.preferred ? t('console.cc.handoverPreferred') : null,
                     ]
                       .filter(Boolean)
                       .join(' · '),

@@ -11,7 +11,7 @@ import {
 } from '@repo/contracts';
 import { encryptJson } from '../src/lib/crypto';
 import { dispatchAlerts } from '../src/modules/dispatch/service';
-import { buildRecord, chooseHospital, hashLinkToken, newLinkToken, PREFERRED_SLACK_S } from '../src/modules/handover/policy';
+import { buildRecord, hashLinkToken, hospitalsByDistance, newLinkToken } from '../src/modules/handover/policy';
 import { beginDispatch } from '../src/modules/sos/escalation-service';
 import { emptyPatient } from './fake-handover';
 import { testContext } from './helpers';
@@ -26,28 +26,24 @@ const B = '0b6d3c1e-4f2a-4c8d-9e1f-2a3b4c5d6e7f';
 const HOME = { lat: 17.44, lng: 78.35 };
 const north = (km: number) => ({ lat: HOME.lat + km / 111.2, lng: HOME.lng });
 
-describe('choosing the receiving hospital (⚑4)', () => {
-  const h = (id: string, km: number, p: { hasCapacity?: boolean; active?: boolean } = {}) => ({ id, ...north(km), hasCapacity: true, active: true, ...p });
+describe('the hospitals a crew picks from (plan §11)', () => {
+  const h = (id: string, km: number | null, p: { hasCapacity?: boolean; active?: boolean } = {}) => ({ id, name: id, ...north(km ?? 0), hasCapacity: true, active: true, ...p });
 
-  it('the nearest hospital with capacity', () => {
-    expect(chooseHospital(HOME, [h('far', 8), h('near', 2), h('full', 1, { hasCapacity: false }), h('closed', 0.5, { active: false })], null)).toMatchObject({
-      hospitalId: 'near',
-      preferred: false,
-    });
+  it('every active hospital, nearest first, ER full ones included (the crew decides); nothing is chosen', () => {
+    const list = hospitalsByDistance(HOME, [h('far', 8), h('near', 2), h('full', 1, { hasCapacity: false }), h('closed', 0.5, { active: false })]);
+    expect(list.map((x) => [x.id, x.hasCapacity])).toEqual([
+      ['full', false],
+      ['near', true],
+      ['far', true],
+    ]);
+    expect(list.every((x) => typeof x.etaS === 'number')).toBe(true);
   });
 
-  it('the preferred hospital when it is at most 10 minutes further', () => {
-    // 25 km/h × 1.4 road factor: ~2.98 km more straight line ≈ 10 min.
-    expect(chooseHospital(HOME, [h('near', 1), h('mine', 3.5)], 'mine')).toMatchObject({ hospitalId: 'mine', preferred: true });
-    const tooFar = chooseHospital(HOME, [h('near', 1), h('mine', 5)], 'mine');
-    expect(tooFar).toMatchObject({ hospitalId: 'near', preferred: false });
-    expect(PREFERRED_SLACK_S).toBe(600);
-  });
-
-  it('a full or inactive preferred hospital is skipped; none with capacity → null', () => {
-    expect(chooseHospital(HOME, [h('near', 1), h('mine', 1.5, { hasCapacity: false })], 'mine')).toMatchObject({ hospitalId: 'near' });
-    expect(chooseHospital(HOME, [h('near', 1), h('mine', 1.5, { active: false })], 'mine')).toMatchObject({ hospitalId: 'near' });
-    expect(chooseHospital(HOME, [h('full', 1, { hasCapacity: false })], null)).toBeNull();
+  it('without a location: no ETA, in name order', () => {
+    expect(hospitalsByDistance(null, [h('b', 1), h('a', 5)]).map((x) => [x.id, x.etaS])).toEqual([
+      ['a', null],
+      ['b', null],
+    ]);
   });
 
   it('link tokens are random and only their hash is kept', () => {
@@ -161,7 +157,13 @@ async function setup() {
       const o = (await offerFor(incidentId))!;
       return field.post(`/v1/dispatch/offers/${o.id}/accept`);
     };
-    return { ...c, field, accept };
+    /** Accept, then pick the receiving hospital (plan §11: the crew picks; no reason the first time). */
+    const acceptAndPick = async (incidentId: string, hospitalId = near.id) => {
+      const res = await accept(incidentId);
+      if (res.status !== 200) return res;
+      return field.put(`/v1/sos/${incidentId}/hospital`, { hospitalId });
+    };
+    return { ...c, field, accept, acceptAndPick };
   };
   const er = await as(ER, ['hospital']);
   const otherEr = await as(OTHER_ER, ['hospital']);
@@ -176,16 +178,34 @@ async function setup() {
   return { t, green, near, far, as, resident, share, sos, crew, er, otherEr, ops, desk, linkOf, openLink };
 }
 
-describe('hospital handover on accept', () => {
-  it('opens to the nearest hospital, with everything the person consented to', async () => {
+describe('the crew picks the hospital (plan §11)', () => {
+  it('nothing is sent on accept; the crew picks from a distance-sorted list, which opens the handover', async () => {
     const s = await setup();
     await s.share('granted');
     const id = await s.sos();
     const c = await s.crew();
     expect((await c.accept(id)).status).toBe(200);
+    // No automatic choice: no handover, no link, until the crew picks.
+    expect(s.t.handovers.rows).toHaveLength(0);
+    expect(s.t.links).toHaveLength(0);
+    expect(((await (await c.field.get('/v1/crew/job')).json()) as { handover: HandoverSummary | null }).handover).toBeNull();
+    const before = (await (await s.desk.get(`/v1/desk/sos/${id}`)).json()) as DeskIncidentDetail;
+    expect(before.handover).toBeNull();
+    expect(before.hospitalsNearby.map((x) => x.name)).toEqual(['Care Hospital', 'City Hospital']);
+
+    const list = (await (await c.field.get(`/v1/sos/${id}/hospitals`)).json()) as { hospitals: { id: string; name: string; etaS: number | null; preferred: boolean; hasCapacity: boolean }[] };
+    expect(list.hospitals.map((x) => [x.name, x.hasCapacity, x.preferred])).toEqual([
+      ['Care Hospital', true, false],
+      ['City Hospital', true, false],
+    ]);
+    expect(list.hospitals[0]!.etaS).toBeLessThan(list.hospitals[1]!.etaS!);
+
+    const picked = await c.field.put(`/v1/sos/${id}/hospital`, { hospitalId: s.near.id });
+    expect(picked.status).toBe(200);
+    expect(await picked.json()).toMatchObject({ hospital: { name: 'Care Hospital' }, chosenBy: 'crew', reason: null });
 
     const h = s.t.handovers.rows[0]!;
-    expect(h).toMatchObject({ incidentId: id, hospitalId: s.near.id, chosenBy: 'auto', preferred: false });
+    expect(h).toMatchObject({ incidentId: id, hospitalId: s.near.id, chosenBy: 'crew', preferred: false });
     expect(h.items).toEqual(['blood_group', 'allergies', 'conditions', 'medicines', 'last_vitals', 'emergency_contacts', 'insurance']);
     expect(s.t.links).toHaveLength(1);
     expect(s.t.links[0]!.url).toMatch(/^https:\/\/console\.example\.test\/handover\/[A-Za-z0-9_-]{43}$/);
@@ -199,7 +219,6 @@ describe('hospital handover on accept', () => {
     expect(mine.handover).toMatchObject({ hospital: { name: 'Care Hospital' } });
     const desk = (await (await s.desk.get(`/v1/desk/sos/${id}`)).json()) as DeskIncidentDetail;
     expect(desk.handover).toMatchObject({ hospital: { name: 'Care Hospital', erPhone: '+914012345678' } });
-    expect(desk.hospitalsNearby.map((x) => x.name)).toEqual(['Care Hospital', 'City Hospital']);
     expect(JSON.stringify(desk)).not.toMatch(/Penicillin|B\+/);
   });
 
@@ -208,13 +227,13 @@ describe('hospital handover on accept', () => {
     await s.share('granted');
     await s.share('withdrawn');
     const id = await s.sos();
-    await (await s.crew()).accept(id);
+    await (await s.crew()).acceptAndPick(id);
     expect(s.t.handovers.rows[0]!.items).toEqual(['blood_group']);
     const view = (await (await s.openLink(s.linkOf(id))).json()) as HandoverLinkView;
     expect(view.record).toEqual({ items: ['blood_group'], patient: { name: 'Lakshmi Rao', age: null, sex: null }, bloodGroup: 'B+', firstAidNotes: null });
   });
 
-  it('the preferred hospital, set by the person, wins within 10 minutes', async () => {
+  it('the person’s preferred hospital is marked in the list, never chosen for the crew', async () => {
     const s = await setup();
     const mine = s.t.handovers.addHospital({ name: 'My Hospital', ...north(4.5) });
     const choices = await s.resident.put(`/v1/people/${A}/preferred-hospital`, { hospitalId: mine.id });
@@ -223,24 +242,43 @@ describe('hospital handover on accept', () => {
     // Nobody else can set it.
     expect((await (await s.as(B, [])).put(`/v1/people/${A}/preferred-hospital`, { hospitalId: s.far.id })).status).toBe(403);
     const id = await s.sos();
-    await (await s.crew()).accept(id);
-    expect(s.t.handovers.rows[0]).toMatchObject({ hospitalId: mine.id, preferred: true });
+    const c = await s.crew();
+    await c.accept(id);
+    expect(s.t.handovers.rows).toHaveLength(0);
+    const list = (await (await c.field.get(`/v1/sos/${id}/hospitals`)).json()) as { hospitals: { name: string; preferred: boolean }[] };
+    expect(list.hospitals.map((x) => [x.name, x.preferred])).toEqual([
+      ['Care Hospital', false],
+      ['My Hospital', true],
+      ['City Hospital', false],
+    ]);
+    await c.field.put(`/v1/sos/${id}/hospital`, { hospitalId: mine.id });
+    expect(s.t.handovers.rows[0]).toMatchObject({ hospitalId: mine.id, preferred: true, chosenBy: 'crew' });
   });
 
-  it('no hospital with capacity: no handover, the desk is alarmed; the accept still succeeds', async () => {
+  it('an ER marked full is shown as full, not hidden: the crew decides', async () => {
     const s = await setup();
-    s.t.handovers.hospitals.forEach((h) => (h.hasCapacity = false));
+    expect((await s.er.put('/v1/partner/capacity', { hasCapacity: false })).status).toBe(200);
+    const id = await s.sos();
+    const c = await s.crew();
+    await c.accept(id);
+    const list = (await (await c.field.get(`/v1/sos/${id}/hospitals`)).json()) as { hospitals: { name: string; hasCapacity: boolean }[] };
+    expect(list.hospitals.map((x) => [x.name, x.hasCapacity])).toEqual([
+      ['Care Hospital', false],
+      ['City Hospital', true],
+    ]);
+  });
+
+  it('the desk may pick before the crew, always with a reason; the accept never depends on it', async () => {
+    const s = await setup();
     const id = await s.sos();
     expect((await (await s.crew()).accept(id)).status).toBe(200);
-    expect(s.t.handovers.rows).toHaveLength(0);
-    expect(s.t.published.some((p) => p.event === 'alarm' && JSON.stringify(p).includes('no_hospital'))).toBe(true);
-    // The desk chooses one.
-    const res = await s.desk.post(`/v1/desk/sos/${id}/hospital`, { hospitalId: s.far.id, reason: 'Care Hospital ER full' });
+    expect((await s.desk.post(`/v1/desk/sos/${id}/hospital`, { hospitalId: s.far.id })).status).toBe(400);
+    const res = await s.desk.post(`/v1/desk/sos/${id}/hospital`, { hospitalId: s.far.id, reason: 'Crew busy with the patient' });
     expect(res.status).toBe(200);
     expect(((await res.json()) as DeskIncidentDetail).handover).toMatchObject({
       hospital: { name: 'City Hospital' },
       chosenBy: 'desk',
-      reason: 'Care Hospital ER full',
+      reason: 'Crew busy with the patient',
     });
   });
 
@@ -250,6 +288,7 @@ describe('hospital handover on accept', () => {
     await beginDispatch({ sos: s.t.deps.sos, alerts: dispatchAlerts({ dispatch: s.t.deps.dispatch, locator: s.t.locator, sos: s.t.deps.sos }) }, drill.id);
     const c = await s.crew({ drillParticipant: true });
     expect((await c.accept(drill.id)).status).toBe(200);
+    expect((await c.field.put(`/v1/sos/${drill.id}/hospital`, { hospitalId: s.near.id })).status).toBe(409);
     expect(s.t.handovers.rows).toHaveLength(0);
     expect(s.t.links).toHaveLength(0);
     expect((await s.desk.post(`/v1/desk/sos/${drill.id}/hospital`, { hospitalId: s.far.id, reason: 'x' })).status).toBe(409);
@@ -260,7 +299,7 @@ describe('the partner portal', () => {
   it('lists the hospital’s incoming patients with arrival ETA; other hospitals see nothing', async () => {
     const s = await setup();
     const id = await s.sos();
-    await (await s.crew()).accept(id);
+    await (await s.crew()).acceptAndPick(id);
     const list = (await (await s.er.get('/v1/partner/handovers')).json()) as PartnerHandovers;
     expect(list.hospital).toMatchObject({ name: 'Care Hospital', hasCapacity: true });
     expect(list.handovers).toHaveLength(1);
@@ -282,7 +321,7 @@ describe('the partner portal', () => {
     await s.share('granted');
     const id = await s.sos();
     const c = await s.crew();
-    await c.accept(id);
+    await c.acceptAndPick(id);
     expect((await c.field.post(`/v1/sos/${id}/first-aid-notes`, { notes: 'Aspirin 300 mg at 10:42' })).status).toBe(204);
 
     const detail = (await (await s.er.get(`/v1/partner/handovers/${id}`)).json()) as PartnerHandoverDetail;
@@ -312,23 +351,13 @@ describe('the partner portal', () => {
     const unlinked = await s.as(randomUUID(), ['hospital']);
     expect((await unlinked.get('/v1/partner/handovers')).status).toBe(403);
   });
-
-  it('ER full: the hospital is skipped for the next patient', async () => {
-    const s = await setup();
-    const res = await s.er.put('/v1/partner/capacity', { hasCapacity: false });
-    expect(res.status).toBe(200);
-    expect(await res.json()).toMatchObject({ name: 'Care Hospital', hasCapacity: false, capacityUpdatedAt: expect.any(String) });
-    const id = await s.sos();
-    await (await s.crew()).accept(id);
-    expect(s.t.handovers.rows[0]).toMatchObject({ incidentId: id, hospitalId: s.far.id });
-  });
 });
 
 describe('the signed link', () => {
   it('works without sign-in, is logged each time, and is never cached', async () => {
     const s = await setup();
     const id = await s.sos();
-    await (await s.crew()).accept(id);
+    await (await s.crew()).acceptAndPick(id);
     const res = await s.openLink(s.linkOf(id));
     expect(res.status).toBe(200);
     expect(res.headers.get('cache-control')).toBe('no-store');
@@ -339,7 +368,7 @@ describe('the signed link', () => {
   it('unknown, malformed, expired and cancelled links all look the same', async () => {
     const s = await setup();
     const id = await s.sos();
-    await (await s.crew()).accept(id);
+    await (await s.crew()).acceptAndPick(id);
     const token = s.linkOf(id);
     expect((await s.openLink(newLinkToken().token)).status).toBe(404);
     expect((await s.openLink('short')).status).toBe(404);
@@ -363,16 +392,18 @@ describe('the signed link', () => {
 });
 
 describe('changing the hospital', () => {
-  it('the crew redirects with a reason: a new link, the old one stops working, confirmation cleared', async () => {
+  it('after picking, the crew changes with a reason: a new link, the old one stops working, confirmation cleared', async () => {
     const s = await setup();
     const id = await s.sos();
     const c = await s.crew();
-    await c.accept(id);
+    await c.acceptAndPick(id);
     const old = s.linkOf(id);
     const choices = (await (await c.field.get(`/v1/sos/${id}/hospitals`)).json()) as { hospitals: { id: string; name: string }[] };
     expect(choices.hospitals.map((h) => h.name)).toEqual(['Care Hospital', 'City Hospital']);
 
     expect((await c.field.put(`/v1/sos/${id}/hospital`, { hospitalId: s.far.id, reason: '' })).status).toBe(400);
+    // A change, unlike the first pick, needs a reason.
+    expect((await c.field.put(`/v1/sos/${id}/hospital`, { hospitalId: s.far.id })).status).toBe(400);
     const res = await c.field.put(`/v1/sos/${id}/hospital`, { hospitalId: s.far.id, reason: 'Needs cardiac cath lab' });
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({ hospital: { name: 'City Hospital' }, chosenBy: 'crew', reason: 'Needs cardiac cath lab', confirmedAt: null });
@@ -392,7 +423,7 @@ describe('changing the hospital', () => {
     const s = await setup();
     const id = await s.sos();
     const c = await s.crew();
-    await c.accept(id);
+    await c.acceptAndPick(id);
     const stranger = await s.crew();
     expect((await stranger.field.put(`/v1/sos/${id}/hospital`, { hospitalId: s.far.id, reason: 'x' })).status).toBe(404);
     expect((await (await s.as(SUPPORT, ['support'])).post(`/v1/desk/sos/${id}/hospital`, { hospitalId: s.far.id, reason: 'x' })).status).toBe(403);

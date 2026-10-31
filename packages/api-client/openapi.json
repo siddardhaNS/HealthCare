@@ -2682,31 +2682,7 @@
               "hospitalsNearby": {
                 "type": "array",
                 "items": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "format": "uuid"
-                    },
-                    "name": {
-                      "type": "string"
-                    },
-                    "hasCapacity": {
-                      "type": "boolean"
-                    },
-                    "etaS": {
-                      "type": [
-                        "integer",
-                        "null"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "id",
-                    "name",
-                    "hasCapacity",
-                    "etaS"
-                  ]
+                  "$ref": "#/components/schemas/NearbyHospital"
                 }
               }
             },
@@ -2765,6 +2741,37 @@
           "ring",
           "offeredAt",
           "response"
+        ]
+      },
+      "NearbyHospital": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "hasCapacity": {
+            "type": "boolean"
+          },
+          "etaS": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "preferred": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "hasCapacity",
+          "etaS",
+          "preferred"
         ]
       },
       "TestSosCreate": {
@@ -2846,8 +2853,7 @@
           }
         },
         "required": [
-          "hospitalId",
-          "reason"
+          "hospitalId"
         ]
       },
       "SiteSosSettingsList": {
@@ -10326,7 +10332,7 @@
         "tags": [
           "handover"
         ],
-        "summary": "Crew: hospitals to send the patient to, nearest with capacity first",
+        "summary": "Crew: every active hospital, nearest to the patient first, with ER full / accepting and the person’s preferred one marked (plan §11)",
         "security": [
           {
             "bearer": []
@@ -10354,31 +10360,7 @@
                     "hospitals": {
                       "type": "array",
                       "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "format": "uuid"
-                          },
-                          "name": {
-                            "type": "string"
-                          },
-                          "hasCapacity": {
-                            "type": "boolean"
-                          },
-                          "etaS": {
-                            "type": [
-                              "integer",
-                              "null"
-                            ]
-                          }
-                        },
-                        "required": [
-                          "id",
-                          "name",
-                          "hasCapacity",
-                          "etaS"
-                        ]
+                        "$ref": "#/components/schemas/NearbyHospital"
                       }
                     }
                   },
@@ -10448,7 +10430,7 @@
         "tags": [
           "handover"
         ],
-        "summary": "Crew: send the patient to another hospital, with a reason (a new link is issued, the old one stops working)",
+        "summary": "Crew: pick the receiving hospital, which opens the handover (no reason needed the first time), or change it with a reason (a new link is issued, the old one stops working)",
         "security": [
           {
             "bearer": []

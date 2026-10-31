@@ -4,15 +4,14 @@ import { allowedHandoverItems, type HandoverLinkView, type PartnerHandover, type
 import { crewActiveStates, distanceM, estimateEtaS, sosRef } from '@repo/contracts/sos';
 import type { CrewLocator } from '../../lib/crew-locator';
 import { encryptJson } from '../../lib/crypto';
-import { silentRealtime, type Realtime } from '../../lib/realtime';
+import type { Realtime } from '../../lib/realtime';
 import type { ConsentRepo } from '../consent/repo';
 import { isGranted } from '../consent/policy';
 import type { DispatchRepo } from '../dispatch/repo';
-import { publishDesk } from '../sos/live';
 import type { IncidentRow, SosRepo } from '../sos/repo';
 import { incidentPoint } from '../sos/service';
 import { fail, type SosFailure } from '../sos/transition';
-import { HANDOVER_TTL_MS, buildRecord, chooseHospital, hashLinkToken, newLinkToken, rankHospitals } from './policy';
+import { HANDOVER_TTL_MS, buildRecord, hashLinkToken, newLinkToken, hospitalsByDistance } from './policy';
 import type { HandoverRepo, HandoverRow } from './repo';
 import { toSummary } from './summary';
 
@@ -91,55 +90,29 @@ async function issue(
   return row;
 }
 
-/**
- * On accept: choose the receiving hospital (⚑4) and open the handover.
- * Drills never reach a hospital. A job taken again after a reassign keeps
- * its hospital. No hospital with capacity: the desk is alarmed and picks one.
- */
-export async function openHandover(d: HandoverDeps, incident: IncidentRow): Promise<HandoverRow | null> {
-  if (incident.isDrill) return null;
-  const existing = await d.handovers.forIncident(incident.id);
-  if (existing) return existing;
-  const [from, hospitals, preferredId] = await Promise.all([
-    incidentPoint(d.dispatch, incident),
-    d.handovers.hospitals(),
-    d.handovers.preferredHospital(incident.userId),
-  ]);
-  const choice = from ? chooseHospital(from, hospitals, preferredId) : null;
-  if (!choice) {
-    console.warn(JSON.stringify({ level: 'warn', event: 'sos_no_hospital', incidentId: incident.id, located: !!from }));
-    await publishDesk(d.realtime ?? silentRealtime(), incident, 'alarm', { why: 'no_hospital', at: new Date().toISOString() });
-    return null;
-  }
-  return issue(d, incident, choice.hospitalId, { chosenBy: 'auto', reason: null, preferred: choice.preferred, actor: { id: null, role: 'system' } });
-}
-
-/** Never fails the accept: the crew has the job either way, and the desk can choose a hospital. */
-export async function openHandoverSafely(d: HandoverDeps, incident: IncidentRow, requestId?: string) {
-  try {
-    await openHandover(d, incident);
-  } catch (err) {
-    console.error(JSON.stringify({ level: 'error', event: 'sos_handover_open_failed', incidentId: incident.id, requestId, name: (err as Error).name }));
-  }
-}
-
 /** States in which the patient can still be sent somewhere else. */
 const redirectable = (i: IncidentRow) => crewActiveStates.includes(i.state);
 
-/** The crew or the desk sends the patient to another hospital, with a reason. The old link stops working. */
+/**
+ * Plan §11: the crew picks the receiving hospital after accepting, and that
+ * opens the handover (consented record, signed link, partner portal). No
+ * reason for the crew's first pick; a change, or a pick by the desk, needs
+ * one. A change issues a new link and the old one stops working.
+ */
 export async function redirectHandover(
   d: HandoverDeps,
   incident: IncidentRow,
   hospitalId: string,
-  reason: string,
+  reason: string | null,
   actor: { id: string; role: 'crew' | 'desk' },
 ): Promise<HandoverRow | SosFailure> {
   if (incident.isDrill) return fail('conflict', 'Drills are never handed over to a hospital.');
-  if (!redirectable(incident)) return fail('conflict', 'The hospital can be changed only while a crew has the job.');
+  if (!redirectable(incident)) return fail('conflict', 'The hospital can be chosen only while a crew has the job.');
   const hospital = await d.handovers.hospital(hospitalId);
   if (!hospital?.active) return fail('not_found', 'No such hospital.');
   const current = await d.handovers.forIncident(incident.id);
   if (current?.hospitalId === hospitalId) return current;
+  if (!reason && (current || actor.role === 'desk')) return fail('reason_required', 'Give a reason for choosing this hospital.');
   return issue(d, incident, hospitalId, {
     chosenBy: actor.role,
     reason,
@@ -148,13 +121,14 @@ export async function redirectHandover(
   });
 }
 
-/** Hospitals for the crew or desk to pick from: nearest with capacity first, then the rest. */
+/**
+ * Hospitals for the crew (or desk) to pick from (plan §11): every active one,
+ * nearest to the patient first (their phone's location, else their home),
+ * ER full or accepting, and the person's preferred hospital marked.
+ */
 export async function hospitalsNear(d: Pick<HandoverDeps, 'handovers' | 'dispatch'>, incident: IncidentRow) {
-  const [from, all] = await Promise.all([incidentPoint(d.dispatch, incident), d.handovers.hospitals()]);
-  const active = all.filter((h) => h.active);
-  const ranked = from ? rankHospitals(from, active) : [];
-  const rest = active.filter((h) => !ranked.some((r) => r.id === h.id)).map((h) => ({ ...h, etaS: from ? estimateEtaS(distanceM(from, h)) : null }));
-  return [...ranked, ...rest].map((h) => ({ id: h.id, name: h.name, hasCapacity: h.hasCapacity, etaS: h.etaS }));
+  const [from, all, preferredId] = await Promise.all([incidentPoint(d.dispatch, incident), d.handovers.hospitals(), d.handovers.preferredHospital(incident.userId)]);
+  return hospitalsByDistance(from, all).map((h) => ({ id: h.id, name: h.name, hasCapacity: h.hasCapacity, etaS: h.etaS, preferred: h.id === preferredId }));
 }
 
 /** The crew's first-aid notes, added to the handover (encrypted at rest). */

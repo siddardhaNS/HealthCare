@@ -100,7 +100,23 @@
       "transporting": "Leaving for hospital",
       "handed_over": "Handed over at hospital"
     },
-    "laterRoles": "Jobs for your role arrive in a later update."
+    "laterRoles": "Jobs for your role arrive in a later update.",
+    "hospital": {
+      "title": "Hospital",
+      "choose": "Choose the hospital",
+      "changeTitle": "Change the hospital",
+      "hint": "Nearest to the patient first. The hospital gets the patient’s shared record as soon as you choose.",
+      "reason": "Why change? (required)",
+      "loading": "Loading hospitals…",
+      "none": "No network hospitals. Ask the desk.",
+      "erFull": "ER full",
+      "preferred": "Patient’s preferred hospital",
+      "sent": "Record sent. Waiting for the ER to confirm.",
+      "confirmed": "The ER has confirmed receipt.",
+      "callEr": "Call the ER",
+      "change": "Change hospital",
+      "keep": "Keep the current hospital"
+    }
   },
   "web": {
     "heroTitle": "Doctors, medicines, lab tests and a 24×7 SOS for every home",
@@ -188,7 +204,6 @@
       "alarm": {
         "raised": "New SOS {{ref}}",
         "no_accept": "{{ref}}: still no crew. Offered to the nearest free crews; you can offer it to any crew.",
-        "no_hospital": "{{ref}}: no hospital has capacity. Choose one.",
         "no_accept_team": "{{ref}}: {{missed}} did not respond. Offered to {{next}}.",
         "no_accept_nearest": "{{ref}}: {{missed}} did not respond. Offered to the nearest free crews."
       },
@@ -290,9 +305,9 @@
         "escalated_to_108": "108 prompted"
       },
       "scale": "{{km}} km",
-      "handoverWaiting": "The hospital is chosen when a crew accepts.",
+      "handoverWaiting": "The crew picks the hospital after accepting.",
       "handoverDrill": "Drills are never sent to a hospital.",
-      "handoverNone": "No hospital yet (none had capacity). Choose one.",
+      "handoverNone": "Hospital not chosen yet. The crew picks it; you can choose one with a reason.",
       "handoverItems": "Shared: {{items}}",
       "handoverConfirmed": "Received by the ER at {{time}}",
       "handoverUnconfirmed": "Not yet confirmed by the ER",
@@ -300,8 +315,8 @@
       "handoverLink": "Link valid until {{time}}",
       "chosenBy": {
         "auto": "Chosen automatically",
-        "crew": "Changed by the crew",
-        "desk": "Changed by the desk"
+        "crew": "Chosen by the crew",
+        "desk": "Chosen by the desk"
       },
       "callEr": "Call ER",
       "hospitalChoose": "Choose hospital",

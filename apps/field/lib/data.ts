@@ -92,3 +92,26 @@ export function useAdvanceJob() {
     onError: () => qc.invalidateQueries({ queryKey: keys.job }),
   });
 }
+
+// ── Receiving hospital (plan §11: the crew picks; nothing is chosen on accept) ──
+
+/** Every active hospital, nearest to the patient first, ER full / accepting, the patient's preferred one marked. */
+export function useJobHospitals(incidentId: string, enabled: boolean) {
+  const { api } = useSession();
+  return useQuery({
+    queryKey: ['crew', 'job', incidentId, 'hospitals'] as const,
+    enabled,
+    queryFn: async () => (await unwrap(api.GET('/v1/sos/{id}/hospitals', { params: { path: { id: incidentId } } }))).hospitals,
+  });
+}
+
+/** Picks the hospital (opens the handover), or changes it with a reason. */
+export function usePickHospital() {
+  const { api } = useSession();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, hospitalId, reason }: { id: string; hospitalId: string; reason?: string }) =>
+      unwrap(api.PUT('/v1/sos/{id}/hospital', { params: { path: { id } }, body: { hospitalId, ...(reason ? { reason } : {}) } })),
+    onSettled: () => qc.invalidateQueries({ queryKey: keys.job }),
+  });
+}

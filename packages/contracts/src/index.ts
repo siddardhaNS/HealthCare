@@ -497,6 +497,7 @@ export const HandoverSummary = z
   .object({
     hospital: z.object({ id: z.string().uuid(), name: z.string(), erPhone: z.string() }),
     items: z.array(HandoverItemSchema),
+    /** 'auto' only on incidents from before plan §11. */
     chosenBy: z.enum(['auto', 'crew', 'desk']),
     preferred: z.boolean(),
     reason: z.string().nullable(),
@@ -593,7 +594,7 @@ export type DeskIncident = z.infer<typeof DeskIncident>;
 export const DeskIncidentDetail = DeskIncident.extend({
   offers: z.array(DeskOffer),
   handover: HandoverSummary.nullable(),
-  hospitalsNearby: z.array(z.object({ id: z.string().uuid(), name: z.string(), hasCapacity: z.boolean(), etaS: z.number().int().nullable() })),
+  hospitalsNearby: z.array(z.lazy(() => NearbyHospital)),
 }).openapi('DeskIncidentDetail');
 export type DeskIncidentDetail = z.infer<typeof DeskIncidentDetail>;
 
@@ -763,8 +764,23 @@ export const HospitalChoices = z
   .openapi('HospitalChoices');
 export const PreferredHospital = z.object({ hospitalId: z.string().uuid().nullable() }).openapi('PreferredHospital');
 
-/** The crew or the desk sends the patient to another hospital. */
-export const HandoverRedirect = z.object({ hospitalId: z.string().uuid(), reason }).openapi('HandoverRedirect');
+/**
+ * The crew picks the receiving hospital (plan §11: no automatic choice), or the crew or
+ * desk changes it. The crew's first pick needs no reason; every change after that does.
+ */
+export const HandoverRedirect = z.object({ hospitalId: z.string().uuid(), reason: reason.optional() }).openapi('HandoverRedirect');
+
+/** A hospital the crew or desk can pick: every active one, nearest first, ER full or accepting. */
+export const NearbyHospital = z
+  .object({
+    id: z.string().uuid(),
+    name: z.string(),
+    hasCapacity: z.boolean(),
+    etaS: z.number().int().nullable(),
+    /** The resident's own preferred hospital. */
+    preferred: z.boolean(),
+  })
+  .openapi('NearbyHospital');
 export const FirstAidNotes = z.object({ notes: z.string().trim().min(1).max(2000) }).openapi('FirstAidNotes');
 
 /** What the ER receives. Only the items listed are present; with emergency sharing off, the blood group alone. */
