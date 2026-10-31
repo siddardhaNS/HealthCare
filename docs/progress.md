@@ -1,9 +1,9 @@
 # Progress
 
-## 2026-10-31 · Phase 4 plan written (awaiting your approval)
+## 2026-10-31 · Phase 4 plan approved (⚑8 calling provider still open)
 
 - `docs/plans/phase-4-consults-calling.md`: 13 decisions (⚑1–⚑13) with recommendations, plus the data model, API, calling rules, screens, tests and order of work.
-- Nothing is built until you approve (working agreement, phases 3 and 4).
+- **Approved** with all recommendations, except ⚑8: you asked about our own calling instead of LiveKit. Options A / B / C are set out in the plan; I recommended B (self-hosted open-source LiveKit in Mumbai). Steps 1–3 (doctors, booking, payments) don't depend on it.
 
 ## 2026-10-31 · Phase 3, step 10 (started): SOS notifications
 

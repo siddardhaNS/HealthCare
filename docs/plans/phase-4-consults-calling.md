@@ -1,6 +1,6 @@
 # Plan: Phase 4 (consults and calling)
 
-Status: **⚑ awaiting approval** (written 2026-10-31). Brief dates: 22 Dec – 18 Jan.
+Status: **approved 2026-10-31**: all recommendations accepted, **except ⚑8 (where calls run), now open:** you asked about running our own calling instead of LiveKit Cloud. Options: A) LiveKit Cloud, B) the open-source LiveKit server self-hosted in Mumbai, C) our own WebRTC with our signalling and a coturn relay. B and C add a server outside Vercel and Supabase (a stack change). Brief dates: 22 Dec – 18 Jan.
 
 A resident books a doctor by specialty and slot, pays, waits in a waiting room, has a video or audio call (or goes to the clinic), and gets an e-prescription in Records. All calls in the product run on one `calls` module: consults, the SOS crew call, the desk call, and later the service calls. Incoming calls ring like a phone call, even with the app closed.
 
