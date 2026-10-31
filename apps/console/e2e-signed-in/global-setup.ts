@@ -83,13 +83,25 @@ export default async function globalSetup() {
   const pre = await userId(crewEmail);
   const adminId = await userId('e2e-admin@example.test');
   const erId = await userId('e2e-er@example.test');
+  const doctorId = await userId('e2e-doctor@example.test');
   // Roles before signing in, so the tokens carry them.
-  await db.execute(sql`delete from user_roles where user_id in (${adminId}, ${erId}, ${pre})`);
+  await db.execute(sql`delete from user_roles where user_id in (${adminId}, ${erId}, ${pre}, ${doctorId})`);
   await db.execute(sql`
     insert into user_roles (user_id, role, scope_type, scope_id) values
       (${adminId}, 'super_admin', null, null),
       (${erId}, 'hospital', 'partner', ${ids.far}),
-      (${pre}, 'crew', null, null)`);
+      (${pre}, 'crew', null, null),
+      (${doctorId}, 'doctor', null, null)`);
+  // Phase 4: a verified, bookable General Physician with no hours yet (each run starts clean).
+  const [doctorRow] = (await db.execute(sql`
+    insert into doctors (user_id, full_name, qualification, registration_no, council, fee_video_paise, fee_audio_paise, verified_at, active)
+    values (${doctorId}, 'Dr. E2E Doctor', 'MBBS', 'E2E-REG-1', 'E2E Medical Council', 50000, 40000, now(), true)
+    on conflict (user_id) do update set fee_video_paise = 50000, fee_audio_paise = 40000, fee_clinic_paise = null, slot_minutes = 15, verified_at = now(), active = true
+    returning id`)) as unknown as { id: string }[];
+  await db.execute(sql`delete from doctor_hours where doctor_id = ${doctorRow!.id}`);
+  await db.execute(sql`delete from doctor_exceptions where doctor_id = ${doctorRow!.id}`);
+  await db.execute(sql`
+    insert into doctor_specialties (doctor_id, specialty_id) select ${doctorRow!.id}, id from specialties where code = 'general_physician' on conflict do nothing`);
   const [crewRow] = (await db.execute(sql`
     insert into crews (user_id, drill_participant, active, team_id) values (${pre}, true, true, null)
     on conflict (user_id) do update set drill_participant = true, active = true, team_id = null
@@ -99,6 +111,7 @@ export default async function globalSetup() {
     admin: await prepare('e2e-admin@example.test', true),
     er: await prepare('e2e-er@example.test', true),
     crew: { ...(await prepare(crewEmail, false)), crewId: crewRow!.id },
+    doctor: { ...(await prepare('e2e-doctor@example.test', true)), doctorId: doctorRow!.id },
     resident: await prepare('e2e-resident@example.test', false),
     siteId: ids.site,
     hospitals: { near: ids.near, far: ids.far },

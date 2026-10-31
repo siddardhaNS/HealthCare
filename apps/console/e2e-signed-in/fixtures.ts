@@ -10,6 +10,7 @@ export const AUTH_DIR = join(here, '.auth');
 export const ACCOUNTS_FILE = join(AUTH_DIR, 'accounts.json');
 export const adminState = join(AUTH_DIR, 'admin.json');
 export const erState = join(AUTH_DIR, 'er.json');
+export const doctorState = join(AUTH_DIR, 'doctor.json');
 
 // Server secrets come from the repo's .env (as for the API and scripts).
 const rootEnv = join(here, '..', '..', '..', '.env');
@@ -40,6 +41,7 @@ export interface Accounts {
   admin: Account;
   er: Account;
   crew: Account & { crewId: string };
+  doctor: Account & { doctorId: string };
   resident: Account;
   siteId: string;
   hospitals: { near: string; far: string };

@@ -882,3 +882,107 @@ export const DeskPhoneUpdate = z
 
 /** Languages to offer besides English, which is always on. */
 export const LanguagesUpdate = z.object({ enabled: z.array(z.enum(['te', 'hi'])).max(2) }).openapi('LanguagesUpdate');
+
+// ── Consults (Phase 4, docs/plans/phase-4-consults-calling.md) ───────────
+export * from './consults';
+import { consultTypes as _consultTypes, consultRules as _consultRules } from './consults';
+
+const ConsultTypeSchema = z.enum(_consultTypes);
+const localized = z.object({ en: z.string().trim().min(1).max(80), te: z.string().trim().min(1).max(80), hi: z.string().trim().min(1).max(80) });
+const keywordList = z.array(z.string().trim().min(2).max(40)).max(60);
+
+/** A specialty with its names and the symptom words that suggest it (⚑4). */
+export const Specialty = z
+  .object({
+    id: z.string().uuid(),
+    code: z.string(),
+    names: localized,
+    keywords: z.object({ en: keywordList.optional(), te: keywordList.optional(), hi: keywordList.optional() }),
+    active: z.boolean(),
+  })
+  .openapi('Specialty');
+export type Specialty = z.infer<typeof Specialty>;
+export const Specialties = z.object({ specialties: z.array(Specialty) }).openapi('Specialties');
+export const SpecialtyInput = z
+  .object({
+    code: z.string().trim().regex(/^[a-z_]{2,40}$/, 'Lower-case letters and underscores'),
+    names: localized,
+    keywords: z.object({ en: keywordList.optional(), te: keywordList.optional(), hi: keywordList.optional() }).default({}),
+    active: z.boolean().default(true),
+  })
+  .openapi('SpecialtyInput');
+export const SpecialtyUpdate = z
+  .object({ names: localized.optional(), keywords: z.object({ en: keywordList.optional(), te: keywordList.optional(), hi: keywordList.optional() }).optional(), active: z.boolean().optional() })
+  .openapi('SpecialtyUpdate');
+
+// hhmm and isoDate are defined above (vitals, contacts) and reused here.
+const paise = z.number().int().min(0).max(10_000_00);
+
+/** A doctor as operations manage them (⚑1). Fees in paise; null = that consult type is not offered. */
+export const Doctor = z
+  .object({
+    id: z.string().uuid(),
+    userId: z.string().uuid(),
+    email: z.string().nullable(),
+    fullName: z.string(),
+    qualification: z.string(),
+    registrationNo: z.string(),
+    council: z.string(),
+    verifiedAt: z.string().datetime().nullable(),
+    feeVideoPaise: z.number().int().nullable(),
+    feeAudioPaise: z.number().int().nullable(),
+    feeClinicPaise: z.number().int().nullable(),
+    slotMinutes: z.number().int(),
+    languages: z.array(z.enum(['en', 'te', 'hi'])),
+    clinicAddress: z.string().nullable(),
+    specialtyIds: z.array(z.string().uuid()),
+    active: z.boolean(),
+  })
+  .openapi('Doctor');
+export type Doctor = z.infer<typeof Doctor>;
+export const Doctors = z.object({ doctors: z.array(Doctor) }).openapi('Doctors');
+
+const doctorFields = {
+  fullName: z.string().trim().min(2).max(100),
+  qualification: z.string().trim().min(2).max(120),
+  registrationNo: z.string().trim().min(3).max(40),
+  council: z.string().trim().min(2).max(80),
+  feeVideoPaise: paise.nullable().optional(),
+  feeAudioPaise: paise.nullable().optional(),
+  feeClinicPaise: paise.nullable().optional(),
+  slotMinutes: z.union(_consultRules.slotMinutesAllowed.map((m) => z.literal(m)) as unknown as [z.ZodLiteral<10>, z.ZodLiteral<15>, z.ZodLiteral<20>, z.ZodLiteral<30>]).default(15),
+  languages: z.array(z.enum(['en', 'te', 'hi'])).min(1).default(['en']),
+  clinicAddress: z.string().trim().max(300).nullable().optional(),
+  specialtyIds: z.array(z.string().uuid()).min(1, 'Choose at least one specialty').max(5),
+};
+/** Links an existing doctor sign-in (created with staff:create --role doctor) by email. */
+export const DoctorCreate = z.object({ email: z.string().trim().toLowerCase().email(), ...doctorFields }).openapi('DoctorCreate');
+export const DoctorUpdate = z.object(doctorFields).partial().openapi('DoctorUpdate');
+export const DoctorActive = z.object({ active: z.boolean() }).openapi('DoctorActive');
+
+export const WeeklyHoursRow = z
+  .object({ weekday: z.number().int().min(0).max(6), start: hhmm, end: hhmm, types: z.array(ConsultTypeSchema).min(1) })
+  .refine((h) => h.end > h.start, { message: 'The end must be after the start', path: ['end'] })
+  .openapi('WeeklyHoursRow');
+export const WeeklyHoursInput = z.object({ hours: z.array(WeeklyHoursRow).max(50) }).openapi('WeeklyHoursInput');
+export const HoursExceptionInput = z
+  .object({ from: isoDate, to: isoDate, kind: z.enum(['off', 'extra']), start: hhmm.optional(), end: hhmm.optional(), types: z.array(ConsultTypeSchema).min(1).optional() })
+  .refine((e) => e.to >= e.from, { message: 'The end date must not be before the start', path: ['to'] })
+  .refine((e) => e.kind === 'off' || (e.start && e.end && e.end > e.start), { message: 'Extra hours need a start and an end', path: ['end'] })
+  .openapi('HoursExceptionInput');
+export const HoursException = z
+  .object({ id: z.string().uuid(), from: isoDate, to: isoDate, kind: z.enum(['off', 'extra']), start: hhmm.nullable(), end: hhmm.nullable(), types: z.array(ConsultTypeSchema).nullable() })
+  .openapi('HoursException');
+/** A saved exception (with its id); the slot generator's input type is HoursException in ./consults. */
+export type SavedHoursException = z.infer<typeof HoursException>;
+
+/** The doctor's own schedule in the partner portal, with the bookable slots it makes for the next 7 days. */
+export const DoctorSchedule = z
+  .object({
+    doctor: Doctor,
+    hours: z.array(WeeklyHoursRow),
+    exceptions: z.array(HoursException),
+    preview: z.array(z.object({ startsAt: z.string().datetime(), types: z.array(ConsultTypeSchema) })),
+  })
+  .openapi('DoctorSchedule');
+export type DoctorSchedule = z.infer<typeof DoctorSchedule>;

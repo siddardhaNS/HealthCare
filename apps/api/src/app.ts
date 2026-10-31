@@ -20,6 +20,7 @@ import { leadsRoutes } from './modules/leads/routes';
 import { whatsappWebhookRoutes } from './modules/messaging/routes';
 import { systemRoutes } from './modules/system/routes';
 import { settingsRoutes } from './modules/settings/routes';
+import { consultsRoutes } from './modules/consults/routes';
 
 export type AppEnv = { Variables: { requestId: string; deps: Deps; auth?: AccessClaims } };
 
@@ -65,7 +66,7 @@ export function createApp(options: CreateAppOptions = {}) {
   const webOrigins = options.webOrigins ?? (process.env.WEB_ORIGINS ?? 'http://localhost:3000,http://localhost:3003').split(',').map((o) => o.trim());
   app.use('/v1/leads', cors({ origin: webOrigins, allowMethods: ['POST'], allowHeaders: ['content-type'], maxAge: 600 }));
 
-  for (const path of ['/v1/auth/*', '/v1/me', '/v1/leads', '/v1/leads/*', '/v1/consents', '/v1/consents/*', '/v1/households', '/v1/households/*', '/v1/me/*', '/v1/people/*', '/v1/residents', '/v1/residents/*', '/v1/sos', '/v1/sos/*', '/v1/crew/*', '/v1/dispatch/*', '/v1/desk/*', '/v1/sos-settings', '/v1/sos-settings/*', '/v1/coverage/*', '/v1/partner/*', '/v1/handover-links/*', '/v1/hospitals', '/v1/hospitals/*', '/v1/config', '/v1/settings/*', '/webhooks/*']) app.use(path, withDeps);
+  for (const path of ['/v1/auth/*', '/v1/me', '/v1/leads', '/v1/leads/*', '/v1/consents', '/v1/consents/*', '/v1/households', '/v1/households/*', '/v1/me/*', '/v1/people/*', '/v1/residents', '/v1/residents/*', '/v1/sos', '/v1/sos/*', '/v1/crew/*', '/v1/dispatch/*', '/v1/desk/*', '/v1/sos-settings', '/v1/sos-settings/*', '/v1/coverage/*', '/v1/partner/*', '/v1/handover-links/*', '/v1/hospitals', '/v1/hospitals/*', '/v1/config', '/v1/settings/*', '/v1/specialties', '/v1/console/*', '/webhooks/*']) app.use(path, withDeps);
   app.route('/v1', authRoutes);
   app.route('/v1', authHookRoutes);
   app.route('/v1', leadsRoutes);
@@ -80,6 +81,7 @@ export function createApp(options: CreateAppOptions = {}) {
   app.route('/v1', handoverRoutes);
   app.route('/v1', dispatchRoutes);
   app.route('/v1', settingsRoutes);
+  app.route('/v1', consultsRoutes);
   app.route('/', whatsappWebhookRoutes);
 
   app.notFound((c) => c.json<ErrorBody>({ error: { code: 'not_found', message: 'Not found', requestId: c.get('requestId') } }, 404));

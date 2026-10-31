@@ -15,6 +15,7 @@ import { fakeEscalation, fakeSos, recordingAlerts } from './fake-sos';
 import { fakeDispatch } from './fake-dispatch';
 import { fakeDesk } from './fake-desk';
 import { fakeCoverage, fakeSosSettings } from './fake-coverage';
+import { fakeConsults } from './fake-consults';
 import { fakeHandovers, recordingNotifier } from './fake-handover';
 import { memoryCrewLocator } from '../src/lib/crew-locator';
 import { recordingRealtime } from '../src/lib/realtime';
@@ -121,6 +122,7 @@ export async function testContext(opts: { whatsappFails?: boolean; mailerFails?:
   const sosSettings = fakeSosSettings(hh, sos);
   const ops = { deskPhone: null as string | null, languages: ['en'] as ('en' | 'te' | 'hi')[], audit: [] as { from: unknown; to: unknown }[] };
   const handovers = fakeHandovers(() => sos.incidents);
+  const consults = fakeConsults();
   const links = recordingNotifier();
   const locator = memoryCrewLocator();
   const live = recordingRealtime();
@@ -228,6 +230,7 @@ export async function testContext(opts: { whatsappFails?: boolean; mailerFails?:
       },
     },
     handovers: handovers.repo,
+    consults: consults.repo,
     handoverNotifier: links.notifier,
     sosAlerts: alerts.alerts,
     escalation: escalation.runner,
@@ -315,6 +318,7 @@ export async function testContext(opts: { whatsappFails?: boolean; mailerFails?:
     mail,
     whatsappSent,
     gatePhones,
+    consults,
     notifyStarted,
     notifyDeps,
     smsSent,

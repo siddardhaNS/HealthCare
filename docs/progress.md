@@ -14,9 +14,34 @@
   - the slot generator (⚑3): weekly hours, leave and extra hours, taken slots, 30 min lead, always IST (UTC+05:30)
   - 8 tests.
 
-### Next (step 2)
-- Console: doctor onboarding and verification, and specialties with the symptom keywords (⚑4).
-- Partner portal: the doctor's weekly hours and exceptions.
+### Step 2 done (same day): doctors, specialties, the doctor's schedule
+- **API** (`consults` module):
+  - `GET /specialties`
+  - Operations: `/console/specialties` (add, edit names and symptom words, on/off) and `/console/doctors` (add, edit, verify, bookable on/off).
+  - Doctor: `/partner/schedule` (weekly hours, leave and extra hours, and a slot preview for the next 7 days).
+  - Every change is audited.
+- **Rules:**
+  - A doctor is linked by email to an existing sign-in that has the `doctor` role; sign-ins are still created with `staff:create --role doctor`.
+  - A doctor starts unverified and off. They become bookable only once verified, with a fee and a specialty.
+  - A *different* registration number or council clears the verification. Found in Chrome: saving the form unchanged used to clear it too; fixed, with a test.
+  - Weekly hours: no overlaps, and only consult types the doctor has a fee for.
+- **14 specialties seeded** (migration `20261031080000`) with symptom words in en/te/hi (part of the pending translation review).
+- **Console:**
+  - Doctors list and add form, and a doctor page (registration check, bookable, edit; fees in ₹).
+  - Specialties page.
+  - "My schedule" for doctors (two windows per day, leave and extra hours, slot preview). Doctors land on it after sign-in.
+  - Strings in en/te/hi.
+- **Tests:**
+  - API: 262 unit (6 new).
+  - Real DB through the API: add, refused before verification, verify, activate; plus a Chrome edit of the clinic fee.
+  - New signed-in e2e: a doctor account in global setup, a doctor sign-in step, and `schedule.spec.ts` (hours → preview, leave removes a day, axe). It passes on its own.
+- **Local e2e is unreliable on this machine** under load (dev servers, Docker, Chrome): each full run fails a different test (timeouts while opening the browser, a 3.6-minute simple test). CI's clean runner is the reference.
+
+### Gap to flag
+- Staff sign-ins (doctors included) can only be created with a command-line script. Operations will need user management in the console before the pilot.
+
+### Next (step 3)
+- Booking API: resident search by specialty and type, slots, hold the slot and create the Razorpay order (test mode), webhook, hold-expiry Workflow, WhatsApp confirmation and reminders.
 
 ## 2026-10-31 · Phase 4 plan approved; calls on self-hosted LiveKit
 

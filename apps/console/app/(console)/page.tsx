@@ -27,6 +27,8 @@ export default async function CommandCenter({ searchParams }: { searchParams: Pr
   const roles: string[] = claims?.roles ?? [];
   // Hospital partner staff have their own home: incoming patients.
   if (roles.includes('hospital') && !roles.some((r) => deskRoles.includes(r))) redirect('/handovers');
+  // Doctors have their own home: their schedule (and, from step 3, their consult queue).
+  if (roles.includes('doctor') && !roles.some((r) => deskRoles.includes(r))) redirect('/schedule');
   const api = await serverApi();
   const [open, recent, fleet, sites, config] = await Promise.all([
     api.GET('/v1/desk/sos', { params: { query: { view: 'open' } } }),

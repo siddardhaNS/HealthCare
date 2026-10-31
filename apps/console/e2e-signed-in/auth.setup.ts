@@ -1,6 +1,6 @@
 import { expect, test as setup, type Page } from '@playwright/test';
 import { createI18n } from '@repo/i18n';
-import { accounts, adminState, erState, totp, type Account } from './fixtures';
+import { accounts, adminState, doctorState, erState, totp, type Account } from './fixtures';
 
 const { t } = createI18n('en');
 
@@ -31,4 +31,11 @@ setup('hospital staff sign in and land on incoming patients', async ({ page }) =
   await expect(page).toHaveURL(/\/handovers$/);
   await expect(page.getByRole('heading', { name: t('console.partner.title') })).toBeVisible();
   await page.context().storageState({ path: erState });
+});
+
+setup('a doctor signs in and lands on their schedule', async ({ page }) => {
+  await signIn(page, accounts().doctor);
+  await expect(page).toHaveURL(/\/schedule$/);
+  await expect(page.getByRole('heading', { name: t('console.schedule.title') })).toBeVisible();
+  await page.context().storageState({ path: doctorState });
 });

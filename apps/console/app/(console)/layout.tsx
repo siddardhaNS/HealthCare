@@ -57,6 +57,21 @@ export default async function ConsoleLayout({ children }: { children: ReactNode 
             </Link>
           ) : null}
           {claims.roles.some((r) => r === 'super_admin' || r === 'operations') ? (
+            <Link href="/doctors" className="rounded-control px-3 py-2 font-semibold text-text-muted hover:bg-surface hover:text-text">
+              {t('console.doctors.title')}
+            </Link>
+          ) : null}
+          {claims.roles.some((r) => r === 'super_admin' || r === 'operations') ? (
+            <Link href="/specialties" className="rounded-control px-3 py-2 font-semibold text-text-muted hover:bg-surface hover:text-text">
+              {t('console.specialties.title')}
+            </Link>
+          ) : null}
+          {claims.roles.includes('doctor') ? (
+            <Link href="/schedule" className="rounded-control px-3 py-2 font-semibold text-text-muted hover:bg-surface hover:text-text">
+              {t('console.schedule.title')}
+            </Link>
+          ) : null}
+          {claims.roles.some((r) => r === 'super_admin' || r === 'operations') ? (
             <Link href="/settings" className="rounded-control px-3 py-2 font-semibold text-text-muted hover:bg-surface hover:text-text">
               {t('console.settings.title')}
             </Link>
